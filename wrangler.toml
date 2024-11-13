@@ -1,0 +1,20 @@
+name = "chatty"
+main = "src/worker.js"
+compatibility_date = "2024-01-01"
+
+[durable_objects]
+classes = [
+  { name = "ChatRoom", class_name = "ChatRoom" }
+]
+
+[[durable_objects.bindings]]
+name = "CHATROOM"
+class_name = "ChatRoom"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["ChatRoom"]
+
+[observability]
+enabled = true
+head_sampling_rate = 1
