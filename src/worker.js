@@ -188,50 +188,52 @@ export class ChatRoom {
 
   async logToDatadog(event, data = {}) {
     try {
-      const timestamp = new Date().toISOString();
-      const baseMetrics = {
-        uptime_ms: Date.now() - this.startTime,
-        users_count: this.users.size,
-        message_count: this.metrics.messages.total,
-        error_count: Object.values(this.metrics.errors)
-          .reduce((sum, stat) => sum + stat.count, 0)
-      };
+        const timestamp = new Date().toISOString();
+        const baseMetrics = {
+            uptime_ms: Date.now() - this.startTime,
+            users_count: this.users.size,
+            message_count: this.metrics.messages.total,
+            error_count: Object.values(this.metrics.errors).reduce((sum, stat) => sum + stat.count, 0)
+        };
 
-      await fetch("https://http-intake.logs.datadoghq.com/api/v2/logs", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'DD-API-KEY': this.env.DD_API_KEY
-        },
-        body: JSON.stringify({
-          ddsource: "worker",
-          ddtags: `env:prod,service:chatty,event:${event},users:${this.users.size}`,
-          message: event,
-          service: "chatty",
-          host: "worker",
-          timestamp,
-          attributes: {
-            event_details: data,
-            metrics: {
-              ...baseMetrics,
-              ...data.metrics
+        // Enhanced log structure for Datadog compatibility
+        await fetch("https://http-intake.logs.datadoghq.com/api/v2/logs", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'DD-API-KEY': this.env.DD_API_KEY
             },
-            tags: [
-              `event:${event}`,
-              `users:${this.users.size}`,
-              ...(data.tags || [])
-            ]
-          }
-        })
-      });
+            body: JSON.stringify({
+                ddsource: "worker",
+                ddtags: `env:prod,service:chatty,event:${event},users:${this.users.size}`,
+                message: event,
+                service: "chatty",
+                host: "worker",
+                timestamp,
+                attributes: {
+                    event_name: event,
+                    event_details: data,
+                    metrics: {
+                        ...baseMetrics,
+                        ...data.metrics  // Adding custom metrics if provided
+                    },
+                    tags: [
+                        `event:${event}`,
+                        `users:${this.users.size}`,
+                        ...(data.tags || [])
+                    ]
+                }
+            })
+        });
     } catch (error) {
-      await this.logError('datadog', error, {
-        severity: 'CRITICAL',
-        failed_event: event,
-        failed_data: data
-      });
+        await this.logError('datadog', error, {
+            severity: 'CRITICAL',
+            failed_event: event,
+            failed_data: data
+        });
     }
-  }
+}
+
 
   async logTestMetric() {
     await this.logToDatadog('test_metric', {
