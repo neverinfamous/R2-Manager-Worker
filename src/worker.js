@@ -4,10 +4,8 @@ export class ChatRoom {
     this.env = env;
     this.users = new Set();
     this.startTime = Date.now();
-    this.pendingLogs = [];
-    this.logFlushInterval = null;
 
-    // Use state storage for metrics to persist across isolate recycling
+    // Initialize metrics in state storage
     this.initMetrics();
   }
 
@@ -21,64 +19,55 @@ export class ChatRoom {
       };
     }
     this.metrics = metrics;
-    this.flushPendingLogs();
   }
 
-  // Queue log instead of sending immediately
-  queueLog(type, data = {}) {
-    this.pendingLogs.push({
+  // Immediate log sending with single retry on failure
+  async sendLog(type, data = {}) {
+    const logEntry = {
+      ddsource: 'cloudflare-worker',
+      ddtags: `env:prod,service:chatty,event:${type}`,
+      message: type,
       timestamp: new Date().toISOString(),
-      type,
       data: {
         ...data,
         connection_time: Date.now() - this.startTime,
         current_users: this.users.size,
         metrics: this.metrics
       }
-    });
-  }
+    };
 
-  // Batch send logs every 2 seconds with smaller batch size
-  async flushPendingLogs() {
-    if (this.logFlushInterval) return;
+    try {
+      const response = await fetch("https://http-intake.logs.datadoghq.com/api/v2/logs", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'DD-API-KEY': 'b2e6e243844fa59b66e2e5c87d880a39'
+        },
+        body: JSON.stringify([logEntry])
+      });
 
-    this.logFlushInterval = setInterval(async () => {
-      if (this.pendingLogs.length === 0) return;
-
-      const logs = this.pendingLogs.splice(0, 10); // Process in smaller batches of 10
-      
+      if (!response.ok) throw new Error(`Datadog log failed: ${response.statusText}`);
+    } catch (error) {
+      console.error('Log send error, retrying once:', error);
+      // Retry once on failure
       try {
-        const response = await fetch("https://http-intake.logs.datadoghq.com/api/v2/logs", {
+        await fetch("https://http-intake.logs.datadoghq.com/api/v2/logs", {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'DD-API-KEY': 'b2e6e243844fa59b66e2e5c87d880a39'
           },
-          body: JSON.stringify(logs.map(log => ({
-            ddsource: 'cloudflare-worker',
-            ddtags: `env:prod,service:chatty,event:${log.type}`,
-            message: log.type,
-            timestamp: log.timestamp,
-            data: log.data
-          })))
+          body: JSON.stringify([logEntry])
         });
-
-        if (!response.ok) {
-          console.error('Datadog log flush failed:', response.statusText);
-          // Re-queue failed logs
-          this.pendingLogs.unshift(...logs);
-        }
-      } catch (error) {
-        console.error('Log flush error:', error);
-        // Re-queue failed logs
-        this.pendingLogs.unshift(...logs);
+      } catch (retryError) {
+        console.error('Retry log send failed:', retryError);
       }
-    }, 2000); // Flush every 2 seconds
+    }
   }
 
   async fetch(request) {
     const connectionId = crypto.randomUUID();
-    this.queueLog('websocket_request', {
+    this.sendLog('websocket_request', {
       connection_id: connectionId,
       url: request.url,
       headers: Object.fromEntries(request.headers)
@@ -86,7 +75,7 @@ export class ChatRoom {
 
     try {
       if (!request.headers.get("Upgrade")?.toLowerCase().includes("websocket")) {
-        this.queueLog('websocket_reject', {
+        this.sendLog('websocket_reject', {
           connection_id: connectionId,
           reason: 'invalid_upgrade'
         });
@@ -103,7 +92,7 @@ export class ChatRoom {
       this.metrics.connections.peak = Math.max(this.metrics.connections.peak, this.users.size);
       await this.state.storage.put('metrics', this.metrics);
 
-      this.queueLog('websocket_accepted', {
+      this.sendLog('websocket_accepted', {
         connection_id: connectionId,
         users: this.users.size
       });
@@ -130,7 +119,7 @@ export class ChatRoom {
           this.metrics.messages.bytes += event.data.length;
           await this.state.storage.put('metrics', this.metrics);
 
-          this.queueLog('websocket_message', {
+          this.sendLog('websocket_message', {
             connection_id: connectionId,
             size: event.data.length
           });
@@ -152,7 +141,7 @@ export class ChatRoom {
           const failedCount = results.filter(r => r.status === 'rejected' || !r.value).length;
 
           if (failedCount > 0) {
-            this.queueLog('broadcast_failure', {
+            this.sendLog('broadcast_failure', {
               connection_id: connectionId,
               failed: failedCount,
               total: this.users.size
@@ -167,7 +156,7 @@ export class ChatRoom {
           });
           await this.state.storage.put('metrics', this.metrics);
 
-          this.queueLog('error', {
+          this.sendLog('error', {
             connection_id: connectionId,
             type: 'message_processing',
             error: error.message
@@ -181,7 +170,7 @@ export class ChatRoom {
         this.metrics.connections.current = this.users.size;
         await this.state.storage.put('metrics', this.metrics);
 
-        this.queueLog('websocket_closed', {
+        this.sendLog('websocket_closed', {
           connection_id: connectionId,
           remaining_users: this.users.size
         });
@@ -196,7 +185,7 @@ export class ChatRoom {
         });
         await this.state.storage.put('metrics', this.metrics);
 
-        this.queueLog('error', {
+        this.sendLog('error', {
           connection_id: connectionId,
           type: 'websocket',
           error: error.message
@@ -221,7 +210,7 @@ export class ChatRoom {
       });
       await this.state.storage.put('metrics', this.metrics);
 
-      this.queueLog('error', {
+      this.sendLog('error', {
         connection_id: connectionId,
         type: 'system',
         error: error.message
