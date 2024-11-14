@@ -1,9 +1,10 @@
-name: Deploy Worker
-
+name: Deploy Worker and Trigger Frontend
 on:
   push:
     branches:
       - main
+  repository_dispatch:
+    types: [frontend-updated]
 
 jobs:
   deploy:
@@ -27,3 +28,11 @@ jobs:
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
         env:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
+
+      - name: Trigger frontend rebuild
+        if: github.event_name == 'push'
+        uses: peter-evans/repository-dispatch@v2
+        with:
+          token: ${{ secrets.DEPLOY_PAT }}
+          repository: neverinfamous/frontend
+          event-type: worker-updated
