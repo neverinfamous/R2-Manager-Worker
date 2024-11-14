@@ -19,15 +19,19 @@ jobs:
           node-version: '18'
 
       - name: Install Dependencies
-        run: npm install
+        run: |
+          npm install
+          npm list # Log installed packages
       
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          command: deploy src/worker.js --verbose # Added verbose flag
         env:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
 
       - name: Trigger frontend rebuild
         if: github.event_name == 'push'
