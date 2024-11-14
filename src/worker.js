@@ -93,7 +93,10 @@ export class ChatRoom {
           service: "chatty",
           timestamp: new Date().toISOString(),
           metrics: this.metrics,
-          event_data: data
+          event_data: {
+            ...data,
+            connection_time: Date.now() - this.startTime
+          }
         })
       });
     } catch (error) {
@@ -120,6 +123,8 @@ export class ChatRoom {
       const upgrade = request.headers.get("Upgrade") || '';
       const connection = request.headers.get("Connection") || '';
       const wsKey = request.headers.get("Sec-WebSocket-Key");
+      const wsProtocol = request.headers.get("Sec-WebSocket-Protocol");
+      const wsExtensions = request.headers.get("Sec-WebSocket-Extensions");
       
       if (upgrade.toLowerCase() !== "websocket" || 
           !connection.toLowerCase().includes("upgrade")) {
@@ -128,7 +133,15 @@ export class ChatRoom {
           reason: 'invalid_upgrade',
           headers: { upgrade, connection }
         });
-        return new Response("Expected WebSocket connection", { status: 426 });
+        return new Response("Expected WebSocket connection", { 
+          status: 426,
+          headers: {
+            'Connection': 'keep-alive',
+            'Keep-Alive': 'timeout=60',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        });
       }
 
       const pair = new WebSocketPair();
@@ -149,13 +162,39 @@ export class ChatRoom {
         total_connections: this.metrics.connections.total
       });
 
+      // Set up ping interval immediately after accept
+      const pingInterval = setInterval(() => {
+        if (server.readyState === 1) {
+          try {
+            server.send(JSON.stringify({ 
+              type: 'ping', 
+              timestamp: new Date().toISOString(),
+              metrics: {
+                uptime: Date.now() - this.startTime,
+                users: this.users.size,
+                connectionId
+              }
+            }));
+          } catch (error) {
+            clearInterval(pingInterval);
+            if (server.readyState === 1) {
+              server.close(1001, "Ping failed");
+            }
+          }
+        } else {
+          clearInterval(pingInterval);
+        }
+      }, 15000);
+
       server.addEventListener('message', async event => {
         const messageStart = Date.now();
         this.lastMessageTime = messageStart;
         
         try {
           const data = JSON.parse(event.data);
-          if (data.type === 'pong') return;
+          if (data.type === 'pong') {
+            return;
+          }
 
           this.metrics.messages.total++;
           this.metrics.messages.bytes += event.data.length;
@@ -165,7 +204,7 @@ export class ChatRoom {
 
           // Broadcast to ALL users including sender
           const broadcasts = Array.from(this.users).map(async user => {
-            if (user.readyState === 1) { // OPEN
+            if (user.readyState === 1) {
               try {
                 user.send(event.data);
                 return true;
@@ -199,6 +238,7 @@ export class ChatRoom {
       });
 
       server.addEventListener('close', async event => {
+        clearInterval(pingInterval);
         this.users.delete(server);
         const duration = Date.now() - requestStart;
         
@@ -213,39 +253,25 @@ export class ChatRoom {
       });
 
       server.addEventListener('error', async error => {
+        clearInterval(pingInterval);
         await this.logError('websocket', error, {
           connection_id: connectionId,
           duration: Date.now() - requestStart
         });
       });
 
-      // Set up ping interval
-      const pingInterval = setInterval(() => {
-        if (server.readyState === 1) {
-          try {
-            server.send(JSON.stringify({ 
-              type: 'ping', 
-              timestamp: new Date().toISOString(),
-              metrics: {
-                uptime: Date.now() - this.startTime,
-                users: this.users.size
-              }
-            }));
-          } catch (error) {
-            clearInterval(pingInterval);
-            server.close();
-          }
-        } else {
-          clearInterval(pingInterval);
-        }
-      }, 15000);
-
+      // Return WebSocket upgrade response
       return new Response(null, {
         status: 101,
         webSocket: client,
         headers: {
           'Upgrade': 'websocket',
-          'Connection': 'Upgrade'
+          'Connection': 'Upgrade',
+          'Keep-Alive': 'timeout=60',
+          'Sec-WebSocket-Protocol': wsProtocol || '',
+          'Sec-WebSocket-Extensions': wsExtensions || '',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         }
       });
 
@@ -259,7 +285,16 @@ export class ChatRoom {
           headers: Object.fromEntries(request.headers)
         }
       });
-      return new Response(error.message, { status: 500 });
+      return new Response(error.message, { 
+        status: 500,
+        headers: {
+          'Content-Type': 'text/plain',
+          'Connection': 'keep-alive',
+          'Keep-Alive': 'timeout=60',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
     }
   }
 }
@@ -278,11 +313,26 @@ const worker = {
     // Handle regular HTTP requests
     if (url.pathname === "/" || url.pathname === "/chat") {
       return new Response("Chatty Server", {
-        headers: { 'Content-Type': 'text/plain' }
+        headers: { 
+          'Content-Type': 'text/plain',
+          'Connection': 'keep-alive',
+          'Keep-Alive': 'timeout=60',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
       });
     }
 
-    return new Response("Not Found", { status: 404 });
+    return new Response("Not Found", { 
+      status: 404,
+      headers: {
+        'Content-Type': 'text/plain',
+        'Connection': 'keep-alive',
+        'Keep-Alive': 'timeout=60',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    });
   }
 };
 
