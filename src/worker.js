@@ -38,17 +38,17 @@ export class ChatRoom {
     });
   }
 
-  // Batch send logs every few seconds
+  // Batch send logs every 2 seconds with smaller batch size
   async flushPendingLogs() {
     if (this.logFlushInterval) return;
 
     this.logFlushInterval = setInterval(async () => {
       if (this.pendingLogs.length === 0) return;
 
-      const logs = this.pendingLogs.splice(0, 20); // Process in smaller batches
+      const logs = this.pendingLogs.splice(0, 10); // Process in smaller batches of 10
       
       try {
-        await fetch("https://http-intake.logs.datadoghq.com/api/v2/logs", {
+        const response = await fetch("https://http-intake.logs.datadoghq.com/api/v2/logs", {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -62,12 +62,18 @@ export class ChatRoom {
             data: log.data
           })))
         });
+
+        if (!response.ok) {
+          console.error('Datadog log flush failed:', response.statusText);
+          // Re-queue failed logs
+          this.pendingLogs.unshift(...logs);
+        }
       } catch (error) {
-        console.error('Log flush failed:', error);
+        console.error('Log flush error:', error);
         // Re-queue failed logs
         this.pendingLogs.unshift(...logs);
       }
-    }, 5000); // Flush every 5 seconds
+    }, 2000); // Flush every 2 seconds
   }
 
   async fetch(request) {
