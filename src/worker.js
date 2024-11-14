@@ -123,16 +123,11 @@ export class ChatRoom {
       
       if (upgrade.toLowerCase() !== "websocket" || 
           !connection.toLowerCase().includes("upgrade")) {
-            
         await this.logToDatadog('websocket_reject', {
           connection_id: connectionId,
           reason: 'invalid_upgrade',
-          headers: {
-            upgrade,
-            connection
-          }
+          headers: { upgrade, connection }
         });
-        
         return new Response("Expected WebSocket connection", { status: 426 });
       }
 
@@ -155,23 +150,46 @@ export class ChatRoom {
       });
 
       server.addEventListener('message', async event => {
+        const messageStart = Date.now();
+        this.lastMessageTime = messageStart;
+        
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'pong') return;
 
-          // Broadcast only to other users
-          for (const user of this.users) {
-            if (user !== server && user.readyState === 1) {
+          this.metrics.messages.total++;
+          this.metrics.messages.bytes += event.data.length;
+          
+          // Log that we received a message to broadcast
+          console.log('Broadcasting message:', data);
+
+          // Broadcast to ALL users including sender
+          const broadcasts = Array.from(this.users).map(async user => {
+            if (user.readyState === 1) { // OPEN
               try {
                 user.send(event.data);
+                return true;
               } catch (error) {
-                await this.logError('broadcast', error, {
-                  connection_id: connectionId,
-                  message_size: event.data.length
-                });
+                console.error('Send failed:', error);
+                return false;
               }
             }
+            return false;
+          });
+
+          // Wait for all broadcasts to complete
+          const results = await Promise.all(broadcasts);
+          const failedCount = results.filter(r => !r).length;
+          
+          if (failedCount > 0) {
+            await this.logToDatadog('broadcast_partial_failure', {
+              connection_id: connectionId,
+              failed: failedCount,
+              total: this.users.size,
+              message: data
+            });
           }
+
         } catch (error) {
           await this.logError('parsing', error, {
             connection_id: connectionId,
@@ -250,15 +268,6 @@ const worker = {
   async fetch(request, env) {
     const url = new URL(request.url);
     
-    // Log all incoming requests
-    console.log('Worker request:', {
-      path: url.pathname,
-      method: request.method,
-      upgrade: request.headers.get('Upgrade'),
-      connection: request.headers.get('Connection'),
-      timestamp: new Date().toISOString()
-    });
-
     // Handle WebSocket connections regardless of path
     if (request.headers.get('Upgrade')?.toLowerCase() === 'websocket') {
       const id = env.CHATROOM.idFromName("default");
@@ -267,7 +276,7 @@ const worker = {
     }
 
     // Handle regular HTTP requests
-    if (url.pathname === "/") {
+    if (url.pathname === "/" || url.pathname === "/chat") {
       return new Response("Chatty Server", {
         headers: { 'Content-Type': 'text/plain' }
       });
