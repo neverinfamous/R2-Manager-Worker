@@ -59,9 +59,11 @@ export class ChatRoom {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'DD-API-KEY': this.env.DD_API_KEY
+          'DD-API-KEY': 'b2e6e243844fa59b66e2e5c87d880a39'
         },
         body: JSON.stringify({
+          ddsource: 'cloudflare-worker',
+          ddtags: `env:prod,service:chatty,category:${category}`,
           message: `${category}_error`,
           service: "chatty",
           error: {
@@ -86,9 +88,11 @@ export class ChatRoom {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'DD-API-KEY': this.env.DD_API_KEY
+          'DD-API-KEY': 'b2e6e243844fa59b66e2e5c87d880a39'
         },
         body: JSON.stringify({
+          ddsource: 'cloudflare-worker',
+          ddtags: `env:prod,service:chatty,event:${event}`,
           message: event,
           service: "chatty",
           timestamp: new Date().toISOString(),
@@ -190,6 +194,13 @@ export class ChatRoom {
           const data = JSON.parse(event.data);
           if (data.type === 'pong') return;
 
+          await this.logToDatadog('websocket_message', {
+            connection_id: connectionId,
+            message_size: event.data.length,
+            message_type: data.type || 'chat',
+            processing_start: messageStart
+          });
+
           this.metrics.messages.total++;
           this.metrics.messages.bytes += event.data.length;
 
@@ -208,11 +219,16 @@ export class ChatRoom {
           const results = await Promise.all(broadcasts);
           const failedCount = results.filter(r => !r).length;
           
+          const processingTime = Date.now() - messageStart;
+          this.metrics.messages.processingTimes.push(processingTime);
+          this.truncateArray(this.metrics.messages.processingTimes);
+          
           if (failedCount > 0) {
             await this.logToDatadog('broadcast_partial_failure', {
               connection_id: connectionId,
               failed: failedCount,
               total: this.users.size,
+              processing_time: processingTime,
               message: data
             });
           }
@@ -289,29 +305,13 @@ export class ChatRoom {
 const worker = {
   async fetch(request, env) {
     const url = new URL(request.url);
-
-    // Handle WebSocket connections regardless of path
+    
     if (request.headers.get('Upgrade')?.toLowerCase() === 'websocket') {
       const id = env.CHATROOM.idFromName("default");
       const room = env.CHATROOM.get(id);
       return room.fetch(request);
     }
 
-    // Redirect /chat to root for HTTP requests
-    if (url.pathname === "/chat") {
-      return new Response(null, {
-        status: 301,
-        headers: {
-          'Location': '/',
-          'Connection': 'keep-alive',
-          'Keep-Alive': 'timeout=60',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
-        }
-      });
-    }
-
-    // Handle root path
     if (url.pathname === "/") {
       return new Response("Chatty Server", {
         headers: { 
