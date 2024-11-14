@@ -7,7 +7,7 @@ export class ChatRoom {
     this.pendingLogs = [];
     this.logFlushInterval = null;
 
-    // Use state storage for metrics to persist across isolate recycling
+    // Use state storage for metrics to persist across isolate recyclings
     this.initMetrics();
   }
 
