@@ -95,7 +95,8 @@ export class ChatRoom {
           metrics: this.metrics,
           event_data: {
             ...data,
-            connection_time: Date.now() - this.startTime
+            connection_time: Date.now() - this.startTime,
+            current_users: this.users.size
           }
         })
       });
@@ -108,7 +109,7 @@ export class ChatRoom {
     const requestStart = Date.now();
     const connectionId = crypto.randomUUID();
 
-    // Log all incoming requests with headers
+    // Log request details
     await this.logToDatadog('websocket_request', {
       connection_id: connectionId,
       url: request.url,
@@ -119,7 +120,6 @@ export class ChatRoom {
     });
 
     try {
-      // Check upgrade headers
       const upgrade = request.headers.get("Upgrade") || '';
       const connection = request.headers.get("Connection") || '';
       const wsKey = request.headers.get("Sec-WebSocket-Key");
@@ -147,10 +147,7 @@ export class ChatRoom {
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
 
-      // Accept first, then add handlers
       server.accept();
-
-      // Add to active users
       this.users.add(server);
       this.metrics.connections.total++;
       this.metrics.connections.current = this.users.size;
@@ -162,7 +159,6 @@ export class ChatRoom {
         total_connections: this.metrics.connections.total
       });
 
-      // Set up ping interval immediately after accept
       const pingInterval = setInterval(() => {
         if (server.readyState === 1) {
           try {
@@ -192,31 +188,23 @@ export class ChatRoom {
         
         try {
           const data = JSON.parse(event.data);
-          if (data.type === 'pong') {
-            return;
-          }
+          if (data.type === 'pong') return;
 
           this.metrics.messages.total++;
           this.metrics.messages.bytes += event.data.length;
-          
-          // Log that we received a message to broadcast
-          console.log('Broadcasting message:', data);
 
-          // Broadcast to ALL users including sender
           const broadcasts = Array.from(this.users).map(async user => {
             if (user.readyState === 1) {
               try {
                 user.send(event.data);
                 return true;
               } catch (error) {
-                console.error('Send failed:', error);
                 return false;
               }
             }
             return false;
           });
 
-          // Wait for all broadcasts to complete
           const results = await Promise.all(broadcasts);
           const failedCount = results.filter(r => !r).length;
           
@@ -260,7 +248,6 @@ export class ChatRoom {
         });
       });
 
-      // Return WebSocket upgrade response
       return new Response(null, {
         status: 101,
         webSocket: client,
@@ -302,7 +289,7 @@ export class ChatRoom {
 const worker = {
   async fetch(request, env) {
     const url = new URL(request.url);
-    
+
     // Handle WebSocket connections regardless of path
     if (request.headers.get('Upgrade')?.toLowerCase() === 'websocket') {
       const id = env.CHATROOM.idFromName("default");
@@ -310,8 +297,22 @@ const worker = {
       return room.fetch(request);
     }
 
-    // Handle regular HTTP requests
-    if (url.pathname === "/" || url.pathname === "/chat") {
+    // Redirect /chat to root for HTTP requests
+    if (url.pathname === "/chat") {
+      return new Response(null, {
+        status: 301,
+        headers: {
+          'Location': '/',
+          'Connection': 'keep-alive',
+          'Keep-Alive': 'timeout=60',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+    }
+
+    // Handle root path
+    if (url.pathname === "/") {
       return new Response("Chatty Server", {
         headers: { 
           'Content-Type': 'text/plain',
