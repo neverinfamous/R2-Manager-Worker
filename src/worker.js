@@ -4,8 +4,8 @@ export class ChatRoom {
     this.env = env;
     this.users = new Set();
     this.startTime = Date.now();
+    this.lastMessageTime = null;
     
-    // Enhanced statistics tracking
     this.metrics = {
       messages: {
         total: 0,
@@ -13,8 +13,8 @@ export class ChatRoom {
         failed: 0,
         ratePerMinute: 0,
         avgSize: 0,
-        processingTimes: [], // Last 100 messages
-        broadcastTimes: []   // Last 100 broadcasts
+        processingTimes: [],
+        broadcastTimes: []
       },
       connections: {
         total: 0,
@@ -22,7 +22,8 @@ export class ChatRoom {
         peak: 0,
         failed: 0,
         avgDuration: 0,
-        durations: [] // Last 100 connections
+        durations: [],
+        attempts: 0
       },
       errors: {
         websocket: { count: 0, lastTime: null, details: [] },
@@ -31,106 +32,13 @@ export class ChatRoom {
         parsing: { count: 0, lastTime: null, details: [] },
         system: { count: 0, lastTime: null, details: [] },
         datadog: { count: 0, lastTime: null, details: [] }
-      },
-      performance: {
-        lastGC: null,
-        memoryUsage: [],
-        cpuUsage: [],
-        lastMetricsFlush: Date.now()
       }
     };
-
-    // Start periodic metrics flush
-    this.startMetricsReporting();
   }
 
-  // Keep arrays at reasonable size
   truncateArray(arr, maxSize = 100) {
     if (arr.length > maxSize) {
       arr.splice(0, arr.length - maxSize);
-    }
-  }
-
-  // Calculate performance metrics
-  getPerformanceMetrics() {
-    try {
-      const memory = {};
-      if (typeof performance !== 'undefined' && performance.memory) {
-        memory.heapSize = performance.memory.totalJSHeapSize;
-        memory.heapUsed = performance.memory.usedJSHeapSize;
-        memory.heapLimit = performance.memory.jsHeapSizeLimit;
-      }
-      
-      return {
-        timestamp: Date.now(),
-        memory,
-        messageRate: this.calculateMessageRate(),
-        avgProcessingTime: this.calculateAverage(this.metrics.messages.processingTimes),
-        avgBroadcastTime: this.calculateAverage(this.metrics.messages.broadcastTimes),
-        connectionRate: this.calculateConnectionRate()
-      };
-    } catch (error) {
-      this.logError('system', error, { context: 'performance_metrics' });
-      return {};
-    }
-  }
-
-  calculateAverage(arr) {
-    return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0;
-  }
-
-  calculateMessageRate() {
-    const timeWindow = 60000; // 1 minute
-    const now = Date.now();
-    const recentMessages = this.metrics.messages.processingTimes.filter(
-      time => (now - time) < timeWindow
-    ).length;
-    return recentMessages / (timeWindow / 1000);
-  }
-
-  calculateConnectionRate() {
-    const timeWindow = 60000; // 1 minute
-    const now = Date.now();
-    const recentConnections = this.metrics.connections.durations.filter(
-      duration => (now - duration.timestamp) < timeWindow
-    ).length;
-    return recentConnections / (timeWindow / 1000);
-  }
-
-  async startMetricsReporting() {
-    try {
-      const metricsInterval = 15000; // 15 seconds
-      setInterval(async () => {
-        const now = Date.now();
-        const metrics = this.getPerformanceMetrics();
-        
-        // Store historical metrics
-        this.metrics.performance.memoryUsage.push({
-          timestamp: now,
-          ...metrics.memory
-        });
-        
-        this.truncateArray(this.metrics.performance.memoryUsage);
-        
-        // Flush metrics to Datadog
-        await this.logToDatadog('metrics_flush', {
-          metrics,
-          stats: this.metrics,
-          tags: [
-            `users:${this.users.size}`,
-            `uptime:${now - this.startTime}`,
-            `message_rate:${metrics.messageRate.toFixed(2)}`,
-            `connection_rate:${metrics.connectionRate.toFixed(2)}`
-          ]
-        });
-
-        this.metrics.performance.lastMetricsFlush = now;
-      }, metricsInterval);
-    } catch (error) {
-      await this.logError('system', error, { 
-        context: 'metrics_reporting',
-        severity: 'HIGH'
-      });
     }
   }
 
@@ -141,29 +49,10 @@ export class ChatRoom {
     this.metrics.errors[category].details.push({
       time: errorTime,
       message: error.message,
-      stack: error.stack
+      stack: error.stack,
+      ...context
     });
     this.truncateArray(this.metrics.errors[category].details);
-
-    const errorLog = {
-      error_category: category,
-      error_message: error.message,
-      error_stack: error.stack,
-      error_time: errorTime.toISOString(),
-      impact: {
-        active_users: this.users.size,
-        uptime_ms: Date.now() - this.startTime,
-        total_errors: Object.values(this.metrics.errors)
-          .reduce((sum, stat) => sum + stat.count, 0)
-      },
-      metrics: this.metrics,
-      tags: [
-        `error_category:${category}`,
-        `severity:${context.severity || 'ERROR'}`,
-        `users:${this.users.size}`
-      ],
-      ...context
-    };
 
     try {
       await fetch("https://http-intake.logs.datadoghq.com/api/v2/logs", {
@@ -175,123 +64,113 @@ export class ChatRoom {
         body: JSON.stringify({
           message: `${category}_error`,
           service: "chatty",
-          error: errorLog,
-          severity: context.severity || 'ERROR',
+          error: {
+            category,
+            message: error.message,
+            stack: error.stack,
+            context,
+            metrics: this.metrics
+          },
           timestamp: errorTime.toISOString()
         })
       });
     } catch (ddError) {
+      console.error('Failed to log to Datadog:', ddError);
       this.metrics.errors.datadog.count++;
-      console.error('Failed to log to Datadog:', ddError, 'Original error:', error);
     }
   }
 
   async logToDatadog(event, data = {}) {
     try {
-        const timestamp = new Date().toISOString();
-        const baseMetrics = {
-            uptime_ms: Date.now() - this.startTime,
-            users_count: this.users.size,
-            message_count: this.metrics.messages.total,
-            error_count: Object.values(this.metrics.errors).reduce((sum, stat) => sum + stat.count, 0)
-        };
-
-        // Enhanced log structure for Datadog compatibility
-        await fetch("https://http-intake.logs.datadoghq.com/api/v2/logs", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'DD-API-KEY': this.env.DD_API_KEY
-            },
-            body: JSON.stringify({
-                ddsource: "worker",
-                ddtags: `env:prod,service:chatty,event:${event},users:${this.users.size}`,
-                message: event,
-                service: "chatty",
-                host: "worker",
-                timestamp,
-                attributes: {
-                    event_name: event,
-                    event_details: data,
-                    metrics: {
-                        ...baseMetrics,
-                        ...data.metrics  // Adding custom metrics if provided
-                    },
-                    tags: [
-                        `event:${event}`,
-                        `users:${this.users.size}`,
-                        ...(data.tags || [])
-                    ]
-                }
-            })
-        });
+      await fetch("https://http-intake.logs.datadoghq.com/api/v2/logs", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'DD-API-KEY': this.env.DD_API_KEY
+        },
+        body: JSON.stringify({
+          message: event,
+          service: "chatty",
+          timestamp: new Date().toISOString(),
+          metrics: this.metrics,
+          event_data: data
+        })
+      });
     } catch (error) {
-        await this.logError('datadog', error, {
-            severity: 'CRITICAL',
-            failed_event: event,
-            failed_data: data
-        });
+      await this.logError('datadog', error, { event, data });
     }
-}
-
-
-  async logTestMetric() {
-    await this.logToDatadog('test_metric', {
-      metrics: {
-        test_metric_value: {
-          value: 123,
-          type: 'gauge'
-        }
-      },
-      tags: ['test_metric']
-    });
   }
 
   async fetch(request) {
     const requestStart = Date.now();
-    const requestId = crypto.randomUUID();
-    const connectionMetrics = {
-      startTime: requestStart,
-      processingTime: 0,
-      bytesProcessed: 0
-    };
+    const connectionId = crypto.randomUUID();
+    let isAlive = true;
+    let pingInterval;
 
     try {
       if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
-        const error = new Error("Expected WebSocket connection");
-        await this.logError('connection', error, {
-          request_id: requestId,
-          headers: Object.fromEntries(request.headers),
-          processing_time: Date.now() - requestStart
-        });
-        return new Response("Expected WebSocket", { status: 400 });
+        throw new Error("Expected WebSocket");
       }
+
+      this.metrics.connections.attempts++;
+
+      // Log connection attempt
+      await this.logToDatadog('websocket_attempt', {
+        connection_id: connectionId,
+        cf: request.cf,
+        headers: Object.fromEntries(request.headers),
+        metrics: {
+          attempts: this.metrics.connections.attempts,
+          current_users: this.users.size
+        }
+      });
 
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
-      const connectionId = crypto.randomUUID();
 
-      server.accept();
-      this.users.add(server);
-      this.metrics.connections.total++;
-      this.metrics.connections.current = this.users.size;
-      this.metrics.connections.peak = Math.max(this.metrics.connections.peak, this.users.size);
+      // Set up ping/pong handling
+      pingInterval = setInterval(() => {
+        if (!isAlive) {
+          clearInterval(pingInterval);
+          try {
+            server.close(1000, "Ping timeout");
+          } catch (err) {
+            // Ignore close errors
+          }
+          return;
+        }
+        if (server.readyState === 1) {
+          try {
+            server.send(JSON.stringify({ 
+              type: 'ping', 
+              timestamp: new Date().toISOString(),
+              metrics: {
+                uptime: Date.now() - this.startTime,
+                users: this.users.size,
+                lastMessageAge: this.lastMessageTime ? Date.now() - this.lastMessageTime : null
+              }
+            }));
+            isAlive = false; // Reset flag, waiting for pong
+          } catch (error) {
+            clearInterval(pingInterval);
+            server.close(1001, "Failed to send ping");
+          }
+        }
+      }, 15000);
 
-            await this.logToDatadog('websocket_connected', {
-        connection_id: connectionId,
-        request_id: requestId,
-        metrics: {
-          setup_time: Date.now() - requestStart,
-          current_connections: this.users.size,
-          peak_connections: this.metrics.connections.peak
-        },
-        tags: [`connection_id:${connectionId}`]
-      });
-
+      // Set up message handling
       server.addEventListener('message', async event => {
         const messageStart = Date.now();
+        this.lastMessageTime = messageStart;
+        
         try {
-          const messageData = JSON.parse(event.data);
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'pong') {
+            isAlive = true;
+            return;
+          }
+
           this.metrics.messages.total++;
           this.metrics.messages.bytes += event.data.length;
           
@@ -299,54 +178,28 @@ export class ChatRoom {
           this.metrics.messages.processingTimes.push(processingTime);
           this.truncateArray(this.metrics.messages.processingTimes);
 
-          await this.logToDatadog('message_received', {
-            connection_id: connectionId,
-            metrics: {
-              processing_time: processingTime,
-              message_size: event.data.length,
-              total_messages: this.metrics.messages.total,
-              avg_processing_time: this.calculateAverage(this.metrics.messages.processingTimes)
-            },
-            message_sample: messageData.message?.substring(0, 100),
-            tags: [
-              `connection_id:${connectionId}`,
-              `message_size:${event.data.length}`
-            ]
+          // Broadcast with confirmation
+          const broadcastPromises = Array.from(this.users).map(async user => {
+            if (user.readyState === 1) {
+              try {
+                user.send(event.data);
+                return true;
+              } catch (error) {
+                return false;
+              }
+            }
+            return false;
           });
 
-          const broadcastStart = Date.now();
-          let broadcastErrors = 0;
-          const failedRecipients = [];
-
-          for (const user of this.users) {
-            try {
-              user.send(event.data);
-            } catch (error) {
-              broadcastErrors++;
-              failedRecipients.push(error.message);
-              await this.logError('broadcast', error, {
-                connection_id: connectionId,
-                message_size: event.data.length,
-                failed_recipients_count: broadcastErrors
-              });
-            }
-          }
-
-          const broadcastTime = Date.now() - broadcastStart;
-          this.metrics.messages.broadcastTimes.push(broadcastTime);
-          this.truncateArray(this.metrics.messages.broadcastTimes);
-
-          if (broadcastErrors > 0) {
-            this.metrics.messages.failed += broadcastErrors;
-            await this.logError('broadcast', new Error('Partial broadcast failure'), {
+          const results = await Promise.all(broadcastPromises);
+          const failedCount = results.filter(r => !r).length;
+          
+          if (failedCount > 0) {
+            this.metrics.messages.failed += failedCount;
+            await this.logToDatadog('broadcast_partial_failure', {
               connection_id: connectionId,
-              metrics: {
-                broadcast_time: broadcastTime,
-                total_recipients: this.users.size,
-                failed_count: broadcastErrors,
-                success_rate: (this.users.size - broadcastErrors) / this.users.size
-              },
-              failed_details: failedRecipients
+              failed_count: failedCount,
+              total_users: this.users.size
             });
           }
 
@@ -354,71 +207,78 @@ export class ChatRoom {
           this.metrics.messages.failed++;
           await this.logError('parsing', error, {
             connection_id: connectionId,
-            data_preview: event.data.substring(0, 200),
-            message_size: event.data.length,
-            processing_time: Date.now() - messageStart
+            data_sample: event.data.substring(0, 200)
           });
         }
       });
 
-      server.addEventListener('close', async () => {
-        const sessionDuration = Date.now() - requestStart;
-        this.users.delete(server);
-        this.metrics.connections.current = this.users.size;
-        this.metrics.connections.durations.push({
-          timestamp: Date.now(),
-          duration: sessionDuration
-        });
-        this.truncateArray(this.metrics.connections.durations);
-
+      // Set up close handler
+      server.addEventListener('close', async (event) => {
+        clearInterval(pingInterval);
+        const duration = Date.now() - requestStart;
+        
         await this.logToDatadog('websocket_disconnected', {
           connection_id: connectionId,
-          metrics: {
-            session_duration: sessionDuration,
-            current_connections: this.users.size,
-            avg_session_duration: this.calculateAverage(
-              this.metrics.connections.durations.map(d => d.duration)
-            )
-          },
-          tags: [
-            `connection_id:${connectionId}`,
-            `session_duration:${sessionDuration}`
-          ]
+          duration,
+          close_code: event.code,
+          close_reason: event.reason,
+          user_count: this.users.size,
+          was_alive: isAlive,
+          time_since_last_message: this.lastMessageTime ? Date.now() - this.lastMessageTime : null
         });
+        
+        this.users.delete(server);
+        this.metrics.connections.current = this.users.size;
       });
 
+      // Set up error handler
       server.addEventListener('error', async error => {
         await this.logError('websocket', error, {
           connection_id: connectionId,
-          metrics: {
-            duration_ms: Date.now() - requestStart,
-            user_count: this.users.size,
-            total_bytes: connectionMetrics.bytesProcessed
-          },
-          tags: [`connection_id:${connectionId}`]
+          duration: Date.now() - requestStart,
+          was_alive: isAlive
         });
+      });
+
+      // Now that handlers are set up, accept the connection
+      server.accept();
+      
+      // Add to users after successful accept
+      this.users.add(server);
+      this.metrics.connections.total++;
+      this.metrics.connections.current = this.users.size;
+      this.metrics.connections.peak = Math.max(this.metrics.connections.peak, this.users.size);
+
+      // Log successful connection
+      await this.logToDatadog('websocket_connected', {
+        connection_id: connectionId,
+        users: this.users.size,
+        total_connections: this.metrics.connections.total
       });
 
       return new Response(null, {
         status: 101,
-        webSocket: client
+        webSocket: client,
+        headers: {
+          'Upgrade': 'websocket',
+          'Connection': 'Upgrade',
+          'Sec-WebSocket-Version': '13',
+          'Sec-WebSocket-Extensions': 'permessage-deflate; client_max_window_bits'
+        }
       });
 
     } catch (error) {
+      clearInterval(pingInterval);
       await this.logError('system', error, {
-        request_id: requestId,
-        phase: 'connection_setup',
-        metrics: {
-          setup_time: Date.now() - requestStart,
-          current_connections: this.users.size
-        }
+        connection_id: connectionId,
+        duration: Date.now() - requestStart
       });
       return new Response("Internal Server Error", { status: 500 });
     }
   }
 }
 
-export default {
+const worker = {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname === "/chat") {
@@ -428,5 +288,6 @@ export default {
     }
     return new Response("Not Found", { status: 404 });
   }
-}
+};
 
+export default worker;
