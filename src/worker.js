@@ -104,41 +104,133 @@ export class ChatRoom {
   async fetch(request) {
     const requestStart = Date.now();
     const connectionId = crypto.randomUUID();
-    let isAlive = true;
     let pingInterval;
 
     try {
-      if (request.headers.get("Upgrade")?.toLowerCase() !== "websocket") {
-        throw new Error("Expected WebSocket");
+      // Strict WebSocket upgrade validation
+      const upgrade = request.headers.get("Upgrade");
+      const connection = request.headers.get("Connection");
+      const wsKey = request.headers.get("Sec-WebSocket-Key");
+      const wsVersion = request.headers.get("Sec-WebSocket-Version");
+      const wsExtensions = request.headers.get("Sec-WebSocket-Extensions");
+      
+      if (!upgrade || !connection || !wsKey || 
+          upgrade.toLowerCase() !== "websocket" || 
+          !connection.toLowerCase().includes("upgrade") ||
+          wsVersion !== "13") {
+        throw new Error("Invalid WebSocket upgrade request");
       }
 
       this.metrics.connections.attempts++;
 
-      // Log connection attempt
       await this.logToDatadog('websocket_attempt', {
         connection_id: connectionId,
-        cf: request.cf,
-        headers: Object.fromEntries(request.headers),
-        metrics: {
-          attempts: this.metrics.connections.attempts,
-          current_users: this.users.size
-        }
+        request_headers: {
+          upgrade,
+          connection,
+          wsVersion,
+          wsExtensions,
+          origin: request.headers.get("Origin"),
+          userAgent: request.headers.get("User-Agent")
+        },
+        cf: request.cf
       });
 
       const pair = new WebSocketPair();
       const [client, server] = Object.values(pair);
 
-      // Set up ping/pong handling
-      pingInterval = setInterval(() => {
-        if (!isAlive) {
-          clearInterval(pingInterval);
-          try {
-            server.close(1000, "Ping timeout");
-          } catch (err) {
-            // Ignore close errors
+      // Set up message handling before accepting connection
+      server.addEventListener('message', async event => {
+        const messageStart = Date.now();
+        this.lastMessageTime = messageStart;
+        
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'pong') {
+            return;
           }
-          return;
+
+          this.metrics.messages.total++;
+          this.metrics.messages.bytes += event.data.length;
+          
+          const processingTime = Date.now() - messageStart;
+          this.metrics.messages.processingTimes.push(processingTime);
+          this.truncateArray(this.metrics.messages.processingTimes);
+
+          // Broadcast with active user filtering
+          const activeUsers = Array.from(this.users)
+            .filter(user => user.readyState === 1);
+          
+          let failCount = 0;
+          for (const user of activeUsers) {
+            try {
+              user.send(event.data);
+            } catch (error) {
+              failCount++;
+              await this.logError('broadcast', error, {
+                connection_id: connectionId,
+                message_size: event.data.length
+              });
+            }
+          }
+
+          if (failCount > 0) {
+            this.metrics.messages.failed += failCount;
+            await this.logToDatadog('broadcast_partial_failure', {
+              connection_id: connectionId,
+              failed_count: failCount,
+              total_recipients: activeUsers.length,
+              message_size: event.data.length
+            });
+          }
+        } catch (error) {
+          this.metrics.messages.failed++;
+          await this.logError('parsing', error, {
+            connection_id: connectionId,
+            data_sample: event.data.substring(0, 200)
+          });
         }
+      });
+
+      // Set up close handler before accepting connection
+      server.addEventListener('close', async event => {
+        clearInterval(pingInterval);
+        const duration = Date.now() - requestStart;
+        
+        await this.logToDatadog('websocket_disconnected', {
+          connection_id: connectionId,
+          duration,
+          close_code: event.code,
+          close_reason: event.reason,
+          user_count: this.users.size,
+          time_since_last_message: this.lastMessageTime ? Date.now() - this.lastMessageTime : null
+        });
+        
+        this.users.delete(server);
+        this.metrics.connections.current = this.users.size;
+      });
+
+      // Set up error handler before accepting connection
+      server.addEventListener('error', async error => {
+        await this.logError('websocket', error, {
+          connection_id: connectionId,
+          duration: Date.now() - requestStart,
+          user_count: this.users.size
+        });
+      });
+
+      // Accept the connection
+      server.accept();
+      
+      // Add to users after successful accept
+      this.users.add(server);
+      this.metrics.connections.total++;
+      this.metrics.connections.current = this.users.size;
+      this.metrics.connections.peak = Math.max(this.metrics.connections.peak, this.users.size);
+
+      // Set up ping interval after successful accept
+      pingInterval = setInterval(() => {
         if (server.readyState === 1) {
           try {
             server.send(JSON.stringify({ 
@@ -150,120 +242,36 @@ export class ChatRoom {
                 lastMessageAge: this.lastMessageTime ? Date.now() - this.lastMessageTime : null
               }
             }));
-            isAlive = false; // Reset flag, waiting for pong
           } catch (error) {
             clearInterval(pingInterval);
-            server.close(1001, "Failed to send ping");
+            server.close();
           }
         }
       }, 15000);
-
-      // Set up message handling
-      server.addEventListener('message', async event => {
-        const messageStart = Date.now();
-        this.lastMessageTime = messageStart;
-        
-        try {
-          const data = JSON.parse(event.data);
-          
-          if (data.type === 'pong') {
-            isAlive = true;
-            return;
-          }
-
-          this.metrics.messages.total++;
-          this.metrics.messages.bytes += event.data.length;
-          
-          const processingTime = Date.now() - messageStart;
-          this.metrics.messages.processingTimes.push(processingTime);
-          this.truncateArray(this.metrics.messages.processingTimes);
-
-          // Broadcast with confirmation
-          const broadcastPromises = Array.from(this.users).map(async user => {
-            if (user.readyState === 1) {
-              try {
-                user.send(event.data);
-                return true;
-              } catch (error) {
-                return false;
-              }
-            }
-            return false;
-          });
-
-          const results = await Promise.all(broadcastPromises);
-          const failedCount = results.filter(r => !r).length;
-          
-          if (failedCount > 0) {
-            this.metrics.messages.failed += failedCount;
-            await this.logToDatadog('broadcast_partial_failure', {
-              connection_id: connectionId,
-              failed_count: failedCount,
-              total_users: this.users.size
-            });
-          }
-
-        } catch (error) {
-          this.metrics.messages.failed++;
-          await this.logError('parsing', error, {
-            connection_id: connectionId,
-            data_sample: event.data.substring(0, 200)
-          });
-        }
-      });
-
-      // Set up close handler
-      server.addEventListener('close', async (event) => {
-        clearInterval(pingInterval);
-        const duration = Date.now() - requestStart;
-        
-        await this.logToDatadog('websocket_disconnected', {
-          connection_id: connectionId,
-          duration,
-          close_code: event.code,
-          close_reason: event.reason,
-          user_count: this.users.size,
-          was_alive: isAlive,
-          time_since_last_message: this.lastMessageTime ? Date.now() - this.lastMessageTime : null
-        });
-        
-        this.users.delete(server);
-        this.metrics.connections.current = this.users.size;
-      });
-
-      // Set up error handler
-      server.addEventListener('error', async error => {
-        await this.logError('websocket', error, {
-          connection_id: connectionId,
-          duration: Date.now() - requestStart,
-          was_alive: isAlive
-        });
-      });
-
-      // Now that handlers are set up, accept the connection
-      server.accept();
-      
-      // Add to users after successful accept
-      this.users.add(server);
-      this.metrics.connections.total++;
-      this.metrics.connections.current = this.users.size;
-      this.metrics.connections.peak = Math.max(this.metrics.connections.peak, this.users.size);
 
       // Log successful connection
       await this.logToDatadog('websocket_connected', {
         connection_id: connectionId,
         users: this.users.size,
-        total_connections: this.metrics.connections.total
+        total_connections: this.metrics.connections.total,
+        client_info: {
+          ip: request.headers.get('CF-Connecting-IP'),
+          country: request.cf?.country,
+          asn: request.cf?.asn,
+          colo: request.cf?.colo
+        }
       });
 
+      // Return WebSocket upgrade response
       return new Response(null, {
         status: 101,
         webSocket: client,
         headers: {
           'Upgrade': 'websocket',
           'Connection': 'Upgrade',
+          'Sec-WebSocket-Accept': wsKey,
           'Sec-WebSocket-Version': '13',
-          'Sec-WebSocket-Extensions': 'permessage-deflate; client_max_window_bits'
+          'Sec-WebSocket-Extensions': wsExtensions || ''
         }
       });
 
@@ -271,9 +279,15 @@ export class ChatRoom {
       clearInterval(pingInterval);
       await this.logError('system', error, {
         connection_id: connectionId,
-        duration: Date.now() - requestStart
+        duration: Date.now() - requestStart,
+        headers: Object.fromEntries(request.headers)
       });
-      return new Response("Internal Server Error", { status: 500 });
+      return new Response(error.message, { 
+        status: 400,
+        headers: {
+          'Content-Type': 'text/plain'
+        }
+      });
     }
   }
 }
