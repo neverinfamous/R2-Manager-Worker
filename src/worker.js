@@ -43,6 +43,7 @@ export class ChatRoom {
   }
 
   async logError(category, error, context = {}) {
+    console.error("logError called:", category, error, context);
     const errorTime = new Date();
     this.metrics.errors[category].count++;
     this.metrics.errors[category].lastTime = errorTime;
@@ -55,6 +56,7 @@ export class ChatRoom {
     this.truncateArray(this.metrics.errors[category].details);
 
     try {
+      console.error("Sending error to DD:", category);
       await fetch("https://http-intake.logs.datadoghq.com/api/v2/logs", {
         method: 'POST',
         headers: {
@@ -76,6 +78,7 @@ export class ChatRoom {
           timestamp: errorTime.toISOString()
         })
       });
+      console.error("DD error log sent successfully:", category);
     } catch (ddError) {
       console.error('Failed to log to Datadog:', ddError);
       this.metrics.errors.datadog.count++;
@@ -83,7 +86,9 @@ export class ChatRoom {
   }
 
   async logToDatadog(event, data = {}) {
+    console.error("logToDatadog called:", event, data);
     try {
+      console.error("Sending event to DD:", event);
       await fetch("https://http-intake.logs.datadoghq.com/api/v2/logs", {
         method: 'POST',
         headers: {
@@ -104,7 +109,9 @@ export class ChatRoom {
           }
         })
       });
+      console.error("DD event log sent successfully:", event);
     } catch (error) {
+      console.error("Failed to send event to DD:", event, error);
       await this.logError('datadog', error, { event, data });
     }
   }
@@ -112,6 +119,7 @@ export class ChatRoom {
   async fetch(request) {
     const requestStart = Date.now();
     const connectionId = crypto.randomUUID();
+    console.error("Fetch called with connectionId:", connectionId);
 
     // Log request details
     await this.logToDatadog('websocket_request', {
@@ -132,6 +140,7 @@ export class ChatRoom {
       
       if (upgrade.toLowerCase() !== "websocket" || 
           !connection.toLowerCase().includes("upgrade")) {
+        console.error("Invalid upgrade request:", upgrade, connection);
         await this.logToDatadog('websocket_reject', {
           connection_id: connectionId,
           reason: 'invalid_upgrade',
@@ -157,6 +166,7 @@ export class ChatRoom {
       this.metrics.connections.current = this.users.size;
       this.metrics.connections.peak = Math.max(this.metrics.connections.peak, this.users.size);
 
+      console.error("WebSocket accepted, users:", this.users.size);
       await this.logToDatadog('websocket_accepted', {
         connection_id: connectionId,
         users: this.users.size,
@@ -176,6 +186,7 @@ export class ChatRoom {
               }
             }));
           } catch (error) {
+            console.error("Ping failed:", error);
             clearInterval(pingInterval);
             if (server.readyState === 1) {
               server.close(1001, "Ping failed");
@@ -189,11 +200,13 @@ export class ChatRoom {
       server.addEventListener('message', async event => {
         const messageStart = Date.now();
         this.lastMessageTime = messageStart;
+        console.error("Message received:", event.data.substring(0, 100));
         
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'pong') return;
 
+          console.error("Processing message:", data);
           await this.logToDatadog('websocket_message', {
             connection_id: connectionId,
             message_size: event.data.length,
@@ -210,6 +223,7 @@ export class ChatRoom {
                 user.send(event.data);
                 return true;
               } catch (error) {
+                console.error("Broadcast failed to user:", error);
                 return false;
               }
             }
@@ -224,6 +238,7 @@ export class ChatRoom {
           this.truncateArray(this.metrics.messages.processingTimes);
           
           if (failedCount > 0) {
+            console.error("Partial broadcast failure:", failedCount, "of", this.users.size);
             await this.logToDatadog('broadcast_partial_failure', {
               connection_id: connectionId,
               failed: failedCount,
@@ -234,6 +249,7 @@ export class ChatRoom {
           }
 
         } catch (error) {
+          console.error("Message processing error:", error);
           await this.logError('parsing', error, {
             connection_id: connectionId,
             data_sample: event.data.substring(0, 200)
@@ -246,6 +262,7 @@ export class ChatRoom {
         this.users.delete(server);
         const duration = Date.now() - requestStart;
         
+        console.error("WebSocket closed:", event.code, event.reason);
         await this.logToDatadog('websocket_closed', {
           connection_id: connectionId,
           duration,
@@ -257,6 +274,7 @@ export class ChatRoom {
       });
 
       server.addEventListener('error', async error => {
+        console.error("WebSocket error:", error);
         clearInterval(pingInterval);
         await this.logError('websocket', error, {
           connection_id: connectionId,
@@ -279,6 +297,7 @@ export class ChatRoom {
       });
 
     } catch (error) {
+      console.error("System error:", error);
       await this.logError('system', error, {
         connection_id: connectionId,
         duration: Date.now() - requestStart,
@@ -305,13 +324,29 @@ export class ChatRoom {
 const worker = {
   async fetch(request, env) {
     const url = new URL(request.url);
-    
+
+    // Handle WebSocket connections regardless of path
     if (request.headers.get('Upgrade')?.toLowerCase() === 'websocket') {
       const id = env.CHATROOM.idFromName("default");
       const room = env.CHATROOM.get(id);
       return room.fetch(request);
     }
 
+    // Redirect /chat to root for HTTP requests
+    if (url.pathname === "/chat") {
+      return new Response(null, {
+        status: 301,
+        headers: {
+          'Location': '/',
+          'Connection': 'keep-alive',
+          'Keep-Alive': 'timeout=60',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+    }
+
+    // Handle root path
     if (url.pathname === "/") {
       return new Response("Chatty Server", {
         headers: { 
