@@ -1,20 +1,26 @@
-name = "chatty"
-main = "src/worker.js"
+name = "r2"
+main = "worker/index.ts"
 compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
 
-[durable_objects]
-classes = [
-  { name = "ChatRoom", class_name = "ChatRoom" }
-]
+[assets]
+directory = "dist"
+binding = "ASSETS"
+serve_single_page_app = true
 
-[[durable_objects.bindings]]
-name = "CHATROOM"
-class_name = "ChatRoom"
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "r2-bucket"
 
-[[migrations]]
-tag = "v1"
-new_classes = ["ChatRoom"]
+[[d1_databases]]
+binding = "DB"
+database_name = "r2manager"
+database_id = "7c4e1036-b1ee-4aaa-b0b2-20ca3fe6e3d9"
 
-[observability]
+[observability.logs]
 enabled = true
-head_sampling_rate = 1
+
+[[routes]]
+pattern = "r2.adamic.tech"
+custom_domain = true
+zone_name = "adamic.tech"
