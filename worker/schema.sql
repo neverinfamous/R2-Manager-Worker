@@ -1,0 +1,24 @@
+﻿DROP TABLE IF EXISTS users;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS bucket_owners;
+CREATE TABLE users (
+  user_id TEXT PRIMARY KEY,
+email TEXT UNIQUE NOT NULL,
+password_hash TEXT NOT NULL,
+salt TEXT NOT NULL,
+created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE sessions (
+token TEXT PRIMARY KEY,
+user_id TEXT NOT NULL,
+expires DATETIME NOT NULL,
+created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);
+CREATE TABLE bucket_owners (
+bucket_name TEXT NOT NULL,
+user_id TEXT NOT NULL,
+created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+PRIMARY KEY (bucket_name, user_id),
+FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE
+);

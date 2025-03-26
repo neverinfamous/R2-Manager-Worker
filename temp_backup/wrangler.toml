@@ -1,0 +1,26 @@
+name = "r2"
+main = "worker/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[assets]
+directory = "dist"
+binding = "ASSETS"
+serve_single_page_app = true
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "r2-bucket"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "r2manager"
+database_id = "7c4e1036-b1ee-4aaa-b0b2-20ca3fe6e3d9"
+
+[observability.logs]
+enabled = true
+
+[[routes]]
+pattern = "r2.adamic.tech"
+custom_domain = true
+zone_name = "adamic.tech"
