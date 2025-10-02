@@ -1,7 +1,10 @@
 name = "r2"
 main = "worker/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
+
+# Smart Placement disabled for SPA - UI responsiveness priority
+placement = { mode = "off" }
 
 [assets]
 directory = "dist"
