@@ -1,5 +1,126 @@
 import JSZip from 'jszip';
 
+// Cloudflare Workers types
+declare global {
+  interface R2Bucket {
+    put(key: string, value: ReadableStream | ArrayBuffer | ArrayBufferView | string | null, options?: R2PutOptions): Promise<R2Object>;
+    get(key: string, options?: R2GetOptions): Promise<R2ObjectBody | null>;
+    delete(keys: string | string[]): Promise<void>;
+    list(options?: R2ListOptions): Promise<R2Objects>;
+  }
+
+  interface R2Object {
+    key: string;
+    version: string;
+    size: number;
+    etag: string;
+    httpEtag: string;
+    checksums: R2Checksums;
+    uploaded: Date;
+    httpMetadata?: R2HTTPMetadata;
+    customMetadata?: Record<string, string>;
+  }
+
+  interface R2ObjectBody extends R2Object {
+    body: ReadableStream;
+    bodyUsed: boolean;
+    arrayBuffer(): Promise<ArrayBuffer>;
+    text(): Promise<string>;
+    json<T = unknown>(): Promise<T>;
+    blob(): Promise<Blob>;
+  }
+
+  interface R2PutOptions {
+    httpMetadata?: R2HTTPMetadata;
+    customMetadata?: Record<string, string>;
+  }
+
+  interface R2GetOptions {
+    onlyIf?: R2Conditional;
+    range?: R2Range;
+  }
+
+  interface R2ListOptions {
+    limit?: number;
+    prefix?: string;
+    cursor?: string;
+    delimiter?: string;
+    include?: ('httpMetadata' | 'customMetadata')[];
+  }
+
+  interface R2Objects {
+    objects: R2Object[];
+    truncated: boolean;
+    cursor?: string;
+    delimitedPrefixes: string[];
+  }
+
+  interface R2HTTPMetadata {
+    contentType?: string;
+    contentLanguage?: string;
+    contentDisposition?: string;
+    contentEncoding?: string;
+    cacheControl?: string;
+    cacheExpiry?: Date;
+  }
+
+  interface R2Checksums {
+    md5?: ArrayBuffer;
+    sha1?: ArrayBuffer;
+    sha256?: ArrayBuffer;
+    sha384?: ArrayBuffer;
+    sha512?: ArrayBuffer;
+  }
+
+  interface R2Conditional {
+    etagMatches?: string;
+    etagDoesNotMatch?: string;
+    uploadedBefore?: Date;
+    uploadedAfter?: Date;
+  }
+
+  interface R2Range {
+    offset?: number;
+    length?: number;
+    suffix?: number;
+  }
+
+  interface D1Database {
+    prepare(query: string): D1PreparedStatement;
+    dump(): Promise<ArrayBuffer>;
+    batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
+    exec(query: string): Promise<D1ExecResult>;
+  }
+
+  interface D1PreparedStatement {
+    bind(...values: unknown[]): D1PreparedStatement;
+    first<T = unknown>(colName?: string): Promise<T | null>;
+    run<T = unknown>(): Promise<D1Result<T>>;
+    all<T = unknown>(): Promise<D1Result<T>>;
+    raw<T = unknown>(): Promise<T[]>;
+  }
+
+  interface D1Result<T = unknown> {
+    results: T[];
+    success: boolean;
+    meta: Record<string, unknown>;
+  }
+
+  interface D1ExecResult {
+    count: number;
+    duration: number;
+  }
+
+  interface Fetcher {
+    fetch(request: Request | string): Promise<Response>;
+  }
+
+  interface ExecutionContext {
+    waitUntil(promise: Promise<unknown>): void;
+    passThroughOnException(): void;
+  }
+}
+
 export interface Env {
   R2: R2Bucket
   ASSETS: Fetcher
@@ -269,7 +390,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           .bind(userId)
           .all<{ bucket_name: string }>();
         
-        const filteredBuckets = data.result.buckets.filter((bucket: any) =>
+        const filteredBuckets = data.result.buckets.filter((bucket: { name: string }) =>
           userBuckets.results.some(ub => ub.bucket_name === bucket.name)
         );
         
@@ -420,7 +541,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         console.log('[Files] Creating ZIP');
         const zipContent = await zip.generateAsync({type: "uint8array"});
         
-        return new Response(zipContent, {
+        return new Response(zipContent.buffer as ArrayBuffer, {
           headers: {
             'Content-Type': 'application/zip',
             'Content-Disposition': 'attachment; filename="' + bucketName + '-files.zip"',
@@ -491,10 +612,16 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         });
 
         // Filter out assets folder and process objects
+        interface R2ObjectInfo {
+          key: string;
+          size?: number;
+          last_modified?: string;
+        }
+        
         const fileList = Array.isArray(data.result) ? data.result : (data.result?.objects || []);
         const objects = fileList
-          .filter((obj: any) => !obj.key.startsWith('assets/'))
-          .map((obj: any) => {
+          .filter((obj: R2ObjectInfo) => !obj.key.startsWith('assets/'))
+          .map((obj: R2ObjectInfo) => {
             const downloadPath = '/api/files/' + bucketName + '/download/' + obj.key;
             const signature = generateSignature(downloadPath, env);
             const signedUrl = downloadPath + '?sig=' + signature;
@@ -695,7 +822,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
 }
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     try {
       return await handleApiRequest(request, env);
     } catch (e) {
