@@ -135,7 +135,7 @@ Adjust `wrangler.toml` with your account ID, routes, and binding names. During d
 
 ## Desired improvements
 
-1. **Enhancement:** Add bucket total filesize to main bucket list (where edit bucket name and delete bucket options are)
+1. **Enhancement:** Add-display total bucket filesize metric in main bucket list (where edit bucket name and delete bucket button-options are).
 2. **Enhancement:** Open files in native applications (IDE, image editor, video editor, etc.)
 3. **Enhancement:** Switch login to the Cloudflare Worker SSO integration backed by Cloudflare Zero Trust and GitHub.
 4. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
@@ -146,9 +146,3 @@ Adjust `wrangler.toml` with your account ID, routes, and binding names. During d
 1. Fork and clone the repository.
 2. Create a feature branch and commit your changes.
 3. Run `npm run lint` and `npm run build` before opening a pull request.
-
----
-
-## License
-
-This project is released under the [MIT License](LICENSE).
