@@ -271,91 +271,95 @@ export default function BucketManager() {
 
       {error && <div className="error-message">{error}</div>}
 
-      <div className="bucket-grid">
-        {buckets.map(bucket => {
-          const isEditing = editingBucketName === bucket.name
-          return (
-          <div key={bucket.name} className={`bucket-item ${isEditing ? 'editing' : ''}`}>
-            {isEditing ? (
-              <div className="bucket-edit-mode">
-                <input
-                  type="text"
-                  value={editInputValue}
-                  onChange={(e) => setEditInputValue(e.target.value)}
-                  className="bucket-edit-input"
-                  placeholder="New bucket name"
-                  autoFocus
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') saveBucketRename()
-                    if (e.key === 'Escape') cancelEditingBucket()
-                  }}
-                />
-                {editError && <p className="bucket-edit-error">{editError}</p>}
-                <div className="bucket-edit-actions">
-                  <button
-                    onClick={saveBucketRename}
-                    className="bucket-edit-save"
-                    disabled={isRenamingBucket}
-                  >
-                    {isRenamingBucket ? 'Renaming...' : 'Save'}
-                  </button>
-                  <button
-                    onClick={cancelEditingBucket}
-                    className="bucket-edit-cancel"
-                    disabled={isRenamingBucket}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <>
-                <div 
-                  className="bucket-content"
-                  onClick={() => setSelectedBucket(bucket.name)}
-                >
-                  <h3 className="bucket-name">{bucket.name}</h3>
-                  <p className="bucket-date">
-                    Created: {new Date(bucket.created).toLocaleDateString()}
-                  </p>
-                  <p className="bucket-size">
-                    Total Size: {formatFileSize(bucket.size || 0)}
-                  </p>
-                </div>
-                <div className="bucket-actions">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      startEditingBucket(bucket.name)
+      {selectedBucket ? (
+        <FileGrid bucketName={selectedBucket} onBack={() => setSelectedBucket(null)} />
+      ) : (
+        <div className="bucket-grid">
+          {buckets.map(bucket => {
+            const isEditing = editingBucketName === bucket.name
+            return (
+            <div key={bucket.name} className={`bucket-item ${isEditing ? 'editing' : ''}`}>
+              {isEditing ? (
+                <div className="bucket-edit-mode">
+                  <input
+                    type="text"
+                    value={editInputValue}
+                    onChange={(e) => setEditInputValue(e.target.value)}
+                    className="bucket-edit-input"
+                    placeholder="New bucket name"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') saveBucketRename()
+                      if (e.key === 'Escape') cancelEditingBucket()
                     }}
-                    className="bucket-edit"
-                    title="Edit bucket name"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      deleteBucket(bucket.name)
-                    }}
-                    className="bucket-delete"
-                  >
-                    Delete
-                  </button>
+                  />
+                  {editError && <p className="bucket-edit-error">{editError}</p>}
+                  <div className="bucket-edit-actions">
+                    <button
+                      onClick={saveBucketRename}
+                      className="bucket-edit-save"
+                      disabled={isRenamingBucket}
+                    >
+                      {isRenamingBucket ? 'Renaming...' : 'Save'}
+                    </button>
+                    <button
+                      onClick={cancelEditingBucket}
+                      className="bucket-edit-cancel"
+                      disabled={isRenamingBucket}
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-              </>
-            )}
-          </div>
-        )
-        })}
-        
-        {buckets.length === 0 && !error && (
-          <div className="empty-state">
-            <p className="empty-text">No buckets found</p>
-            <p className="empty-subtext">Create a bucket to get started</p>
-          </div>
-        )}
-      </div>
+              ) : (
+                <>
+                  <div 
+                    className="bucket-content"
+                    onClick={() => setSelectedBucket(bucket.name)}
+                  >
+                    <h3 className="bucket-name">{bucket.name}</h3>
+                    <p className="bucket-date">
+                      Created: {new Date(bucket.created).toLocaleDateString()}
+                    </p>
+                    <p className="bucket-size">
+                      Total Size: {formatFileSize(bucket.size || 0)}
+                    </p>
+                  </div>
+                  <div className="bucket-actions">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        startEditingBucket(bucket.name)
+                      }}
+                      className="bucket-edit"
+                      title="Edit bucket name"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        deleteBucket(bucket.name)
+                      }}
+                      className="bucket-delete"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )
+          })}
+          
+          {buckets.length === 0 && !error && (
+            <div className="empty-state">
+              <p className="empty-text">No buckets found</p>
+              <p className="empty-subtext">Create a bucket to get started</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {deleteConfirmState && (
         <div className="modal-overlay" onClick={() => !deleteConfirmState.isDeleting && setDeleteConfirmState(null)}>
@@ -387,8 +391,6 @@ export default function BucketManager() {
           </div>
         </div>
       )}
-
-      {selectedBucket && <FileGrid bucketName={selectedBucket} />}
     </div>
   )
 }

@@ -14,6 +14,7 @@ interface FileGridProps {
   onFilesChange?: () => void
   refreshTrigger?: number
   availableBuckets?: string[]
+  onBack?: () => void
 }
 
 interface DownloadProgress {
@@ -167,7 +168,7 @@ const VideoPlayer = ({ src, className, onClick }: VideoPlayerProps) => {
   )
 }
 
-export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0, availableBuckets }: FileGridProps) {
+export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0, availableBuckets }: FileGridProps) {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
   const [error, setError] = useState<string>('')
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null)
@@ -584,6 +585,25 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0, availa
 
   return (
     <div className="file-grid-container">
+      {onBack && (
+        <div style={{ marginBottom: '15px', paddingBottom: '10px', borderBottom: '1px solid #333' }}>
+          <button 
+            onClick={onBack}
+            style={{
+              padding: '8px 16px',
+              backgroundColor: '#0d47a1',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500'
+            }}
+          >
+            ← Back to Buckets
+          </button>
+        </div>
+      )}
       <div className="file-actions-bar">
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flex: 1 }}>
           {selectedFiles.length > 0 && (
@@ -948,3 +968,4 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0, availa
     </div>
   )
 }
+
