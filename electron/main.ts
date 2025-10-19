@@ -11,6 +11,37 @@ let mainWindow: BrowserWindow | null = null
 
 const isDev = process.env.NODE_ENV === 'development'
 
+// Set up download handler BEFORE creating window
+function setupDownloadHandler() {
+  session.defaultSession.on('will-download', (event, item) => {
+    console.log('[Electron] Download started:', item.getFilename())
+    
+    // Don't show the save dialog, just save to Downloads
+    const downloadsPath = path.join(os.homedir(), 'Downloads')
+    const fileName = item.getFilename()
+    const savePath = path.join(downloadsPath, fileName)
+    
+    console.log('[Electron] Saving to:', savePath)
+    item.setSavePath(savePath)
+    
+    // After download completes, open the file
+    item.once('done', () => {
+      console.log('[Electron] Download done, opening file:', savePath)
+      shell.openPath(savePath)
+        .then((error) => {
+          if (error) {
+            console.error('[Electron] Failed to open file:', error)
+          } else {
+            console.log('[Electron] File opened successfully')
+          }
+        })
+        .catch((error) => {
+          console.error('[Electron] Error opening file:', error)
+        })
+    })
+  })
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -36,36 +67,6 @@ function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null
-  })
-
-  // Set up download handler to track where files are saved
-  session.defaultSession.on('will-download', (event, item) => {
-    console.log('[Electron] Download started:', item.getFilename())
-    
-    // Don't show the save dialog, just save to Downloads
-    const downloadsPath = path.join(os.homedir(), 'Downloads')
-    const fileName = item.getFilename()
-    const savePath = path.join(downloadsPath, fileName)
-    
-    console.log('[Electron] Saving to:', savePath)
-    item.setSavePath(savePath)
-    
-    // After download completes, open the file
-    item.once('done', () => {
-      console.log('[Electron] Download done, opening file')
-      console.log('[Electron] Opening file:', savePath)
-      shell.openPath(savePath)
-        .then((error) => {
-          if (error) {
-            console.error('[Electron] Failed to open file:', error)
-          } else {
-            console.log('[Electron] File opened successfully')
-          }
-        })
-        .catch((error) => {
-          console.error('[Electron] Error opening file:', error)
-        })
-    })
   })
 }
 
@@ -107,7 +108,10 @@ ipcMain.handle('show-devtools', () => {
   }
 })
 
-app.on('ready', createWindow)
+app.on('ready', () => {
+  setupDownloadHandler()
+  createWindow()
+})
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
