@@ -41,6 +41,7 @@ export default function BucketManager() {
   const [editingBucketName, setEditingBucketName] = useState<string | null>(null)
   const [editInputValue, setEditInputValue] = useState('')
   const [editError, setEditError] = useState('')
+  const [isRenamingBucket, setIsRenamingBucket] = useState(false)
 
   const acceptedFileTypes = useMemo(() => {
     const mimeTypes = api.getAllowedMimeTypes()
@@ -356,10 +357,14 @@ export default function BucketManager() {
       return
     }
     try {
+      setIsRenamingBucket(true)
+      setEditError('Creating new bucket and copying files... This may take a minute.')
       await api.renameBucket(editingBucketName, newName)
       await loadBuckets()
       cancelEditingBucket()
+      setIsRenamingBucket(false)
     } catch (err) {
+      setIsRenamingBucket(false)
       const errorMessage = err instanceof Error ? err.message : 'Failed to rename bucket'
       setEditError(errorMessage)
       console.error('Rename error:', err)
@@ -574,12 +579,14 @@ export default function BucketManager() {
                   <button
                     onClick={saveBucketRename}
                     className="bucket-edit-save"
+                    disabled={isRenamingBucket}
                   >
-                    Save
+                    {isRenamingBucket ? 'Renaming...' : 'Save'}
                   </button>
                   <button
                     onClick={cancelEditingBucket}
                     className="bucket-edit-cancel"
+                    disabled={isRenamingBucket}
                   >
                     Cancel
                   </button>

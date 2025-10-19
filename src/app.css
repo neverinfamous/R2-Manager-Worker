@@ -565,6 +565,20 @@
   background: #4B5563;
 }
 
+.bucket-edit-save:disabled,
+.bucket-edit-cancel:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.bucket-edit-save:disabled {
+  background: #10B981;
+}
+
+.bucket-edit-cancel:disabled {
+  background: #6B7280;
+}
+
 /* File Management Styles */
 .file-grid-container {
   display: flex;

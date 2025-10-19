@@ -655,17 +655,85 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         });
       }
 
-      // Rename bucket
+      // Rename bucket (create new, copy objects, delete old)
       if (request.method === 'PATCH' && url.pathname.startsWith('/api/buckets/')) {
-        const bucketName = decodeURIComponent(url.pathname.slice(12)).replace(/^\/+/, '');
+        const oldBucketName = decodeURIComponent(url.pathname.slice(12)).replace(/^\/+/, '');
         const body = await request.json();
-        const newName = body.newName;
-        console.log('[Buckets] Rename request:', bucketName, '->', newName);
-        const owner = await env.DB.prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?').bind(bucketName, userId).first();
+        const newBucketName = body.newName?.trim();
+        console.log('[Buckets] Rename request:', oldBucketName, '->', newBucketName);
+        const owner = await env.DB.prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?').bind(oldBucketName, userId).first();
         if (!owner) {
           return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
-        return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        try {
+          console.log('[Buckets] Creating new bucket:', newBucketName);
+          const createResponse = await fetch(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets', { method: 'POST', headers: cfHeaders, body: JSON.stringify({ name: newBucketName }) });
+          if (!createResponse.ok) {
+            const createError = await createResponse.json();
+            return new Response(JSON.stringify({ error: createError.errors?.[0]?.message || 'Failed to create new bucket' }), { status: createResponse.status, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+          }
+          console.log('[Buckets] New bucket created, copying objects...');
+          let cursor: string | undefined;
+          let totalCopied = 0;
+          let totalFailed = 0;
+          let hasMoreObjects = true;
+          while (hasMoreObjects) {
+            const listUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + oldBucketName + '/objects');
+            if (cursor) listUrl.searchParams.set('cursor', cursor);
+            listUrl.searchParams.set('per_page', '100');
+            const listResponse = await fetch(listUrl.toString(), { headers: cfHeaders });
+            if (!listResponse.ok) throw new Error('Failed to list objects: ' + listResponse.status);
+            const listData = await listResponse.json();
+            const objects = Array.isArray(listData.result) ? listData.result : [];
+            console.log('[Buckets] Copying', objects.length, 'objects');
+            if (objects.length === 0) hasMoreObjects = false;
+            for (const obj of objects) {
+              try {
+                const copyUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + newBucketName + '/objects/' + encodeURIComponent(obj.key);
+                const copySource = '/' + oldBucketName + '/' + encodeURIComponent(obj.key);
+                const copyResponse = await fetch(copyUrl, { method: 'PUT', headers: { ...cfHeaders, 'x-amz-copy-source': copySource } });
+                if (copyResponse.ok) totalCopied++;
+                else totalFailed++;
+              } catch (e) {
+                totalFailed++;
+              }
+            }
+            cursor = listData.cursor;
+            if (objects.length > 0 && cursor) await new Promise(resolve => setTimeout(resolve, 500));
+            else hasMoreObjects = false;
+          }
+          console.log('[Buckets] Copied', totalCopied, 'objects, failed:', totalFailed);
+          console.log('[Buckets] Deleting old bucket');
+          let deleteCursor: string | undefined;
+          let deleteHasMore = true;
+          while (deleteHasMore) {
+            const listUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + oldBucketName + '/objects');
+            if (deleteCursor) listUrl.searchParams.set('cursor', deleteCursor);
+            listUrl.searchParams.set('per_page', '100');
+            const listResponse = await fetch(listUrl.toString(), { headers: cfHeaders });
+            if (!listResponse.ok) throw new Error('Failed to list objects for deletion');
+            const listData = await listResponse.json();
+            const objects = Array.isArray(listData.result) ? listData.result : [];
+            if (objects.length === 0) deleteHasMore = false;
+            for (const obj of objects) {
+              try {
+                const deleteUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + oldBucketName + '/objects/' + encodeURIComponent(obj.key);
+                await fetch(deleteUrl, { method: 'DELETE', headers: cfHeaders });
+              } catch (e) {}
+            }
+            deleteCursor = listData.cursor;
+            if (objects.length > 0 && deleteCursor) await new Promise(resolve => setTimeout(resolve, 300));
+            else deleteHasMore = false;
+          }
+          const deleteResponse = await fetch(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + oldBucketName, { method: 'DELETE', headers: cfHeaders });
+          if (!deleteResponse.ok) throw new Error('Failed to delete old bucket');
+          await env.DB.prepare('UPDATE bucket_owners SET bucket_name = ? WHERE bucket_name = ?').bind(newBucketName, oldBucketName).run();
+          console.log('[Buckets] Rename completed');
+          return new Response(JSON.stringify({ success: true, newName: newBucketName }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        } catch (err) {
+          console.error('[Buckets] Rename error:', err);
+          return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'Rename failed' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
       }
     } catch (err) {
       console.error('[Buckets] Operation error:', err);
