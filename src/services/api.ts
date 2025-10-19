@@ -193,11 +193,21 @@ class APIService {
   }
 
   private getHeaders(): HeadersInit {
+    // Cookies are now handled automatically via credentials: 'include'
+    // Keep token handling for backward compatibility during migration
     const headers: HeadersInit = {}
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`
     }
     return headers
+  }
+
+  private getFetchOptions(init?: RequestInit): RequestInit {
+    // Always include credentials so cookies are sent automatically
+    return {
+      ...init,
+      credentials: 'include'
+    }
   }
 
   private async sleep(ms: number): Promise<void> {
@@ -225,16 +235,18 @@ class APIService {
         const formData = new FormData()
         formData.append('file', chunk, file.name)
 
-        const response = await fetch(`${WORKER_API}/api/files/${bucketName}/upload`, {
-          method: 'POST',
-          headers: {
-            ...this.getHeaders(),
-            'X-File-Name': encodeURIComponent(file.name),
-            'X-Total-Chunks': totalChunks.toString(),
-            'X-Chunk-Index': chunkIndex.toString()
-          },
-          body: formData
-        })
+        const response = await fetch(`${WORKER_API}/api/files/${bucketName}/upload`, 
+          this.getFetchOptions({
+            method: 'POST',
+            headers: {
+              ...this.getHeaders(),
+              'X-File-Name': encodeURIComponent(file.name),
+              'X-Total-Chunks': totalChunks.toString(),
+              'X-Chunk-Index': chunkIndex.toString()
+            },
+            body: formData
+          })
+        )
 
         if (!response.ok) {
           throw new Error(`Upload failed with status: ${response.status}`)
@@ -325,27 +337,32 @@ class APIService {
   }
 
   async register(email: string, password: string, code: string): Promise<AuthResponse> {
-    const response = await fetch(`${WORKER_API}/api/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ email, password, code })
-    })
+    const response = await fetch(`${WORKER_API}/api/auth/register`, 
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password, code })
+      })
+    )
     
     return response.json()
   }
 
   async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await fetch(`${WORKER_API}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ email, password })
-    })
+    const response = await fetch(`${WORKER_API}/api/auth/login`, 
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, password })
+      })
+    )
     
     const data = await response.json()
+    // Token is now in HTTP-only cookie, but keep this for backward compatibility
     if (data.token) {
       this.setToken(data.token)
     }
@@ -353,22 +370,24 @@ class APIService {
   }
 
   async logout() {
-    if (!this.token) return
-    
     try {
-      await fetch(`${WORKER_API}/api/auth/logout`, {
-        method: 'POST',
-        headers: this.getHeaders()
-      })
+      await fetch(`${WORKER_API}/api/auth/logout`, 
+        this.getFetchOptions({
+          method: 'POST',
+          headers: this.getHeaders()
+        })
+      )
     } finally {
       this.clearToken()
     }
   }
 
   async listBuckets() {
-    const response = await fetch(`${WORKER_API}/api/buckets`, {
-      headers: this.getHeaders()
-    })
+    const response = await fetch(`${WORKER_API}/api/buckets`, 
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
     
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`)
@@ -382,14 +401,16 @@ class APIService {
   }
 
   async createBucket(name: string) {
-    const response = await fetch(`${WORKER_API}/api/buckets`, {
-      method: 'POST',
-      headers: {
-        ...this.getHeaders(),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ name })
-    })
+    const response = await fetch(`${WORKER_API}/api/buckets`, 
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name })
+      })
+    )
     
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`)
@@ -400,10 +421,12 @@ class APIService {
   }
 
   async deleteBucket(name: string) {
-    const response = await fetch(`${WORKER_API}/api/buckets/${name}`, {
-      method: 'DELETE',
-      headers: this.getHeaders()
-    })
+    const response = await fetch(`${WORKER_API}/api/buckets/${name}`, 
+      this.getFetchOptions({
+        method: 'DELETE',
+        headers: this.getHeaders()
+      })
+    )
     
     const data = await response.json()
     return data
@@ -425,9 +448,11 @@ class APIService {
       url.searchParams.set('skipCache', 'true')
     }
 
-    const response = await fetch(url, {
-      headers: this.getHeaders()
-    })
+    const response = await fetch(url, 
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
     
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`)
@@ -439,10 +464,10 @@ class APIService {
   async deleteFile(bucketName: string, fileName: string) {
     const response = await fetch(
       `${WORKER_API}/api/files/${bucketName}/delete/${encodeURIComponent(fileName)}`,
-      {
+      this.getFetchOptions({
         method: 'DELETE',
         headers: this.getHeaders()
-      }
+      })
     )
     
     if (!response.ok) {
@@ -472,16 +497,18 @@ class APIService {
       return
     }
 
-    const response = await fetch(`${WORKER_API}/api/files/${bucketName}/download-zip`, {
-      method: 'POST',
-      headers: {
-        ...this.getHeaders(),
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        files: files.map(f => f.key)
+    const response = await fetch(`${WORKER_API}/api/files/${bucketName}/download-zip`, 
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          files: files.map(f => f.key)
+        })
       })
-    })
+    )
 
     if (!response.ok) {
       throw new Error('Failed to download files')
