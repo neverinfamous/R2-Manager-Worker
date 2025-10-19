@@ -6,23 +6,16 @@ interface ContextMenuProps {
   x: number
   y: number
   file: FileObject
-  bucketName: string
   onClose: () => void
   onOpen: (file: FileObject) => void
   onDelete: (file: FileObject) => void
   onDownload: (file: FileObject) => void
 }
 
-interface RecommendedApp {
-  name: string
-  url: string | null
-}
-
 export function ContextMenu({
   x,
   y,
   file,
-  bucketName,
   onClose,
   onOpen,
   onDelete,
@@ -33,8 +26,9 @@ export function ContextMenu({
 
   useEffect(() => {
     // Check if running in Electron/Tauri environment
-    const isElectronEnv = !!(window as any).electron || !!(window as any).__TAURI__
-    setIsElectron(isElectronEnv)
+    const electronAPI = (window as unknown as Record<string, unknown>).electron
+    const tauriAPI = (window as unknown as Record<string, unknown>).__TAURI__
+    setIsElectron(!!electronAPI || !!tauriAPI)
   }, [])
 
   // Adjust position to stay within viewport
@@ -56,8 +50,9 @@ export function ContextMenu({
       }
 
       if (adjustedX !== x || adjustedY !== y) {
-        (menu as HTMLElement).style.left = `${adjustedX}px`
-        (menu as HTMLElement).style.top = `${adjustedY}px`
+        const htmlElement = menu as HTMLElement
+        htmlElement.style.left = `${adjustedX}px`
+        htmlElement.style.top = `${adjustedY}px`
       }
     }
   }, [x, y])
@@ -155,7 +150,7 @@ export function ContextMenu({
           <>
             <hr className="context-menu-divider" />
             <div className="context-menu-label">Recommended Apps</div>
-            {suggestedApps.map((app) => (
+            {suggestedApps.map((app: { name: string; url: string | null }) => (
               app.url ? (
                 <a
                   key={app.name}

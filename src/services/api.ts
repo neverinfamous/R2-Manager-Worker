@@ -59,6 +59,11 @@ interface ValidationResult {
   error?: string
 }
 
+interface RecommendedApp {
+  name: string
+  url: string | null
+}
+
 class APIService {
   private token: string | null = null
   private readonly DEFAULT_MAX_RETRIES = 3
@@ -675,11 +680,6 @@ class APIService {
     return fileName.split('.').pop()?.toLowerCase() || ''
   }
 
-  interface RecommendedApp {
-    name: string
-    url: string | null
-  }
-
   getRecommendedApps(fileName: string): RecommendedApp[] {
     const ext = this.getFileExtension(fileName)
     
@@ -887,8 +887,8 @@ class APIService {
     const fileUrl = this.getFileUrl(bucketName, file.key, file)
 
     // Check if running in Electron environment
-    const electronAPI = (window as any).electron
-    const tauriAPI = (window as any).__TAURI__
+    const electronAPI = (window as unknown as Record<string, unknown>).electron
+    const tauriAPI = (window as unknown as Record<string, unknown>).__TAURI__
 
     if (electronAPI) {
       // Electron environment - use IPC to download and open

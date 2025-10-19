@@ -128,7 +128,7 @@ function openFile(filePath: string): Promise<void> {
 }
 
 // IPC handlers for file operations
-ipcMain.handle('open-file-natively', async (event, options: {
+ipcMain.handle('open-file-natively', async (_event: Electron.IpcMainInvokeEvent, options: {
   fileName: string
   url: string
   bucketName?: string
