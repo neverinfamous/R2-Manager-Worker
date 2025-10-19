@@ -326,10 +326,6 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const data = await response.json();
         
         if (data.success) {
-          await env.DB
-            .prepare('INSERT INTO bucket_owners (bucket_name, user_email) VALUES (?, ?)')
-            .bind(body.name, userEmail)
-            .run();
         }
         
         return new Response(JSON.stringify(data), {
