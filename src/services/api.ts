@@ -689,12 +689,12 @@ class APIService {
       // Check if running in Electron environment
       const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI
       console.log('[API] openFileNatively called for:', fileName, '| isElectron:', isElectron)
+      console.log('[API] userAgent:', typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A')
       
       if (isElectron) {
         // In Electron: Download file and open with native app
         const fileUrl = this.getFileUrl(bucketName, fileName, fileObject)
-        console.log('[API] File URL:', fileUrl)
-        console.log('[API] electronAPI available:', !!(window as any).electronAPI)
+        console.log('[API] Running in Electron, downloading:', fileUrl)
         
         // Trigger download
         const link = document.createElement('a')
@@ -704,11 +704,9 @@ class APIService {
         link.click()
         document.body.removeChild(link)
         
-        console.log('[API] Download triggered, waiting for Electron handlers...')
+        console.log('[API] Download triggered in Electron, waiting for handlers...')
         
         // Wait a bit for download to be intercepted and started, then call openFile IPC
-        // The will-download handler will save and attempt to open
-        // But we also explicitly call the IPC handler after a delay
         setTimeout(async () => {
           console.log('[API] Calling IPC openFile after download started:', fileName)
           try {
@@ -720,7 +718,7 @@ class APIService {
         }, 2000)
       } else {
         // Fallback for web (just download)
-        console.log('[API] Not in Electron, downloading file:', fileName)
+        console.log('[API] Running in web browser, downloading file:', fileName)
         const fileUrl = this.getFileUrl(bucketName, fileName, fileObject)
         const link = document.createElement('a')
         link.href = fileUrl
@@ -728,6 +726,7 @@ class APIService {
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
+        console.log('[API] File downloaded - open from your Downloads folder or browser downloads')
       }
     } catch (error) {
       console.error('[API] Failed to open file natively:', error)
