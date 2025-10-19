@@ -344,6 +344,9 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           headers: {
             'Content-Type': response.headers.get('Content-Type') || 'application/octet-stream',
             'Content-Disposition': 'attachment; filename="' + fileName + '"',
+            'Cache-Control': 'no-store, max-age=0, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
             ...corsHeaders
           }
         });
@@ -623,9 +626,11 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           .filter((obj: R2ObjectInfo) => !obj.key.startsWith('assets/'))
           .map((obj: R2ObjectInfo) => {
             const downloadPath = '/api/files/' + bucketName + '/download/' + obj.key;
-            const signature = generateSignature(downloadPath, env);
-            const signedUrl = downloadPath + '?sig=' + signature;
-            
+            const version = obj.last_modified ? new Date(obj.last_modified).getTime() : Date.now();
+            const versionedPath = downloadPath + '?ts=' + version;
+            const signature = generateSignature(versionedPath, env);
+            const signedUrl = versionedPath + '&sig=' + signature;
+
             return {
               key: obj.key,
               size: obj.size || 0,
