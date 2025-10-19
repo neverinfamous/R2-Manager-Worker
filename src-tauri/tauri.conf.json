@@ -1,0 +1,61 @@
+{
+  "build": {
+    "beforeBuildCommand": "npm run build",
+    "beforeDevCommand": "npm run dev",
+    "devPath": "http://localhost:5173",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 600,
+        "resizable": true,
+        "title": "R2 Manager - Native File Operations",
+        "width": 900
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+    }
+  },
+  "package": {
+    "productName": "R2 Manager",
+    "version": "1.0.0"
+  },
+  "tauri": {
+    "allowlist": {
+      "all": false,
+      "fs": {
+        "all": true,
+        "readFile": true,
+        "writeFile": true,
+        "removeFile": true,
+        "renameFile": true,
+        "copyFile": true,
+        "mkdir": true,
+        "removeDir": true,
+        "readDir": true,
+        "copyDir": true
+      },
+      "shell": {
+        "all": true,
+        "open": true,
+        "execute": true
+      },
+      "http": {
+        "all": true,
+        "scope": ["https://**"]
+      }
+    },
+    "bundle": {
+      "active": true,
+      "targets": "all",
+      "identifier": "com.r2manager.app",
+      "icon": ["../public/logo.png"]
+    },
+    "security": {
+      "csp": null
+    }
+  }
+}

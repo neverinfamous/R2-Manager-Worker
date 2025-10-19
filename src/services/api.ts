@@ -670,6 +670,267 @@ class APIService {
       onProgress?.(i + 1, fileKeys.length)
     }
   }
+
+  getFileExtension(fileName: string): string {
+    return fileName.split('.').pop()?.toLowerCase() || ''
+  }
+
+  interface RecommendedApp {
+    name: string
+    url: string | null
+  }
+
+  getRecommendedApps(fileName: string): RecommendedApp[] {
+    const ext = this.getFileExtension(fileName)
+    
+    const appMap: Record<string, RecommendedApp[]> = {
+      // Code files
+      'js': [
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' },
+        { name: 'WebStorm', url: 'https://www.jetbrains.com/webstorm/download' },
+        { name: 'Sublime Text', url: 'https://www.sublimetext.com/download' }
+      ],
+      'ts': [
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' },
+        { name: 'WebStorm', url: 'https://www.jetbrains.com/webstorm/download' },
+        { name: 'Sublime Text', url: 'https://www.sublimetext.com/download' }
+      ],
+      'jsx': [
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' },
+        { name: 'WebStorm', url: 'https://www.jetbrains.com/webstorm/download' }
+      ],
+      'tsx': [
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' },
+        { name: 'WebStorm', url: 'https://www.jetbrains.com/webstorm/download' }
+      ],
+      'py': [
+        { name: 'PyCharm', url: 'https://www.jetbrains.com/pycharm/download' },
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' },
+        { name: 'Thonny', url: 'https://thonny.org' }
+      ],
+      'java': [
+        { name: 'IntelliJ IDEA', url: 'https://www.jetbrains.com/idea/download' },
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' }
+      ],
+      'go': [
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' },
+        { name: 'GoLand', url: 'https://www.jetbrains.com/go/download' }
+      ],
+      'rb': [
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' },
+        { name: 'RubyMine', url: 'https://www.jetbrains.com/rubymine/download' }
+      ],
+      'php': [
+        { name: 'PhpStorm', url: 'https://www.jetbrains.com/phpstorm/download' },
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' }
+      ],
+      'cpp': [
+        { name: 'Visual Studio', url: 'https://visualstudio.microsoft.com/downloads' },
+        { name: 'CLion', url: 'https://www.jetbrains.com/clion/download' }
+      ],
+      'c': [
+        { name: 'Visual Studio Code', url: 'https://code.visualstudio.com/download' },
+        { name: 'Visual Studio', url: 'https://visualstudio.microsoft.com/downloads' }
+      ],
+      'html': [
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' },
+        { name: 'Sublime Text', url: 'https://www.sublimetext.com/download' }
+      ],
+      'css': [
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' },
+        { name: 'Sublime Text', url: 'https://www.sublimetext.com/download' }
+      ],
+      'json': [
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' },
+        { name: 'Sublime Text', url: 'https://www.sublimetext.com/download' }
+      ],
+      'xml': [
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' },
+        { name: 'Sublime Text', url: 'https://www.sublimetext.com/download' }
+      ],
+      'yml': [
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' },
+        { name: 'Sublime Text', url: 'https://www.sublimetext.com/download' }
+      ],
+      'yaml': [
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' },
+        { name: 'Sublime Text', url: 'https://www.sublimetext.com/download' }
+      ],
+      'md': [
+        { name: 'Markdown Editor', url: 'https://code.visualstudio.com/download' },
+        { name: 'Obsidian', url: 'https://obsidian.md/download' }
+      ],
+      'txt': [
+        { name: 'Notepad++', url: 'https://notepad-plus-plus.org/downloads' },
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' }
+      ],
+      // Image files
+      'png': [
+        { name: 'Photoshop', url: 'https://www.adobe.com/products/photoshop/free-trial-download.html' },
+        { name: 'GIMP', url: 'https://www.gimp.org/download' },
+        { name: 'Paint.NET', url: 'https://www.getpaint.net/download.html' }
+      ],
+      'jpg': [
+        { name: 'Photoshop', url: 'https://www.adobe.com/products/photoshop/free-trial-download.html' },
+        { name: 'GIMP', url: 'https://www.gimp.org/download' },
+        { name: 'Preview', url: null }
+      ],
+      'jpeg': [
+        { name: 'Photoshop', url: 'https://www.adobe.com/products/photoshop/free-trial-download.html' },
+        { name: 'GIMP', url: 'https://www.gimp.org/download' },
+        { name: 'Preview', url: null }
+      ],
+      'gif': [
+        { name: 'GIMP', url: 'https://www.gimp.org/download' },
+        { name: 'ImageMagick', url: 'https://imagemagick.org/script/download.php' }
+      ],
+      'webp': [
+        { name: 'GIMP', url: 'https://www.gimp.org/download' },
+        { name: 'ACDSee', url: 'https://www.acdsee.com/en/download' }
+      ],
+      'svg': [
+        { name: 'Illustrator', url: 'https://www.adobe.com/products/illustrator' },
+        { name: 'Inkscape', url: 'https://inkscape.org/release' },
+        { name: 'VS Code', url: 'https://code.visualstudio.com/download' }
+      ],
+      'bmp': [
+        { name: 'Paint.NET', url: 'https://www.getpaint.net/download.html' },
+        { name: 'GIMP', url: 'https://www.gimp.org/download' }
+      ],
+      // Video files
+      'mp4': [
+        { name: 'VLC Media Player', url: 'https://www.videolan.org/vlc/download-windows.html' },
+        { name: 'Premiere Pro', url: 'https://www.adobe.com/products/premiere/free-trial-download.html' },
+        { name: 'FFmpeg', url: 'https://ffmpeg.org/download.html' }
+      ],
+      'webm': [
+        { name: 'VLC Media Player', url: 'https://www.videolan.org/vlc/download-windows.html' },
+        { name: 'Firefox', url: 'https://www.mozilla.org/firefox/download' }
+      ],
+      'mov': [
+        { name: 'QuickTime Player', url: null },
+        { name: 'VLC Media Player', url: 'https://www.videolan.org/vlc/download-windows.html' }
+      ],
+      'avi': [
+        { name: 'VLC Media Player', url: 'https://www.videolan.org/vlc/download-windows.html' },
+        { name: 'Windows Media Player', url: null }
+      ],
+      'mkv': [
+        { name: 'VLC Media Player', url: 'https://www.videolan.org/vlc/download-windows.html' },
+        { name: 'MPC-HC', url: 'https://mpc-hc.org/downloads' }
+      ],
+      // Document files
+      'pdf': [
+        { name: 'Adobe Reader', url: 'https://get.adobe.com/reader' },
+        { name: 'Preview', url: null },
+        { name: 'Firefox', url: 'https://www.mozilla.org/firefox/download' }
+      ],
+      'docx': [
+        { name: 'Microsoft Word', url: 'https://www.microsoft.com/microsoft-365/word/microsoft-word-online' },
+        { name: 'Google Docs', url: 'https://docs.google.com' }
+      ],
+      'doc': [
+        { name: 'Microsoft Word', url: 'https://www.microsoft.com/microsoft-365/word/microsoft-word-online' },
+        { name: 'Google Docs', url: 'https://docs.google.com' }
+      ],
+      'xlsx': [
+        { name: 'Microsoft Excel', url: 'https://www.microsoft.com/microsoft-365/excel/microsoft-excel-online' },
+        { name: 'Google Sheets', url: 'https://sheets.google.com' }
+      ],
+      'xls': [
+        { name: 'Microsoft Excel', url: 'https://www.microsoft.com/microsoft-365/excel/microsoft-excel-online' },
+        { name: 'Google Sheets', url: 'https://sheets.google.com' }
+      ],
+      'pptx': [
+        { name: 'Microsoft PowerPoint', url: 'https://www.microsoft.com/microsoft-365/powerpoint/microsoft-powerpoint-online' },
+        { name: 'Google Slides', url: 'https://slides.google.com' }
+      ],
+      'ppt': [
+        { name: 'Microsoft PowerPoint', url: 'https://www.microsoft.com/microsoft-365/powerpoint/microsoft-powerpoint-online' },
+        { name: 'Google Slides', url: 'https://slides.google.com' }
+      ],
+      'csv': [
+        { name: 'Microsoft Excel', url: 'https://www.microsoft.com/microsoft-365/excel/microsoft-excel-online' },
+        { name: 'Google Sheets', url: 'https://sheets.google.com' }
+      ],
+      // Archive files
+      'zip': [
+        { name: '7-Zip', url: 'https://www.7-zip.org/download.html' },
+        { name: 'WinRAR', url: 'https://www.winrar.com/download.html' }
+      ],
+      'rar': [
+        { name: 'WinRAR', url: 'https://www.winrar.com/download.html' },
+        { name: '7-Zip', url: 'https://www.7-zip.org/download.html' }
+      ],
+      '7z': [
+        { name: '7-Zip', url: 'https://www.7-zip.org/download.html' },
+        { name: 'WinRAR', url: 'https://www.winrar.com/download.html' }
+      ],
+      'tar': [
+        { name: '7-Zip', url: 'https://www.7-zip.org/download.html' },
+        { name: 'WinRAR', url: 'https://www.winrar.com/download.html' }
+      ],
+      'gz': [
+        { name: '7-Zip', url: 'https://www.7-zip.org/download.html' },
+        { name: 'WinRAR', url: 'https://www.winrar.com/download.html' }
+      ]
+    }
+
+    return appMap[ext] || []
+  }
+
+  async downloadFileWithElectron(
+    bucketName: string,
+    file: FileObject,
+    options?: { openAfterDownload?: boolean }
+  ): Promise<void> {
+    const fileUrl = this.getFileUrl(bucketName, file.key, file)
+
+    // Check if running in Electron environment
+    const electronAPI = (window as any).electron
+    const tauriAPI = (window as any).__TAURI__
+
+    if (electronAPI) {
+      // Electron environment - use IPC to download and open
+      try {
+        await electronAPI.openFileNatively({
+          fileName: file.key,
+          url: fileUrl,
+          bucketName,
+          openAfterDownload: options?.openAfterDownload ?? true
+        })
+      } catch (error) {
+        console.error('Electron file opening failed:', error)
+        // Fallback to browser download
+        this.triggerBrowserDownload(fileUrl, file.key)
+      }
+    } else if (tauriAPI) {
+      // Tauri environment
+      try {
+        await tauriAPI.invoke('download_and_open_file', {
+          url: fileUrl,
+          fileName: file.key
+        })
+      } catch (error) {
+        console.error('Tauri file opening failed:', error)
+        // Fallback to browser download
+        this.triggerBrowserDownload(fileUrl, file.key)
+      }
+    } else {
+      // Web environment - just download
+      this.triggerBrowserDownload(fileUrl, file.key)
+    }
+  }
+
+  private triggerBrowserDownload(url: string, fileName: string): void {
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 }
 
 export const api = new APIService();
