@@ -688,35 +688,19 @@ class APIService {
     try {
       // Check if running in Electron environment
       if (typeof window !== 'undefined' && window.electronAPI) {
-        // In Electron: Download and open with native app via IPC
+        // In Electron: Use a regular link download
+        // Electron's will-download handler will intercept this and:
+        // 1. Save it to Downloads folder
+        // 2. Automatically open it with the native application
         const fileUrl = this.getFileUrl(bucketName, fileName, fileObject)
         
-        // Download the file
-        const response = await fetch(fileUrl)
-        const blob = await response.blob()
-        
-        // Create object URL and trigger download
-        const objectUrl = URL.createObjectURL(blob)
         const link = document.createElement('a')
-        link.href = objectUrl
+        link.href = fileUrl
         link.download = fileName
+        link.setAttribute('data-open-native', 'true')
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
-        URL.revokeObjectURL(objectUrl)
-        
-        // After download, trigger native open via IPC
-        // The file will be in the Downloads folder
-        setTimeout(async () => {
-          try {
-            const result = await window.electronAPI!.openFile(fileName)
-            if (!result.success) {
-              console.error('Failed to open file:', result.error)
-            }
-          } catch (error) {
-            console.error('Error invoking electronAPI:', error)
-          }
-        }, 1000)
       } else {
         // Fallback for web (just download)
         const fileUrl = this.getFileUrl(bucketName, fileName, fileObject)

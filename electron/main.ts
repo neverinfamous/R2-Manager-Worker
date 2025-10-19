@@ -1,6 +1,8 @@
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, dialog, session } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import fs from 'fs'
+import os from 'os'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -36,11 +38,38 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null
   })
+
+  // Set up download handler to track where files are saved
+  session.defaultSession.on('will-download', (event, item, webContents) => {
+    // Don't show the save dialog, just save to Downloads
+    const downloadsPath = path.join(os.homedir(), 'Downloads')
+    const fileName = item.getFilename()
+    const savePath = path.join(downloadsPath, fileName)
+    
+    item.setSavePath(savePath)
+    
+    // After download completes, open the file
+    item.once('done', (event) => {
+      if (event === 'completed') {
+        shell.openPath(savePath).catch((error) => {
+          console.error('Failed to open file:', error)
+        })
+      }
+    })
+  })
 }
 
 // IPC handler for opening files with native applications
-ipcMain.handle('open-file', async (_event, filePath: string) => {
+ipcMain.handle('open-file', async (_event, fileName: string) => {
   try {
+    const downloadsPath = path.join(os.homedir(), 'Downloads')
+    const filePath = path.join(downloadsPath, fileName)
+    
+    // Verify file exists
+    if (!fs.existsSync(filePath)) {
+      return { success: false, error: `File not found: ${filePath}` }
+    }
+    
     const result = await shell.openPath(filePath)
     if (result === '') {
       return { success: true }
