@@ -42,6 +42,7 @@ interface RejectedFile {
 }
 
 export default function BucketManager() {
+  const [isAuthenticated, setIsAuthenticated] = useState(auth.isAuthenticated())
   const [buckets, setBuckets] = useState<BucketObject[]>([])
   const [selectedBucket, setSelectedBucket] = useState<string | null>(null)
   const [newBucketName, setNewBucketName] = useState('')
@@ -74,12 +75,13 @@ export default function BucketManager() {
   }
 
   const handleLogin = useCallback(() => {
-    // No-op, Cloudflare Access handles authentication
+    setIsAuthenticated(true)
   }, [])
 
   const handleLogout = useCallback(async () => {
     await api.logout()
     auth.clearToken()
+    setIsAuthenticated(false)
     setSelectedBucket(null)
     setBuckets([])
   }, [])
@@ -236,8 +238,10 @@ export default function BucketManager() {
   })
 
   useEffect(() => {
-    loadBuckets()
-  }, [loadBuckets])
+    if (isAuthenticated) {
+      loadBuckets()
+    }
+  }, [isAuthenticated, loadBuckets])
 
   const createBucket = async () => {
     if (!newBucketName.trim()) return
@@ -384,6 +388,142 @@ export default function BucketManager() {
       setEditError(errorMessage)
       console.error('Rename error:', err)
     }
+  }
+
+  if (!isAuthenticated) {
+    return <Auth onLogin={handleLogin} />
+  }
+
+  if (selectedBucket) {
+    return (
+      <div className="container">
+        <header className="app-header">
+          <img 
+            src="/logo.png" 
+            alt="R2 Manager" 
+            className="app-logo" 
+            onClick={handleHardRefresh}
+          />
+          <div className="header-content">
+            <h1 className="app-title" onClick={handleHardRefresh}>
+              R2 Bucket Manager
+            </h1>
+            <div className="breadcrumb">
+              <button 
+                onClick={() => setSelectedBucket(null)}
+                className="back-button"
+              >
+                ← Back to Buckets
+              </button>
+              <button 
+                onClick={handleLogout}
+                className="logout-button"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </header>
+        <span className="current-bucket-title">{selectedBucket}</span>
+
+        {error && <div className="error-message">{error}</div>}
+
+        {rejectedFiles.length > 0 && (
+          <div className="rejected-files">
+            <div className="rejected-files-header">
+              <h3>Invalid Files</h3>
+              <button onClick={clearRejectedFiles} className="clear-rejected">
+                Clear
+              </button>
+            </div>
+            {rejectedFiles.map(({ file, error }) => (
+              <div key={file.name} className="rejected-file">
+                <span className="rejected-filename">{file.name}</span>
+                <span className="rejected-error">{error}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div 
+          {...getRootProps()} 
+          className={`dropzone ${isDragActive ? 'active' : ''} ${isUploading ? 'uploading' : ''}`}
+        >
+          <input 
+            {...getInputProps()} 
+            id="fileUpload"
+            name="fileUpload"
+          />
+          <div className="dropzone-content">
+            {isUploading ? (
+              <div className="upload-progress-container">
+                {uploadProgress.map(({
+                  fileName,
+                  progress,
+                  status,
+                  currentChunk,
+                  totalChunks,
+                  retryAttempt,
+                  error: uploadError
+                }) => (
+                  <div
+                    key={fileName}
+                    className={`upload-progress-item upload-${status}`}
+                  >
+                    <div className="upload-progress-info">
+                      <span className="upload-filename">{fileName}</span>
+                      <span className="upload-percentage">
+                        {status === 'retrying' ? (
+                          `Retrying chunk ${currentChunk}/${totalChunks} (Attempt ${retryAttempt})`
+                        ) : status === 'error' ? (
+                          'Failed'
+                        ) : (
+                          `${Math.round(progress)}%`
+                        )}
+                      </span>
+                    </div>
+                    <div className="upload-progress-bar">
+                      <div 
+                        className="upload-progress-fill"
+                        style={{ width: `${progress}%` }}
+                      />
+                    </div>
+                    {uploadError && (
+                      <div className="upload-error-message">
+                        {uploadError}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : isDragActive ? (
+              <p>Drop the files here...</p>
+            ) : (
+              <div className="upload-instructions">
+                <p>Drag & drop files here, or click to select files</p>
+                <div className="file-type-limits">
+                  <p>Accepted file types and size limits:</p>
+                  <ul>
+                    <li>Images (JPG, PNG, GIF, WebP) - up to 15MB</li>
+                    <li>Videos (MP4) - up to 100MB</li>
+                    <li>Documents (PDF, Office files, text) - up to 50MB</li>
+                    <li>Archives (ZIP, RAR, 7Z) - up to 100MB</li>
+                    <li>Code files (JS, TS, Python, etc.) - up to 10MB</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <FileGrid 
+          bucketName={selectedBucket}
+          onFilesChange={loadBuckets}
+          refreshTrigger={refreshTrigger}
+          availableBuckets={buckets.map(b => b.name)}
+        />
+      </div>
+    )
   }
 
   return (
@@ -548,119 +688,6 @@ export default function BucketManager() {
                 {deleteConfirmState.isDeleting ? 'Deleting...' : 'Delete Bucket & All Files'}
               </button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {selectedBucket && (
-        <div className="upload-overlay">
-          <div className="upload-panel">
-            <div className="upload-header">
-              <button onClick={() => setSelectedBucket(null)} className="back-button">
-                ← Back to Buckets
-              </button>
-              <h2>{selectedBucket}</h2>
-              <button onClick={handleLogout} className="logout-button">
-                Logout
-              </button>
-            </div>
-
-            {error && <div className="error-message">{error}</div>}
-
-            {rejectedFiles.length > 0 && (
-              <div className="rejected-files">
-                <div className="rejected-files-header">
-                  <h3>Invalid Files</h3>
-                  <button onClick={clearRejectedFiles} className="clear-rejected">
-                    Clear
-                  </button>
-                </div>
-                {rejectedFiles.map(({ file, error }) => (
-                  <div key={file.name} className="rejected-file">
-                    <span className="rejected-filename">{file.name}</span>
-                    <span className="rejected-error">{error}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div 
-              {...getRootProps()} 
-              className={`dropzone ${isDragActive ? 'active' : ''} ${isUploading ? 'uploading' : ''}`}
-            >
-              <input 
-                {...getInputProps()} 
-                id="fileUpload"
-                name="fileUpload"
-              />
-              <div className="dropzone-content">
-                {isUploading ? (
-                  <div className="upload-progress-container">
-                    {uploadProgress.map(({
-                      fileName,
-                      progress,
-                      status,
-                      currentChunk,
-                      totalChunks,
-                      retryAttempt,
-                      error: uploadError
-                    }) => (
-                      <div
-                        key={fileName}
-                        className={`upload-progress-item upload-${status}`}
-                      >
-                        <div className="upload-progress-info">
-                          <span className="upload-filename">{fileName}</span>
-                          <span className="upload-percentage">
-                            {status === 'retrying' ? (
-                              `Retrying chunk ${currentChunk}/${totalChunks} (Attempt ${retryAttempt})`
-                            ) : status === 'error' ? (
-                              'Failed'
-                            ) : (
-                              `${Math.round(progress)}%`
-                            )}
-                          </span>
-                        </div>
-                        <div className="upload-progress-bar">
-                          <div 
-                            className="upload-progress-fill"
-                            style={{ width: `${progress}%` }}
-                          />
-                        </div>
-                        {uploadError && (
-                          <div className="upload-error-message">
-                            {uploadError}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : isDragActive ? (
-                  <p>Drop the files here...</p>
-                ) : (
-                  <div className="upload-instructions">
-                    <p>Drag & drop files here, or click to select files</p>
-                    <div className="file-type-limits">
-                      <p>Accepted file types and size limits:</p>
-                      <ul>
-                        <li>Images (JPG, PNG, GIF, WebP) - up to 15MB</li>
-                        <li>Videos (MP4) - up to 100MB</li>
-                        <li>Documents (PDF, Office files, text) - up to 50MB</li>
-                        <li>Archives (ZIP, RAR, 7Z) - up to 100MB</li>
-                        <li>Code files (JS, TS, Python, etc.) - up to 10MB</li>
-                      </ul>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <FileGrid 
-              bucketName={selectedBucket}
-              onFilesChange={loadBuckets}
-              refreshTrigger={refreshTrigger}
-              availableBuckets={buckets.map(b => b.name)}
-            />
           </div>
         </div>
       )}
