@@ -594,6 +594,8 @@
   padding: 1rem;
   background: #1F2937;
   border-radius: 0.5rem;
+  flex-wrap: nowrap;
+  overflow-x: auto;
 }
 
 .selected-count {
@@ -1315,6 +1317,8 @@
   display: flex;
   gap: 0.5rem;
   margin-right: 1rem;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 
 .sort-button {
@@ -1327,6 +1331,10 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  transition: all 0.2s ease;
+  min-width: 80px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .sort-button:hover {
@@ -1353,39 +1361,6 @@
   transform: translateY(-50%);
   font-size: 0.75rem;
   opacity: 0.8;
-}
-
-/* Enhanced Sort Controls */
-.sort-controls {
-  display: flex;
-  gap: 0.5rem;
-  margin-right: 1rem;
-  flex-wrap: wrap;
-}
-
-.sort-button {
-  padding: 0.5rem 1rem;
-  background: #1F2937;
-  border: none;
-  color: #D1D5DB;
-  border-radius: 0.375rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s ease;
-  min-width: 80px;
-  justify-content: space-between;
-}
-
-.sort-button:hover {
-  background: #374151;
-}
-
-.sort-button.asc,
-.sort-button.desc {
-  background: #2563EB;
-  color: white;
 }
 
 /* List View Sort Headers */
@@ -1475,6 +1450,17 @@
 
   .file-type-limits ul {
     padding-left: 1.25rem;
+  }
+
+  .sort-controls {
+    width: 100%;
+    margin-right: 0;
+    flex-wrap: wrap;
+  }
+
+  .sort-button {
+    flex: 1;
+    min-width: 0;
   }
 }
 
