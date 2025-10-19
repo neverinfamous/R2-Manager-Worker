@@ -1,6 +1,6 @@
 # R2 Manager & Worker
 
-Last Updated October 19, 2025 12:29 AM EST
+Last Updated October 19, 2025 1:19 AM EST
 
 R2 Manager is a Vite-powered React application backed by a Cloudflare Worker that proxies Cloudflare R2 and D1. The web client lets you authenticate, create and delete buckets, upload objects with chunked retries, and download multi-file archives, while the worker mediates all requests, issues signed URLs, and stores session metadata.
 
@@ -135,12 +135,11 @@ Adjust `wrangler.toml` with your account ID, routes, and binding names. During d
 
 ## Desired improvements
 
-1. **Bug:** File preview mode does not update after adding or deleting image(s) without refreshing the page. List mode updates properly.
-2. **Enhancement:** Add the ability to edit R2 bucket names.
-3. **Enhancement:** Modify the delete bucket workflow to optionally remove non-empty buckets after a confirmation, following the behavior of `delete_r2_bucket_robust.ps1` while still warning the user.
-4. **Enhancement:** Add a feature to move file(s) from one bucket to another.
-5. **Enhancement:** Switch login to the Cloudflare Worker SSO integration backed by Cloudflare Zero Trust and GitHub.
-6. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
+1. **Enhancement:** Add the ability to edit R2 bucket names.
+2. **Enhancement:** Modify the delete bucket workflow to optionally remove non-empty buckets after a confirmation, following the behavior of `delete_r2_bucket_robust.ps1` while still warning the user.
+3. **Enhancement:** Add a feature to move file(s) from one bucket to another.
+4. **Enhancement:** Switch login to the Cloudflare Worker SSO integration backed by Cloudflare Zero Trust and GitHub.
+5. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
 
 ---
 
@@ -155,5 +154,3 @@ Adjust `wrangler.toml` with your account ID, routes, and binding names. During d
 ## License
 
 This project is released under the [MIT License](LICENSE).
-No explicit license is provided. All rights reserved.
-
