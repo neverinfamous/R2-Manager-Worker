@@ -144,10 +144,24 @@ async function generateToken(): Promise<string> {
 }
 
 async function validateAuth(request: Request, env: Env): Promise<string | null> {
-  const authHeader = request.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) return null;
+  // Try to get token from cookie first (primary method)
+  let token: string | null = null;
   
-  const token = authHeader.slice(7);
+  const cookieHeader = request.headers.get('Cookie');
+  if (cookieHeader) {
+    const match = cookieHeader.match(/auth_token=([^;]*)/);
+    token = match ? match[1] : null;
+  }
+  
+  // Fall back to Authorization header (for backward compatibility during migration)
+  if (!token) {
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) return null;
+    token = authHeader.slice(7);
+  }
+  
+  if (!token) return null;
+  
   const user = await env.DB
     .prepare('SELECT user_id FROM sessions WHERE token = ? AND expires > ?')
     .bind(token, new Date().toISOString())
@@ -267,28 +281,60 @@ async function handleAuthRequest(request: Request, env: Env): Promise<Response> 
       .bind(token, user.user_id, expires.toISOString())
       .run();
     
-    return new Response(JSON.stringify({ token }), {
+    // Return success but DON'T include token in response (it's in the cookie)
+    const response = new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' }
     });
+    
+    // Set HTTP-only cookie with security flags
+    const isProduction = !request.url.includes('localhost');
+    const cookieFlags = [
+      `auth_token=${token}`,
+      'HttpOnly', // Prevents JavaScript access
+      'Path=/', // Available to entire app
+      'SameSite=Strict', // CSRF protection
+      `Max-Age=${24 * 60 * 60}` // 24 hours
+    ];
+    
+    if (isProduction) {
+      cookieFlags.push('Secure'); // HTTPS only in production
+    }
+    
+    response.headers.set('Set-Cookie', cookieFlags.join('; '));
+    return response;
   }
   
   if (url.pathname === '/api/auth/logout') {
     if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
     
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response('Unauthorized', { status: 401 });
+    // Try to get token from cookie first, fall back to Authorization header
+    const cookieHeader = request.headers.get('Cookie');
+    let token: string | null = null;
+    
+    if (cookieHeader) {
+      const match = cookieHeader.match(/auth_token=([^;]*)/);
+      token = match ? match[1] : null;
     }
     
-    const token = authHeader.slice(7);
+    if (!token) {
+      const authHeader = request.headers.get('Authorization');
+      if (!authHeader?.startsWith('Bearer ')) {
+        return new Response('Unauthorized', { status: 401 });
+      }
+      token = authHeader.slice(7);
+    }
+    
     await env.DB
       .prepare('DELETE FROM sessions WHERE token = ?')
       .bind(token)
       .run();
     
-    return new Response(JSON.stringify({ success: true }), {
+    // Clear the cookie by setting Max-Age=0
+    const response = new Response(JSON.stringify({ success: true }), {
       headers: { 'Content-Type': 'application/json' }
     });
+    response.headers.set('Set-Cookie', 'auth_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict');
+    return response;
   }
 
   return new Response('Not found', { status: 404 });
