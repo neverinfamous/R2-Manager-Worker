@@ -346,7 +346,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS, PATCH',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Name, X-Chunk-Index, X-Total-Chunks'
   };
 
@@ -396,7 +396,20 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
             ...corsHeaders
           }
         });
-      } catch (err) {
+  
+      // Rename bucket
+      if (request.method === 'PATCH' && url.pathname.startsWith('/api/buckets/')) {
+        const bucketName = decodeURIComponent(url.pathname.slice(12)).replace(/^\/+/, '');
+        const body = await request.json();
+        const newName = body.newName;
+        console.log('[Buckets] Rename request:', bucketName, '->', newName);
+        const owner = await env.DB.prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?').bind(bucketName, userId).first();
+        if (!owner) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
+        return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+    } catch (err) {
         console.error('[Files] Download error:', err);
         return new Response('Download failed', { 
           status: 500,
@@ -653,6 +666,19 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           }
         });
       }
+
+      // Rename bucket
+      if (request.method === 'PATCH' && url.pathname.startsWith('/api/buckets/')) {
+        const bucketName = decodeURIComponent(url.pathname.slice(12)).replace(/^\/+/, '');
+        const body = await request.json();
+        const newName = body.newName;
+        console.log('[Buckets] Rename request:', bucketName, '->', newName);
+        const owner = await env.DB.prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?').bind(bucketName, userId).first();
+        if (!owner) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
+        return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
     } catch (err) {
       console.error('[Buckets] Operation error:', err);
       return new Response(JSON.stringify({ error: 'Bucket operation failed' }), {
@@ -725,7 +751,20 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
             ...corsHeaders
           }
         });
-      } catch (err) {
+  
+      // Rename bucket
+      if (request.method === 'PATCH' && url.pathname.startsWith('/api/buckets/')) {
+        const bucketName = decodeURIComponent(url.pathname.slice(12)).replace(/^\/+/, '');
+        const body = await request.json();
+        const newName = body.newName;
+        console.log('[Buckets] Rename request:', bucketName, '->', newName);
+        const owner = await env.DB.prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?').bind(bucketName, userId).first();
+        if (!owner) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
+        return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+    } catch (err) {
         console.error('[Files] ZIP download error:', err);
         return new Response(JSON.stringify({ 
           error: 'Failed to create zip file', 
@@ -830,7 +869,20 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           }
         });
 
-      } catch (err) {
+  
+      // Rename bucket
+      if (request.method === 'PATCH' && url.pathname.startsWith('/api/buckets/')) {
+        const bucketName = decodeURIComponent(url.pathname.slice(12)).replace(/^\/+/, '');
+        const body = await request.json();
+        const newName = body.newName;
+        console.log('[Buckets] Rename request:', bucketName, '->', newName);
+        const owner = await env.DB.prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?').bind(bucketName, userId).first();
+        if (!owner) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
+        return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+    } catch (err) {
         console.error('[Files] List error:', err);
         return new Response(JSON.stringify({ 
           error: 'Failed to list files', 
@@ -931,7 +983,20 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
             ...corsHeaders
           }
         });
-      } catch (err) {
+  
+      // Rename bucket
+      if (request.method === 'PATCH' && url.pathname.startsWith('/api/buckets/')) {
+        const bucketName = decodeURIComponent(url.pathname.slice(12)).replace(/^\/+/, '');
+        const body = await request.json();
+        const newName = body.newName;
+        console.log('[Buckets] Rename request:', bucketName, '->', newName);
+        const owner = await env.DB.prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?').bind(bucketName, userId).first();
+        if (!owner) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
+        return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+    } catch (err) {
         console.error('[Files] Upload error:', err);
         return new Response(JSON.stringify({
           error: 'Upload failed',
@@ -970,7 +1035,20 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
             ...corsHeaders
           }
         });
-      } catch (err) {
+  
+      // Rename bucket
+      if (request.method === 'PATCH' && url.pathname.startsWith('/api/buckets/')) {
+        const bucketName = decodeURIComponent(url.pathname.slice(12)).replace(/^\/+/, '');
+        const body = await request.json();
+        const newName = body.newName;
+        console.log('[Buckets] Rename request:', bucketName, '->', newName);
+        const owner = await env.DB.prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?').bind(bucketName, userId).first();
+        if (!owner) {
+          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        }
+        return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+      }
+    } catch (err) {
         console.error('[Files] Delete error:', err);
         return new Response(JSON.stringify({
           error: 'Delete failed',

@@ -469,6 +469,102 @@
   background: #B91C1C;
 }
 
+.bucket-edit {
+  background: #2563EB;
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.2s;
+  flex: 1;
+}
+
+.bucket-edit:hover {
+  background: #1D4ED8;
+}
+
+.bucket-actions {
+  display: flex;
+  gap: 0;
+  width: 100%;
+}
+
+.bucket-edit,
+.bucket-delete {
+  flex: 1;
+}
+
+.bucket-item.editing {
+  padding: 1rem;
+}
+
+.bucket-edit-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.bucket-edit-input {
+  padding: 0.75rem;
+  background: #374151;
+  border: 1px solid #4B5563;
+  border-radius: 0.375rem;
+  color: white;
+  font-size: 0.875rem;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+
+.bucket-edit-input:focus {
+  outline: none;
+  border-color: #60A5FA;
+}
+
+.bucket-edit-error {
+  color: #EF4444;
+  font-size: 0.875rem;
+  margin: 0;
+  padding: 0.5rem 0;
+}
+
+.bucket-edit-actions {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.bucket-edit-save,
+.bucket-edit-cancel {
+  flex: 1;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  font-weight: 500;
+}
+
+.bucket-edit-save {
+  background: #10B981;
+  color: white;
+}
+
+.bucket-edit-save:hover {
+  background: #059669;
+}
+
+.bucket-edit-cancel {
+  background: #6B7280;
+  color: white;
+}
+
+.bucket-edit-cancel:hover {
+  background: #4B5563;
+}
+
 /* File Management Styles */
 .file-grid-container {
   display: flex;
