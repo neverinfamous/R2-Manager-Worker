@@ -454,6 +454,13 @@
   color: #9CA3AF;
 }
 
+.bucket-size {
+  margin: 0.5rem 0 0 0;
+  font-size: 0.875rem;
+  color: #60A5FA;
+  font-weight: 500;
+}
+
 .bucket-delete {
   background: #1D4ED8;
   color: white;

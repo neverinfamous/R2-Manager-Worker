@@ -7,9 +7,23 @@ import { auth } from './services/auth'
 import { Auth } from './components/auth'
 import type { FileRejection } from 'react-dropzone'
 
+const formatFileSize = (bytes: number): string => {
+  const units = ['B', 'KB', 'MB', 'GB']
+  let size = bytes
+  let unitIndex = 0
+  
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024
+    unitIndex++
+  }
+  
+  return `${size.toFixed(1)} ${units[unitIndex]}`
+}
+
 interface BucketObject {
   name: string
   created: string
+  size?: number
 }
 
 interface UploadProgress {
@@ -602,6 +616,9 @@ export default function BucketManager() {
                   <h3 className="bucket-name">{bucket.name}</h3>
                   <p className="bucket-date">
                     Created: {new Date(bucket.created).toLocaleDateString()}
+                  </p>
+                  <p className="bucket-size">
+                    Total Size: {formatFileSize(bucket.size || 0)}
                   </p>
                 </div>
                 <div className="bucket-actions">

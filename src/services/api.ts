@@ -32,6 +32,7 @@ interface ListFilesOptions {
 interface CloudflareBucket {
   name: string
   creation_date: string
+  size?: number
 }
 
 interface DownloadOptions {
@@ -396,7 +397,8 @@ class APIService {
     const data = await response.json()
     return data.result.buckets.map((bucket: CloudflareBucket) => ({
       name: bucket.name,
-      created: bucket.creation_date
+      created: bucket.creation_date,
+      size: bucket.size || 0
     }))
   }
 
