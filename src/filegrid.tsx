@@ -618,7 +618,7 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0, availa
           {selectedFiles.length > 0 && (
             <>
               <button 
-                onClick={handleMoveFiles}
+                onClick={() => setMoveState({ isDialogOpen: true, targetBucket: null, isMoving: false, progress: 0 })}
                 className="action-button move-button"
               >
                 Move Selected
