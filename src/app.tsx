@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import './app.css'
+import { FileGrid } from './filegrid'
 import { api } from './services/api'
 import { auth } from './services/auth'
 
@@ -386,6 +387,8 @@ export default function BucketManager() {
           </div>
         </div>
       )}
+
+      {selectedBucket && <FileGrid bucketName={selectedBucket} />}
     </div>
   )
 }
