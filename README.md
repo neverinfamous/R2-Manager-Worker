@@ -136,10 +136,9 @@ Adjust `wrangler.toml` with your account ID, routes, and binding names. During d
 ## Desired improvements
 
 1. **Enhancement:** Add the ability to edit R2 bucket names.
-2. **Enhancement:** Modify the delete bucket workflow to optionally remove non-empty buckets after a confirmation, following the behavior of `delete_r2_bucket_robust.ps1` while still warning the user.
-3. **Enhancement:** Add a feature to move file(s) from one bucket to another.
-4. **Enhancement:** Switch login to the Cloudflare Worker SSO integration backed by Cloudflare Zero Trust and GitHub.
-5. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
+2. **Enhancement:** Add a feature to move file(s) from one bucket to another.
+3. **Enhancement:** Switch login to the Cloudflare Worker SSO integration backed by Cloudflare Zero Trust and GitHub.
+4. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
 
 ---
 
