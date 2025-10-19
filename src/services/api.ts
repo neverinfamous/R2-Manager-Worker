@@ -688,21 +688,35 @@ class APIService {
     try {
       // Check if running in Electron environment
       if (typeof window !== 'undefined' && window.electronAPI) {
-        // In Electron: Use a regular link download
-        // Electron's will-download handler will intercept this and:
-        // 1. Save it to Downloads folder
-        // 2. Automatically open it with the native application
-        const fileUrl = this.getFileUrl(bucketName, fileName, fileObject)
+        // In Electron: Download file and open with native app
+        console.log('[API] openFileNatively called for:', fileName)
         
+        const fileUrl = this.getFileUrl(bucketName, fileName, fileObject)
+        console.log('[API] File URL:', fileUrl)
+        
+        // Trigger download
         const link = document.createElement('a')
         link.href = fileUrl
         link.download = fileName
-        link.setAttribute('data-open-native', 'true')
         document.body.appendChild(link)
         link.click()
         document.body.removeChild(link)
+        
+        // Wait a bit for download to be intercepted and started, then call openFile IPC
+        // The will-download handler will save and attempt to open
+        // But we also explicitly call the IPC handler after a delay
+        setTimeout(async () => {
+          console.log('[API] Calling IPC openFile after download started:', fileName)
+          try {
+            const result = await window.electronAPI!.openFile(fileName)
+            console.log('[API] IPC openFile result:', result)
+          } catch (error) {
+            console.error('[API] IPC openFile error:', error)
+          }
+        }, 2000)
       } else {
         // Fallback for web (just download)
+        console.log('[API] Not in Electron, downloading file:', fileName)
         const fileUrl = this.getFileUrl(bucketName, fileName, fileObject)
         const link = document.createElement('a')
         link.href = fileUrl
@@ -712,7 +726,7 @@ class APIService {
         document.body.removeChild(link)
       }
     } catch (error) {
-      console.error('Failed to open file natively:', error)
+      console.error('[API] Failed to open file natively:', error)
       throw new Error('Failed to open file')
     }
   }

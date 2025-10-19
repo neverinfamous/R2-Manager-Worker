@@ -41,19 +41,32 @@ function createWindow() {
 
   // Set up download handler to track where files are saved
   session.defaultSession.on('will-download', (event, item, webContents) => {
+    console.log('[Electron] Download started:', item.getFilename())
+    
     // Don't show the save dialog, just save to Downloads
     const downloadsPath = path.join(os.homedir(), 'Downloads')
     const fileName = item.getFilename()
     const savePath = path.join(downloadsPath, fileName)
     
+    console.log('[Electron] Saving to:', savePath)
     item.setSavePath(savePath)
     
     // After download completes, open the file
     item.once('done', (event) => {
+      console.log('[Electron] Download done, state:', event)
       if (event === 'completed') {
-        shell.openPath(savePath).catch((error) => {
-          console.error('Failed to open file:', error)
-        })
+        console.log('[Electron] Opening file:', savePath)
+        shell.openPath(savePath)
+          .then((error) => {
+            if (error) {
+              console.error('[Electron] Failed to open file:', error)
+            } else {
+              console.log('[Electron] File opened successfully')
+            }
+          })
+          .catch((error) => {
+            console.error('[Electron] Error opening file:', error)
+          })
       }
     })
   })
@@ -62,22 +75,38 @@ function createWindow() {
 // IPC handler for opening files with native applications
 ipcMain.handle('open-file', async (_event, fileName: string) => {
   try {
+    console.log('[IPC] open-file called with:', fileName)
     const downloadsPath = path.join(os.homedir(), 'Downloads')
     const filePath = path.join(downloadsPath, fileName)
     
+    console.log('[IPC] Looking for file at:', filePath)
+    
     // Verify file exists
     if (!fs.existsSync(filePath)) {
+      console.error('[IPC] File not found:', filePath)
       return { success: false, error: `File not found: ${filePath}` }
     }
     
+    console.log('[IPC] File exists, opening with shell.openPath()...')
     const result = await shell.openPath(filePath)
+    
     if (result === '') {
+      console.log('[IPC] File opened successfully')
       return { success: true }
     } else {
+      console.error('[IPC] shell.openPath returned error:', result)
       return { success: false, error: result }
     }
   } catch (error) {
+    console.error('[IPC] Exception in open-file handler:', error)
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+  }
+})
+
+// IPC handler to show DevTools console for debugging
+ipcMain.handle('show-devtools', () => {
+  if (mainWindow) {
+    mainWindow.webContents.openDevTools()
   }
 })
 
