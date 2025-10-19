@@ -576,29 +576,58 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
             headers: cfHeaders
           }
         );
-        const data = await response.json();
         
-        console.log('[Buckets] Delete response status:', response.status, 'data:', data);
+        console.log('[Buckets] Delete response status:', response.status);
         
-        // Cloudflare R2 API returns success: true on successful deletion
-        if (response.ok && (data.success || response.status === 204)) {
-          await env.DB
-            .prepare('DELETE FROM bucket_owners WHERE bucket_name = ?')
-            .bind(bucketName)
-            .run();
-          
-          // Return success response
-          return new Response(JSON.stringify({ success: true }), {
-            status: 200,
-            headers: {
-              'Content-Type': 'application/json',
-              ...corsHeaders
+        // Cloudflare R2 API returns 204 No Content on successful deletion, or 200 with { "success": true }
+        if (response.ok && (response.status === 204 || response.status === 200)) {
+          try {
+            const data = response.status === 204 ? { success: true } : await response.json();
+            console.log('[Buckets] Delete successful, data:', data);
+            
+            if (data.success || response.status === 204) {
+              await env.DB
+                .prepare('DELETE FROM bucket_owners WHERE bucket_name = ?')
+                .bind(bucketName)
+                .run();
+              
+              // Return success response
+              return new Response(JSON.stringify({ success: true }), {
+                status: 200,
+                headers: {
+                  'Content-Type': 'application/json',
+                  ...corsHeaders
+                }
+              });
             }
-          });
+          } catch (parseErr) {
+            console.error('[Buckets] Error parsing delete response:', parseErr);
+            // If we can't parse the response but the HTTP status is OK, consider it a success
+            await env.DB
+              .prepare('DELETE FROM bucket_owners WHERE bucket_name = ?')
+              .bind(bucketName)
+              .run();
+            
+            return new Response(JSON.stringify({ success: true }), {
+              status: 200,
+              headers: {
+                'Content-Type': 'application/json',
+                ...corsHeaders
+              }
+            });
+          }
         }
         
-        // If we get here, something went wrong
-        return new Response(JSON.stringify(data), {
+        // If we get here, something went wrong - try to parse the error response
+        let errorData: unknown;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { error: 'Unknown error', status: response.status };
+        }
+        
+        console.log('[Buckets] Delete failed with status:', response.status, 'error:', errorData);
+        return new Response(JSON.stringify(errorData), {
           status: response.status,
           headers: {
             'Content-Type': 'application/json',
