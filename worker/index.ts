@@ -346,20 +346,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const force = url.searchParams.get('force') === 'true';
         console.log('[Buckets] Deleting bucket:', bucketName, 'force:', force);
         
-        const owner = await env.DB
-          .prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?')
-          .bind(bucketName, userEmail)
-          .first();
-
-        if (!owner) {
-          return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-            status: 403,
-            headers: {
-              'Content-Type': 'application/json',
-              ...corsHeaders
-            }
-          });
-        }
+        // Zero Trust: Owner check removed - all authenticated users can manage all buckets
         
         // If force delete, first delete all objects in the bucket
         if (force) {
@@ -1159,6 +1146,7 @@ export default {
     }
   }
 }
+
 
 
 
