@@ -283,14 +283,9 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         );
         const data = await response.json();
         
-        const userBuckets = await env.DB
-          .prepare('SELECT bucket_name FROM bucket_owners WHERE user_email = ?')
-          .bind(userEmail)
-          .all<{ bucket_name: string }>();
-        
-        const filteredBuckets = data.result.buckets.filter((bucket: { name: string }) =>
-          userBuckets.results.some(ub => ub.bucket_name === bucket.name)
-        );
+        // With Zero Trust auth, show all R2 buckets to authenticated users
+        // Access control is managed by Cloudflare Access, not the database
+        const filteredBuckets = data.result.buckets || [];
         
         // Add size information to each bucket
         const bucketsWithSize = await Promise.all(
@@ -1176,4 +1171,5 @@ export default {
     }
   }
 }
+
 
