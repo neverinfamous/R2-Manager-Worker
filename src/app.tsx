@@ -244,30 +244,34 @@ export default function BucketManager() {
         </div>
       </header>
 
-      <form 
-        id="createBucketForm" 
-        name="createBucketForm" 
-        onSubmit={handleSubmit} 
-        className="bucket-controls"
-      >
-        <input
-          type="text"
-          id="newBucketName"
-          name="newBucketName"
-          value={newBucketName}
-          onChange={(e) => setNewBucketName(e.target.value)}
-          placeholder="New bucket name"
-          className="bucket-input"
-          aria-label="New bucket name"
-        />
-        <button 
-          type="submit"
-          disabled={isCreatingBucket || !newBucketName.trim()}
-          className="bucket-button"
+      {selectedBucket ? (
+        <FileGrid bucketName={selectedBucket} onBack={() => setSelectedBucket(null)} />
+      ) : (
+        <form 
+          id="createBucketForm" 
+          name="createBucketForm" 
+          onSubmit={handleSubmit} 
+          className="bucket-controls"
         >
-          {isCreatingBucket ? 'Creating...' : 'Create Bucket'}
-        </button>
-      </form>
+          <input
+            type="text"
+            id="newBucketName"
+            name="newBucketName"
+            value={newBucketName}
+            onChange={(e) => setNewBucketName(e.target.value)}
+            placeholder="New bucket name"
+            className="bucket-input"
+            aria-label="New bucket name"
+          />
+          <button 
+            type="submit"
+            disabled={isCreatingBucket || !newBucketName.trim()}
+            className="bucket-button"
+          >
+            {isCreatingBucket ? 'Creating...' : 'Create Bucket'}
+          </button>
+        </form>
+      )}
 
       {error && <div className="error-message">{error}</div>}
 
