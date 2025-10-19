@@ -1034,6 +1034,14 @@
   margin-bottom: 1rem;  
 }
 
+.success-message {
+  background: rgba(16, 185, 129, 0.2);
+  color: #86EFAC;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;
