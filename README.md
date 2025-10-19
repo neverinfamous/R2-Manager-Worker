@@ -1,6 +1,6 @@
 # Cloudflare R2 Bucket Manager
 
-Last Updated October 19, 2025 5:06 AM EST
+Last Updated October 19, 2025 5:29 AM EST
 
 R2 Manager is a Vite-powered React application backed by a Cloudflare Worker that proxies Cloudflare R2 and D1. The web client lets you authenticate, create and delete buckets, upload objects with chunked retries, and download multi-file archives, while the worker mediates all requests, issues signed URLs, and stores session metadata.
 
@@ -135,10 +135,10 @@ Adjust `wrangler.toml` with your account ID, routes, and binding names. During d
 
 ## Desired improvements
 
-1. **Enhancement:** Add the ability to edit R2 bucket names.
-2. **Enhancement:** Add a feature to move file(s) from one bucket to another.
-3. **Enhancement:** Switch login to the Cloudflare Worker SSO integration backed by Cloudflare Zero Trust and GitHub.
-4. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
+1. **Enhancement:** Add a feature to move file(s) from one bucket to another.
+2. **Enhancement:** Switch login to the Cloudflare Worker SSO integration backed by Cloudflare Zero Trust and GitHub.
+3. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
+4. **Long-term:** Add GUI for D1 database interactions similar to DB Browser for SQLite.
 
 ---
 

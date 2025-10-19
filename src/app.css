@@ -664,6 +664,85 @@
   background: #374151;
 }
 
+.move-button {
+  background: #4C6EF5;
+  color: white;
+}
+
+.move-button:hover {
+  background: #364FC7;
+}
+
+.bucket-selector {
+  margin: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bucket-selector label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #D1D5DB;
+  font-size: 0.875rem;
+}
+
+.bucket-selector select {
+  width: 100%;
+  padding: 0.75rem;
+  background: #374151;
+  border: 1px solid #4B5563;
+  border-radius: 0.375rem;
+  color: white;
+  font-size: 0.875rem;
+  transition: border-color 0.2s;
+  color-scheme: dark;
+}
+
+.bucket-selector select:focus {
+  outline: none;
+  border-color: #60A5FA;
+}
+
+.bucket-selector select:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.move-progress {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: #1E3A8A;
+  border-radius: 0.375rem;
+  border-left: 4px solid #4C6EF5;
+}
+
+.move-progress p {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  color: #BFDBFE;
+}
+
+.progress-bar {
+  height: 4px;
+  background: #374151;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: #4C6EF5;
+  animation: progress 1.5s ease-in-out infinite;
+}
+
+@keyframes progress {
+  0% { width: 0%; }
+  50% { width: 100%; }
+  100% { width: 100%; }
+}
+
 .file-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -1475,6 +1554,15 @@
 
 .modal-button.delete:hover:not(:disabled) {
   background: #B91C1C;
+}
+
+.modal-button.move {
+  background: #4C6EF5;
+  color: #FFFFFF;
+}
+
+.modal-button.move:hover:not(:disabled) {
+  background: #364FC7;
 }
 
 .modal-button:disabled {
