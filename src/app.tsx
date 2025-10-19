@@ -4,7 +4,6 @@ import './app.css'
 import { FileGrid } from './filegrid'
 import { api } from './services/api'
 import { auth } from './services/auth'
-import { Auth } from './components/auth'
 import type { FileRejection, FileWithPath } from 'react-dropzone'
 
 const formatFileSize = (bytes: number): string => {
@@ -73,13 +72,8 @@ export default function BucketManager() {
     window.location.reload()
   }
 
-  const handleLogin = useCallback(() => {
-    // No-op, Cloudflare Access handles authentication
-  }, [])
-
   const handleLogout = useCallback(async () => {
-    await api.logout()
-    auth.clearToken()
+    await auth.logout()
     setSelectedBucket(null)
     setBuckets([])
   }, [])
