@@ -36,15 +36,23 @@ export function Auth({ onLogin }: AuthProps) {
         if (loginResponse.token) {
           auth.setToken(loginResponse.token)
           onLogin()
+        } else {
+          // Treat successful response without error as logged in (cookie-based auth)
+          onLogin()
         }
       } else {
         const response = await api.login(email, password)
+        console.log('Login response:', response)
         if (response.error) {
           setError(response.error)
           return
         }
         if (response.token) {
           auth.setToken(response.token)
+          onLogin()
+        } else {
+          console.warn('No token in response:', response)
+          // Treat successful response without error as logged in (cookie-based auth)
           onLogin()
         }
       }
