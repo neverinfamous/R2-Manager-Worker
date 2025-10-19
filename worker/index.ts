@@ -578,14 +578,28 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         );
         const data = await response.json();
         
-        if (data.success) {
+        console.log('[Buckets] Delete response status:', response.status, 'data:', data);
+        
+        // Cloudflare R2 API returns success: true on successful deletion
+        if (response.ok && (data.success || response.status === 204)) {
           await env.DB
             .prepare('DELETE FROM bucket_owners WHERE bucket_name = ?')
             .bind(bucketName)
             .run();
+          
+          // Return success response
+          return new Response(JSON.stringify({ success: true }), {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
         }
         
+        // If we get here, something went wrong
         return new Response(JSON.stringify(data), {
+          status: response.status,
           headers: {
             'Content-Type': 'application/json',
             ...corsHeaders
