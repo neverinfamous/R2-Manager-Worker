@@ -388,7 +388,7 @@ export default function BucketManager() {
         </div>
       )}
 
-      {selectedBucket && <FileGrid bucketName={selectedBucket} onBack={() => setSelectedBucket(null)} />}
+      {selectedBucket && <FileGrid bucketName={selectedBucket} />}
     </div>
   )
 }
