@@ -1,8 +1,8 @@
 # Cloudflare R2 Bucket Manager
 
-Last Updated October 19, 2025 12:34 PM EST
+Last Updated October 19, 2025 2:14 PM EST
 
-R2 Manager is a Vite-powered React application backed by a Cloudflare Worker that proxies Cloudflare R2 and D1. The web client lets you authenticate, create, edit and delete buckets, upload objects with chunked retries, delee files, move files between buckets, and download multi-file archives, while the worker mediates all requests, issues signed URLs, and stores session metadata.
+The Cloudflare R2 Manager is a Vite-powered React application backed by a Cloudflare Worker that proxies Cloudflare R2 and D1. The web client lets you authenticate, create, edit and delete buckets, upload objects with chunked retries, delee files, move files between buckets, and download multi-file archives, while the worker mediates all requests, issues signed URLs, and stores session metadata.
 
 ---
 
@@ -18,8 +18,7 @@ R2 Manager is a Vite-powered React application backed by a Cloudflare Worker tha
 │   ├── index.ts         # Worker runtime (Durable objects/D1/R2 bindings)
 │   └── schema.sql       # D1 schema applied during deploy
 ├── public/              # Static assets served by Vite
-├── wrangler.toml        # Worker deployment configuration
-└── delete_r2_bucket_robust.ps1
+└──  wrangler.toml        # Worker deployment configuration
 ```
 
 ---
@@ -136,6 +135,6 @@ Adjust `wrangler.toml` with your account ID, routes, and binding names. During d
 ## Desired improvements
 
 1. **Maintenance:** Update dependencies
-2. **Maintenance:** Add feaure to copy files between buckets.
+2. **Maintenance:** Add feature to copy files between buckets.
 3. **Enhancement:** Switch login to the Cloudflare Worker SSO integration backed by Cloudflare Zero Trust and GitHub.
 4. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
