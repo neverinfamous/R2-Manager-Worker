@@ -181,11 +181,12 @@ npx wrangler dev  # Runs on http://localhost:8787
 
 ## Future Improvements
 
-1. **Maintenance:** Add feature to copy files between buckets
+1. **Enhancement:** Add feature to copy files between buckets
 2. **Enhancement:** Switch login to Cloudflare Worker SSO (Zero Trust + GitHub)
-3. **Monitoring:** Set up automated dependency updates (Dependabot/Renovate)
-4. **Enhancement:** Auto-detect user's ligh/dark settings and match it.
-5. **Long-term:** Add AWS S3 bucket support with bidirectional S3 - R2 migration
+3. **Enhancement:** Auto-detect and match user's light/dark settings.
+4. **Enhancement:** Configure GutHub repository for community standards.
+5. **Enhancement:** Set up automated dependency updates (Dependabot/Renovate)
+6. **Long-term:** Add AWS S3 bucket support with bidirectional S3 - R2 migration
 
 ---
 
