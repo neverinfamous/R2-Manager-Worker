@@ -1,6 +1,7 @@
 import { useCallback, useState, useEffect, useRef } from 'react'
 import { api } from './services/api'
 import { FileObject } from './types/auth'
+import { ContextMenu } from './components/ContextMenu'
 
 interface FileGridProps {
   bucketName: string
@@ -187,6 +188,11 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0, availa
     targetBucket: string | null
     isMoving: boolean
     progress: number
+  } | null>(null)
+  const [contextMenu, setContextMenu] = useState<{
+    x: number
+    y: number
+    file: FileObject
   } | null>(null)
 
   const gridRef = useRef<HTMLDivElement>(null)
@@ -444,6 +450,49 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0, availa
       setError('Failed to delete one or more files')
     }
   }, [bucketName, selectedFiles, onFilesChange])
+
+  const handleContextMenu = useCallback((e: React.MouseEvent, file: FileObject) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      file
+    })
+  }, [])
+
+  const handleOpenFile = useCallback(async (file: FileObject) => {
+    try {
+      await api.openFileNatively(bucketName, file.key, file)
+    } catch (err) {
+      console.error('Failed to open file:', err)
+      setError('Failed to open file')
+    }
+  }, [bucketName])
+
+  const handleDeleteSingleFile = useCallback(async (file: FileObject) => {
+    if (!window.confirm(`Delete ${file.key}?`)) return
+
+    setError('')
+    try {
+      await api.deleteFile(bucketName, file.key)
+      setShouldRefresh(true)
+      onFilesChange?.()
+    } catch (err) {
+      console.error('Failed to delete file:', err)
+      setError('Failed to delete file')
+    }
+  }, [bucketName, onFilesChange])
+
+  const handleDownloadSingleFile = useCallback(async (file: FileObject) => {
+    try {
+      await api.downloadFiles(bucketName, [file])
+    } catch (err) {
+      console.error('Failed to download file:', err)
+      setError('Failed to download file')
+    }
+  }, [bucketName])
 
   const downloadSelected = useCallback(async () => {
     if (selectedFiles.length === 0) return
@@ -704,6 +753,7 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0, availa
                 key={file.key}
                 className={`file-item ${isSelected ? 'selected' : ''}`}
                 onClick={(e) => handleSelection(file.key, e)}
+                onContextMenu={(e) => handleContextMenu(e, file)}
                 style={{ cursor: 'pointer' }}
               >
                 <div className="file-select">
@@ -822,6 +872,7 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0, availa
                   <tr 
                     key={file.key}
                     onClick={(e) => handleRowClick(file.key, e)}
+                    onContextMenu={(e) => handleContextMenu(e, file)}
                     className={selectedFiles.includes(file.key) ? 'selected' : ''}
                   >
                     <td onClick={(e) => e.stopPropagation()}>
@@ -919,6 +970,18 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0, availa
             </div>
           </div>
         </div>
+      )}
+
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          file={contextMenu.file}
+          onClose={() => setContextMenu(null)}
+          onOpen={handleOpenFile}
+          onDelete={handleDeleteSingleFile}
+          onDownload={handleDownloadSingleFile}
+        />
       )}
 
       {process.env.NODE_ENV === 'development' && (

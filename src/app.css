@@ -1562,3 +1562,100 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Context Menu Styles */
+.context-menu {
+  position: fixed;
+  background: #1F2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  z-index: 2000;
+  min-width: 220px;
+  overflow: hidden;
+  animation: contextMenuAppear 0.15s ease-out;
+}
+
+@keyframes contextMenuAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.context-menu-button,
+.context-menu-app {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  color: #D1D5DB;
+  text-decoration: none;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.context-menu-button:hover,
+.context-menu-app:hover {
+  background: #374151;
+  color: #FFFFFF;
+}
+
+.context-menu-button.delete {
+  color: #FCA5A5;
+}
+
+.context-menu-button.delete:hover {
+  background: rgba(220, 38, 38, 0.2);
+  color: #FCA5A5;
+}
+
+.context-menu-divider {
+  margin: 4px 0;
+  border: none;
+  border-top: 1px solid #374151;
+}
+
+.context-menu-label {
+  display: block;
+  padding: 12px 16px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #9CA3AF;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.context-menu-app {
+  padding-left: 32px;
+  font-size: 13px;
+  color: #60A5FA;
+}
+
+.context-menu-app:hover {
+  background: rgba(96, 165, 250, 0.1);
+  color: #93C5FD;
+}
+
+.context-menu-app::before {
+  content: '🔗';
+  position: absolute;
+  left: 16px;
+  opacity: 0.7;
+}
+
+/* Close context menu when clicking outside */
+@media (pointer: fine) {
+  .context-menu {
+    pointer-events: auto;
+  }
+}
