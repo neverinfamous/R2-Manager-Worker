@@ -694,7 +694,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
                 const copyResponse = await fetch(copyUrl, { method: 'PUT', headers: { ...cfHeaders, 'x-amz-copy-source': copySource } });
                 if (copyResponse.ok) totalCopied++;
                 else totalFailed++;
-              } catch (e) {
+              } catch {
                 totalFailed++;
               }
             }
@@ -719,7 +719,9 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
               try {
                 const deleteUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + oldBucketName + '/objects/' + encodeURIComponent(obj.key);
                 await fetch(deleteUrl, { method: 'DELETE', headers: cfHeaders });
-              } catch (e) {}
+              } catch {
+                // Silently continue on delete failure
+              }
             }
             deleteCursor = listData.cursor;
             if (objects.length > 0 && deleteCursor) await new Promise(resolve => setTimeout(resolve, 300));
