@@ -251,6 +251,10 @@ export default function BucketManager() {
     setError('')
     try {
       const response = await api.deleteBucket(name)
+      console.log('[DeleteBucket] Response:', response)
+      
+      // Check if deletion failed because bucket isn't empty
+      // Cloudflare returns 409 Conflict for non-empty buckets
       if (response.errors?.length > 0 && response.errors[0].code === 10008) {
         // Bucket isn't empty - show confirmation dialog
         try {
@@ -271,16 +275,25 @@ export default function BucketManager() {
         }
         return
       }
+      
+      // Check for error in response (for non-JSON responses or other errors)
+      if (response.error) {
+        setError(response.error)
+        return
+      }
+      
       if (!response.success) {
         setError('Failed to delete bucket.')
         return
       }
+      
       await loadBuckets()
       if (selectedBucket === name) {
         setSelectedBucket(null)
       }
     } catch (err) {
       setError('Failed to delete bucket.')
+      console.error('[DeleteBucket] Error:', err)
       if ((err as Error).message.includes('401')) {
         handleLogout()
       }

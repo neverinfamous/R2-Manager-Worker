@@ -433,7 +433,16 @@ class APIService {
       })
     )
     
-    const data = await response.json()
+    // Parse the response regardless of status code
+    let data
+    try {
+      data = await response.json()
+    } catch {
+      // If response can't be parsed as JSON, return a generic error
+      data = { error: `Failed to delete bucket (HTTP ${response.status})` }
+    }
+    
+    // Return the data along with any context needed
     return data
   }
 
