@@ -637,6 +637,37 @@ class APIService {
       throw new Error('Failed to download bucket')
     }
   }
+
+  async moveFile(sourceBucket: string, sourceKey: string, destBucket: string): Promise<void> {
+    const response = await fetch(
+      `${WORKER_API}/api/files/${sourceBucket}/${encodeURIComponent(sourceKey)}/move`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ destinationBucket: destBucket })
+      })
+    )
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: `Failed to move file: ${response.status}` }))
+      throw new Error(error.error || 'Failed to move file')
+    }
+  }
+
+  async moveFiles(
+    sourceBucket: string,
+    fileKeys: string[],
+    destBucket: string,
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<void> {
+    for (let i = 0; i < fileKeys.length; i++) {
+      await this.moveFile(sourceBucket, fileKeys[i], destBucket)
+      onProgress?.(i + 1, fileKeys.length)
+    }
+  }
 }
 
 export const api = new APIService();

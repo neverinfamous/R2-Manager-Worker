@@ -6,6 +6,7 @@ interface FileGridProps {
   bucketName: string
   onFilesChange?: () => void
   refreshTrigger?: number
+  availableBuckets?: string[]
 }
 
 interface DownloadProgress {
@@ -159,7 +160,7 @@ const VideoPlayer = ({ src, className, onClick }: VideoPlayerProps) => {
   )
 }
 
-export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0 }: FileGridProps) {
+export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0, availableBuckets }: FileGridProps) {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
   const [error, setError] = useState<string>('')
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null)
@@ -179,6 +180,14 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0 }: File
     direction: 'desc'
   })
   const [shouldRefresh, setShouldRefresh] = useState(false)
+  const [isMoving, setIsMoving] = useState(false)
+  const [moveDestination, setMoveDestination] = useState<string | null>(null)
+  const [moveState, setMoveState] = useState<{
+    isDialogOpen: boolean
+    targetBucket: string | null
+    isMoving: boolean
+    progress: number
+  } | null>(null)
 
   const gridRef = useRef<HTMLDivElement>(null)
   const lastSelectedRef = useRef<string | null>(null)
@@ -501,6 +510,43 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0 }: File
     }
   }, [bucketName])
 
+  const handleMoveFiles = useCallback(async () => {
+    if (selectedFiles.length === 0) return
+
+    if (!moveDestination) {
+      setError('Please select a destination bucket.')
+      return
+    }
+
+    if (moveDestination === bucketName) {
+      setError('Cannot move to the same bucket')
+      setMoveDestination(null)
+      return
+    }
+
+    setError('')
+    setIsMoving(true)
+
+    try {
+      await api.moveFiles(bucketName, selectedFiles, moveDestination, (completed, total) => {
+        setError(`Moving files: ${completed}/${total}...`)
+      })
+
+      setSelectedFiles([])
+      setShouldRefresh(true)
+      setMoveDestination(null)
+      setMoveState(null)
+      setError(`Successfully moved ${selectedFiles.length} file(s)`)
+      
+      setTimeout(() => setError(''), 3000)
+      onFilesChange?.()
+    } catch (err) {
+      console.error('Move failed:', err)
+      setError('Failed to move one or more files')
+      setIsMoving(false)
+    }
+  }, [bucketName, selectedFiles, moveDestination, onFilesChange])
+
   const selectedFileObjects = paginatedFiles.objects.filter(f => selectedFiles.includes(f.key))
   const totalSelectedSize = selectedFileObjects.reduce((sum, file) => sum + file.size, 0)
   const isOverSizeLimit = totalSelectedSize > 100 * 1024 * 1024 // 100MB in bytes
@@ -571,6 +617,12 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0 }: File
 
           {selectedFiles.length > 0 && (
             <>
+              <button 
+                onClick={handleMoveFiles}
+                className="action-button move-button"
+              >
+                Move Selected
+              </button>
               <button 
                 onClick={handleDelete}
                 className="action-button delete-button"
@@ -814,6 +866,58 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0 }: File
           </svg>
           <p className="empty-text">No files in this bucket</p>
           <p className="empty-subtext">Upload files to get started</p>
+        </div>
+      )}
+
+      {moveState?.isDialogOpen && (
+        <div className="modal-overlay" onClick={() => !moveState.isMoving && setMoveState(null)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2>Move {selectedFiles.length} File(s)</h2>
+            <p>From bucket: <strong>{bucketName}</strong></p>
+            
+            <div className="bucket-selector">
+              <label>Select destination bucket:</label>
+              <select
+                value={moveDestination || ''}
+                onChange={(e) => setMoveDestination(e.target.value || null)}
+                disabled={isMoving}
+              >
+                <option value="">-- Choose a bucket --</option>
+                {availableBuckets?.filter(b => b !== bucketName).map(bucket => (
+                  <option key={bucket} value={bucket}>{bucket}</option>
+                ))}
+              </select>
+            </div>
+
+            {isMoving && (
+              <div className="move-progress">
+                <p>{error}</p>
+                <div className="progress-bar">
+                  <div className="progress-fill"></div>
+                </div>
+              </div>
+            )}
+
+            <div className="modal-actions">
+              <button
+                className="modal-button cancel"
+                onClick={() => {
+                  setMoveState(null)
+                  setMoveDestination(null)
+                }}
+                disabled={isMoving}
+              >
+                Cancel
+              </button>
+              <button
+                className="modal-button move"
+                onClick={handleMoveFiles}
+                disabled={!moveDestination || isMoving}
+              >
+                {isMoving ? 'Moving...' : 'Move Files'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

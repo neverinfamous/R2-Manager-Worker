@@ -501,6 +501,7 @@ export default function BucketManager() {
           bucketName={selectedBucket}
           onFilesChange={loadBuckets}
           refreshTrigger={refreshTrigger}
+          availableBuckets={buckets.map(b => b.name)}
         />
       </div>
     )

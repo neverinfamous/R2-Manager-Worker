@@ -1121,6 +1121,123 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
       }
     }
 
+    // Move file
+    if (request.method === 'POST' && parts[4] === 'move') {
+      try {
+        const sourceKey = decodeURIComponent(parts[5]);
+        const body = await request.json();
+        const destBucket = body.destinationBucket;
+        
+        if (!destBucket) {
+          return new Response(JSON.stringify({ error: 'Missing destination bucket' }), {
+            status: 400,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+
+        // Verify destination bucket ownership
+        const destOwner = await env.DB
+          .prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?')
+          .bind(destBucket, userId)
+          .first();
+
+        if (!destOwner) {
+          return new Response(JSON.stringify({ error: 'Unauthorized access to destination bucket' }), {
+            status: 403,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+
+        if (bucketName === destBucket) {
+          return new Response(JSON.stringify({ error: 'Source and destination buckets must be different' }), {
+            status: 400,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+
+        console.log('[Files] Moving file:', sourceKey, 'from:', bucketName, 'to:', destBucket);
+
+        // 1. Fetch file from source bucket
+        const getUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + sourceKey;
+        const getResponse = await fetch(getUrl, { headers: cfHeaders });
+
+        if (!getResponse.ok) {
+          if (getResponse.status === 404) {
+            return new Response(JSON.stringify({ error: 'Source file not found' }), {
+              status: 404,
+              headers: {
+                'Content-Type': 'application/json',
+                ...corsHeaders
+              }
+            });
+          }
+          throw new Error('Failed to fetch file: ' + getResponse.status);
+        }
+
+        // 2. Preserve metadata from source
+        const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
+        const fileBuffer = await getResponse.arrayBuffer();
+
+        // 3. Upload to destination bucket
+        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + sourceKey;
+        const putResponse = await fetch(putUrl, {
+          method: 'PUT',
+          headers: {
+            ...cfHeaders,
+            'Content-Type': contentType
+          },
+          body: fileBuffer
+        });
+
+        if (!putResponse.ok) {
+          throw new Error('Failed to upload to destination: ' + putResponse.status);
+        }
+
+        // 4. Delete from source bucket
+        const deleteUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + sourceKey;
+        const deleteResponse = await fetch(deleteUrl, {
+          method: 'DELETE',
+          headers: cfHeaders
+        });
+
+        if (!deleteResponse.ok) {
+          console.warn('[Files] Warning: Failed to delete source file after successful copy:', deleteResponse.status);
+          // Don't fail the operation if delete fails - the copy was successful
+        }
+
+        console.log('[Files] Move completed successfully');
+
+        return new Response(JSON.stringify({ success: true }), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+
+      } catch (err) {
+        console.error('[Files] Move error:', err);
+        return new Response(JSON.stringify({
+          error: 'Move failed',
+          details: err instanceof Error ? err.message : 'Unknown error'
+        }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
     return new Response('Not Found', { 
       status: 404,
       headers: corsHeaders
