@@ -540,19 +540,35 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
                 try {
                   totalAttempted++;
                   const deleteUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(obj.key);
+                  console.log('[Buckets] Deleting object:', obj.key);
                   const deleteResponse = await fetch(deleteUrl, {
                     method: 'DELETE',
                     headers: cfHeaders
                   });
                   
+                  console.log('[Buckets] Delete response for', obj.key, ':', deleteResponse.status);
+                  
                   if (deleteResponse.ok) {
                     totalDeleted++;
                   } else {
                     console.warn('[Buckets] Failed to delete object:', obj.key, 'status:', deleteResponse.status);
+                    // Try to read error response
+                    try {
+                      const errorBody = await deleteResponse.text();
+                      console.warn('[Buckets] Error body:', errorBody);
+                    } catch (e) {
+                      // Ignore error reading body
+                    }
                   }
                 } catch (objErr) {
                   console.error('[Buckets] Failed to delete object:', obj.key, objErr);
                 }
+              }
+              
+              // Add small delay between batches to avoid rate limiting
+              if (cursor) {
+                console.log('[Buckets] Waiting before next batch...');
+                await new Promise(resolve => setTimeout(resolve, 500));
               }
               
               cursor = listData.result?.cursor;
