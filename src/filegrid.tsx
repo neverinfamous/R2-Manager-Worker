@@ -217,7 +217,7 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0 }: File
         case 'size':
           result = a.size - b.size
           break
-        case 'type':
+        case 'type': {
           const typeA = getFileExtension(a.key)
           const typeB = getFileExtension(b.key)
           result = typeA.localeCompare(typeB)
@@ -225,11 +225,13 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0 }: File
             result = a.key.localeCompare(b.key)
           }
           break
-        case 'uploaded':
+        }
+        case 'uploaded': {
           const dateA = new Date(a.uploaded).getTime()
           const dateB = new Date(b.uploaded).getTime()
           result = dateA - dateB
           break
+        }
       }
 
       return sortState.direction === 'asc' ? result : -result
@@ -249,9 +251,10 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0 }: File
       setPaginationState(prev => ({ ...prev, isLoading: true, hasError: false }))
       
       const response = await api.listFiles(
-        bucketName, 
-        reset ? undefined : paginatedFiles.cursor, 
-        ITEMS_PER_PAGE
+        bucketName,
+        reset ? undefined : paginatedFiles.cursor,
+        ITEMS_PER_PAGE,
+        { skipCache: reset }
       )
 
       if (!mountedRef.current) return
@@ -426,6 +429,7 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0 }: File
       setShouldRefresh(true)
       onFilesChange?.()
     } catch (err) {
+      console.error('Failed to delete selected files:', err)
       setError('Failed to delete one or more files')
     }
   }, [bucketName, selectedFiles, onFilesChange])

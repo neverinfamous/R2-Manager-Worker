@@ -25,6 +25,15 @@ interface FileListResponse {
   pagination: PaginationInfo
 }
 
+interface ListFilesOptions {
+  skipCache?: boolean
+}
+
+interface CloudflareBucket {
+  name: string
+  creation_date: string
+}
+
 interface DownloadOptions {
   asZip?: boolean
   onProgress?: ProgressCallback
@@ -366,7 +375,7 @@ class APIService {
     }
     
     const data = await response.json()
-    return data.result.buckets.map((bucket: any) => ({
+    return data.result.buckets.map((bucket: CloudflareBucket) => ({
       name: bucket.name,
       created: bucket.creation_date
     }))
@@ -403,13 +412,18 @@ class APIService {
   async listFiles(
     bucketName: string,
     cursor?: string,
-    limit: number = 20
+    limit: number = 20,
+    options: ListFilesOptions = {}
   ): Promise<FileListResponse> {
     const url = new URL(`${WORKER_API}/api/files/${bucketName}`)
     if (cursor) {
       url.searchParams.set('cursor', cursor)
     }
     url.searchParams.set('limit', limit.toString())
+
+    if (options.skipCache) {
+      url.searchParams.set('skipCache', 'true')
+    }
 
     const response = await fetch(url, {
       headers: this.getHeaders()
