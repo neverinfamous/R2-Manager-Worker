@@ -687,12 +687,14 @@ class APIService {
   async openFileNatively(bucketName: string, fileName: string, fileObject?: FileObject): Promise<void> {
     try {
       // Check if running in Electron environment
-      if (typeof window !== 'undefined' && window.electronAPI) {
+      const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI
+      console.log('[API] openFileNatively called for:', fileName, '| isElectron:', isElectron)
+      
+      if (isElectron) {
         // In Electron: Download file and open with native app
-        console.log('[API] openFileNatively called for:', fileName)
-        
         const fileUrl = this.getFileUrl(bucketName, fileName, fileObject)
         console.log('[API] File URL:', fileUrl)
+        console.log('[API] electronAPI available:', !!(window as any).electronAPI)
         
         // Trigger download
         const link = document.createElement('a')
@@ -702,13 +704,15 @@ class APIService {
         link.click()
         document.body.removeChild(link)
         
+        console.log('[API] Download triggered, waiting for Electron handlers...')
+        
         // Wait a bit for download to be intercepted and started, then call openFile IPC
         // The will-download handler will save and attempt to open
         // But we also explicitly call the IPC handler after a delay
         setTimeout(async () => {
           console.log('[API] Calling IPC openFile after download started:', fileName)
           try {
-            const result = await window.electronAPI!.openFile(fileName)
+            const result = await (window as any).electronAPI.openFile(fileName)
             console.log('[API] IPC openFile result:', result)
           } catch (error) {
             console.error('[API] IPC openFile error:', error)

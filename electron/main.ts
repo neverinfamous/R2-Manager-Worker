@@ -43,15 +43,20 @@ function setupDownloadHandler() {
 }
 
 function createWindow() {
+  const preloadPath = path.join(__dirname, 'preload.ts')
+  console.log('[Electron] Preload path:', preloadPath)
+  console.log('[Electron] Preload exists:', fs.existsSync(preloadPath))
+  
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
     minWidth: 800,
     minHeight: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.ts'),
+      preload: preloadPath,
       nodeIntegration: false,
-      contextIsolation: true
+      contextIsolation: true,
+      sandbox: false
     }
   })
 
@@ -106,6 +111,12 @@ ipcMain.handle('show-devtools', () => {
   if (mainWindow) {
     mainWindow.webContents.openDevTools()
   }
+})
+
+// IPC handler to check if we're in Electron
+ipcMain.handle('is-electron', async () => {
+  console.log('[IPC] is-electron called')
+  return { isElectron: true }
 })
 
 app.on('ready', () => {
