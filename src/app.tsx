@@ -38,6 +38,10 @@ export default function BucketManager() {
     fileCount: number | null
     isDeleting: boolean
   } | null>(null)
+  const [editingBucketName, setEditingBucketName] = useState<string | null>(null)
+  const [editInputValue, setEditInputValue] = useState('')
+  const [editError, setEditError] = useState('')
+  const [isRenamingBucket, setIsRenamingBucket] = useState(false)
 
   const acceptedFileTypes = useMemo(() => {
     const mimeTypes = api.getAllowedMimeTypes()
@@ -327,6 +331,46 @@ export default function BucketManager() {
     }
   }
 
+  const startEditingBucket = (bucketName: string) => {
+    setEditingBucketName(bucketName)
+    setEditInputValue(bucketName)
+    setEditError('')
+  }
+
+  const cancelEditingBucket = () => {
+    setEditingBucketName(null)
+    setEditInputValue('')
+    setEditError('')
+  }
+
+  const saveBucketRename = async () => {
+    if (!editingBucketName) return
+    const newName = editInputValue.trim()
+    setEditError('')
+    const validation = api.validateBucketName(newName)
+    if (!validation.valid) {
+      setEditError(validation.error || 'Invalid bucket name')
+      return
+    }
+    if (newName === editingBucketName) {
+      cancelEditingBucket()
+      return
+    }
+    try {
+      setIsRenamingBucket(true)
+      setEditError('Creating new bucket and copying files... This may take a minute.')
+      await api.renameBucket(editingBucketName, newName)
+      await loadBuckets()
+      cancelEditingBucket()
+      setIsRenamingBucket(false)
+    } catch (err) {
+      setIsRenamingBucket(false)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to rename bucket'
+      setEditError(errorMessage)
+      console.error('Rename error:', err)
+    }
+  }
+
   if (!isAuthenticated) {
     return <Auth onLogin={handleLogin} />
   }
@@ -512,28 +556,79 @@ export default function BucketManager() {
       {error && <div className="error-message">{error}</div>}
 
       <div className="bucket-grid">
-        {buckets.map(bucket => (
-          <div key={bucket.name} className="bucket-item">
-            <div 
-              className="bucket-content"
-              onClick={() => setSelectedBucket(bucket.name)}
-            >
-              <h3 className="bucket-name">{bucket.name}</h3>
-              <p className="bucket-date">
-                Created: {new Date(bucket.created).toLocaleDateString()}
-              </p>
-            </div>
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                deleteBucket(bucket.name)
-              }}
-              className="bucket-delete"
-            >
-              Delete Bucket
-            </button>
+        {buckets.map(bucket => {
+          const isEditing = editingBucketName === bucket.name
+          return (
+          <div key={bucket.name} className={`bucket-item ${isEditing ? 'editing' : ''}`}>
+            {isEditing ? (
+              <div className="bucket-edit-mode">
+                <input
+                  type="text"
+                  value={editInputValue}
+                  onChange={(e) => setEditInputValue(e.target.value)}
+                  className="bucket-edit-input"
+                  placeholder="New bucket name"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') saveBucketRename()
+                    if (e.key === 'Escape') cancelEditingBucket()
+                  }}
+                />
+                {editError && <p className="bucket-edit-error">{editError}</p>}
+                <div className="bucket-edit-actions">
+                  <button
+                    onClick={saveBucketRename}
+                    className="bucket-edit-save"
+                    disabled={isRenamingBucket}
+                  >
+                    {isRenamingBucket ? 'Renaming...' : 'Save'}
+                  </button>
+                  <button
+                    onClick={cancelEditingBucket}
+                    className="bucket-edit-cancel"
+                    disabled={isRenamingBucket}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div 
+                  className="bucket-content"
+                  onClick={() => setSelectedBucket(bucket.name)}
+                >
+                  <h3 className="bucket-name">{bucket.name}</h3>
+                  <p className="bucket-date">
+                    Created: {new Date(bucket.created).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="bucket-actions">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      startEditingBucket(bucket.name)
+                    }}
+                    className="bucket-edit"
+                    title="Edit bucket name"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      deleteBucket(bucket.name)
+                    }}
+                    className="bucket-delete"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-        ))}
+        )
+        })}
         
         {buckets.length === 0 && !error && (
           <div className="empty-state">

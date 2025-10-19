@@ -446,6 +446,45 @@ class APIService {
     return data
   }
 
+  validateBucketName(name: string): ValidationResult {
+    if (!name || name.trim().length === 0) {
+      return { valid: false, error: 'Bucket name cannot be empty' }
+    }
+    const trimmedName = name.trim()
+    if (trimmedName.length < 3) {
+      return { valid: false, error: 'Bucket name must be at least 3 characters' }
+    }
+    if (trimmedName.length > 63) {
+      return { valid: false, error: 'Bucket name cannot exceed 63 characters' }
+    }
+    const validPattern = /^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$/
+    if (!validPattern.test(trimmedName)) {
+      return { valid: false, error: 'Bucket name can only contain lowercase letters, numbers, and hyphens' }
+    }
+    return { valid: true }
+  }
+
+  async renameBucket(oldName: string, newName: string) {
+    const validation = this.validateBucketName(newName)
+    if (!validation.valid) {
+      throw new Error(validation.error)
+    }
+    const url = `${WORKER_API}/api/buckets/${encodeURIComponent(oldName)}`
+    const response = await fetch(
+      url,
+      this.getFetchOptions({
+        method: 'PATCH',
+        headers: { ...this.getHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newName: newName.trim() })
+      })
+    )
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
+      throw new Error(error.error || 'Failed to rename bucket')
+    }
+    return response.json()
+  }
+
   async listFiles(
     bucketName: string,
     cursor?: string,
