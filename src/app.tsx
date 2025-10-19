@@ -5,7 +5,7 @@ import { FileGrid } from './filegrid'
 import { api } from './services/api'
 import { auth } from './services/auth'
 import { Auth } from './components/auth'
-import type { FileRejection } from 'react-dropzone'
+import type { FileRejection, FileWithPath } from 'react-dropzone'
 
 const formatFileSize = (bytes: number): string => {
   const units = ['B', 'KB', 'MB', 'GB']
@@ -36,6 +36,11 @@ interface UploadProgress {
   retryAttempt?: number
 }
 
+interface RejectedFile {
+  file: FileWithPath
+  error: string
+}
+
 export default function BucketManager() {
   const [isAuthenticated, setIsAuthenticated] = useState(auth.isAuthenticated())
   const [buckets, setBuckets] = useState<BucketObject[]>([])
@@ -45,7 +50,7 @@ export default function BucketManager() {
   const [error, setError] = useState<string>('')
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([])
-  const [rejectedFiles, setRejectedFiles] = useState<{ file: File; error: string }[]>([])
+  const [rejectedFiles, setRejectedFiles] = useState<RejectedFile[]>([])
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [deleteConfirmState, setDeleteConfirmState] = useState<{
     bucketName: string | null
