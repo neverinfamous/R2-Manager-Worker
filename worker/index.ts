@@ -1122,9 +1122,9 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     }
 
     // Move file
-    if (request.method === 'POST' && parts[4] === 'move') {
+    if (request.method === 'POST' && parts[parts.length - 1] === 'move') {
       try {
-        const sourceKey = decodeURIComponent(parts[5]);
+        const sourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
         const body = await request.json();
         const destBucket = body.destinationBucket;
         
