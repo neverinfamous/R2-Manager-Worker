@@ -684,207 +684,49 @@ class APIService {
     }
   }
 
-  getRecommendedApps(fileName: string): { name: string; url: string | null }[] {
-    const ext = fileName.split('.').pop()?.toLowerCase() || ''
-    
-    const appMap: Record<string, { name: string; url: string | null }[]> = {
-      // Code files
-      'js': [
-        { name: 'VS Code', url: 'https://code.visualstudio.com' },
-        { name: 'WebStorm', url: 'https://www.jetbrains.com/webstorm' },
-        { name: 'Sublime Text', url: 'https://www.sublimetext.com' }
-      ],
-      'ts': [
-        { name: 'VS Code', url: 'https://code.visualstudio.com' },
-        { name: 'WebStorm', url: 'https://www.jetbrains.com/webstorm' },
-        { name: 'Sublime Text', url: 'https://www.sublimetext.com' }
-      ],
-      'tsx': [
-        { name: 'VS Code', url: 'https://code.visualstudio.com' },
-        { name: 'WebStorm', url: 'https://www.jetbrains.com/webstorm' }
-      ],
-      'jsx': [
-        { name: 'VS Code', url: 'https://code.visualstudio.com' },
-        { name: 'WebStorm', url: 'https://www.jetbrains.com/webstorm' }
-      ],
-      'py': [
-        { name: 'PyCharm', url: 'https://www.jetbrains.com/pycharm' },
-        { name: 'VS Code', url: 'https://code.visualstudio.com' },
-        { name: 'Thonny', url: 'https://thonny.org' }
-      ],
-      'java': [
-        { name: 'IntelliJ IDEA', url: 'https://www.jetbrains.com/idea' },
-        { name: 'Eclipse', url: 'https://www.eclipse.org' }
-      ],
-      'cpp': [
-        { name: 'Visual Studio', url: 'https://visualstudio.microsoft.com' },
-        { name: 'CLion', url: 'https://www.jetbrains.com/clion' }
-      ],
-      'go': [
-        { name: 'VS Code', url: 'https://code.visualstudio.com' },
-        { name: 'GoLand', url: 'https://www.jetbrains.com/go' }
-      ],
-      'rb': [
-        { name: 'RubyMine', url: 'https://www.jetbrains.com/ruby' },
-        { name: 'VS Code', url: 'https://code.visualstudio.com' }
-      ],
-      'php': [
-        { name: 'PhpStorm', url: 'https://www.jetbrains.com/phpstorm' },
-        { name: 'VS Code', url: 'https://code.visualstudio.com' }
-      ],
-      'html': [
-        { name: 'VS Code', url: 'https://code.visualstudio.com' },
-        { name: 'WebStorm', url: 'https://www.jetbrains.com/webstorm' }
-      ],
-      'css': [
-        { name: 'VS Code', url: 'https://code.visualstudio.com' },
-        { name: 'WebStorm', url: 'https://www.jetbrains.com/webstorm' }
-      ],
-      'json': [
-        { name: 'VS Code', url: 'https://code.visualstudio.com' },
-        { name: 'Sublime Text', url: 'https://www.sublimetext.com' }
-      ],
-      'xml': [
-        { name: 'VS Code', url: 'https://code.visualstudio.com' },
-        { name: 'Sublime Text', url: 'https://www.sublimetext.com' }
-      ],
-      'yml': [
-        { name: 'VS Code', url: 'https://code.visualstudio.com' }
-      ],
-      'yaml': [
-        { name: 'VS Code', url: 'https://code.visualstudio.com' }
-      ],
-      'md': [
-        { name: 'VS Code', url: 'https://code.visualstudio.com' },
-        { name: 'Typora', url: 'https://typora.io' },
-        { name: 'Obsidian', url: 'https://obsidian.md' }
-      ],
-      'txt': [
-        { name: 'VS Code', url: 'https://code.visualstudio.com' },
-        { name: 'Notepad++', url: 'https://notepad-plus-plus.org' }
-      ],
-      'sql': [
-        { name: 'VS Code', url: 'https://code.visualstudio.com' },
-        { name: 'DataGrip', url: 'https://www.jetbrains.com/datagrip' }
-      ],
-      'csv': [
-        { name: 'Microsoft Excel', url: 'https://www.microsoft.com/office' },
-        { name: 'LibreOffice Calc', url: 'https://www.libreoffice.org' }
-      ],
-
-      // Image files
-      'png': [
-        { name: 'Photoshop', url: 'https://www.adobe.com/products/photoshop' },
-        { name: 'GIMP', url: 'https://www.gimp.org' },
-        { name: 'Paint.NET', url: 'https://www.getpaint.net' }
-      ],
-      'jpg': [
-        { name: 'Photoshop', url: 'https://www.adobe.com/products/photoshop' },
-        { name: 'GIMP', url: 'https://www.gimp.org' },
-        { name: 'Lightroom', url: 'https://www.adobe.com/products/lightroom' }
-      ],
-      'jpeg': [
-        { name: 'Photoshop', url: 'https://www.adobe.com/products/photoshop' },
-        { name: 'GIMP', url: 'https://www.gimp.org' }
-      ],
-      'gif': [
-        { name: 'GIMP', url: 'https://www.gimp.org' },
-        { name: 'Photoshop', url: 'https://www.adobe.com/products/photoshop' }
-      ],
-      'webp': [
-        { name: 'Photoshop', url: 'https://www.adobe.com/products/photoshop' },
-        { name: 'GIMP', url: 'https://www.gimp.org' }
-      ],
-      'svg': [
-        { name: 'Illustrator', url: 'https://www.adobe.com/products/illustrator' },
-        { name: 'Inkscape', url: 'https://inkscape.org' }
-      ],
-
-      // Video files
-      'mp4': [
-        { name: 'VLC Media Player', url: 'https://www.videolan.org' },
-        { name: 'Adobe Premiere Pro', url: 'https://www.adobe.com/products/premiere' },
-        { name: 'DaVinci Resolve', url: 'https://www.blackmagicdesign.com/products/davinciresolve' }
-      ],
-      'mov': [
-        { name: 'QuickTime', url: null },
-        { name: 'VLC Media Player', url: 'https://www.videolan.org' }
-      ],
-      'avi': [
-        { name: 'VLC Media Player', url: 'https://www.videolan.org' },
-        { name: 'Windows Media Player', url: null }
-      ],
-      'mkv': [
-        { name: 'VLC Media Player', url: 'https://www.videolan.org' },
-        { name: 'MPC-HC', url: 'https://mpc-hc.org' }
-      ],
-
-      // Document files
-      'pdf': [
-        { name: 'Adobe Acrobat Reader', url: 'https://get.adobe.com/reader' },
-        { name: 'Preview', url: null },
-        { name: 'Firefox', url: 'https://www.mozilla.org/firefox' }
-      ],
-      'docx': [
-        { name: 'Microsoft Word', url: 'https://www.microsoft.com/office' },
-        { name: 'Google Docs', url: 'https://docs.google.com' },
-        { name: 'LibreOffice Writer', url: 'https://www.libreoffice.org' }
-      ],
-      'doc': [
-        { name: 'Microsoft Word', url: 'https://www.microsoft.com/office' },
-        { name: 'Google Docs', url: 'https://docs.google.com' }
-      ],
-      'xlsx': [
-        { name: 'Microsoft Excel', url: 'https://www.microsoft.com/office' },
-        { name: 'Google Sheets', url: 'https://sheets.google.com' }
-      ],
-      'xls': [
-        { name: 'Microsoft Excel', url: 'https://www.microsoft.com/office' }
-      ],
-      'pptx': [
-        { name: 'Microsoft PowerPoint', url: 'https://www.microsoft.com/office' },
-        { name: 'Google Slides', url: 'https://slides.google.com' }
-      ],
-      'ppt': [
-        { name: 'Microsoft PowerPoint', url: 'https://www.microsoft.com/office' }
-      ],
-
-      // Archive files
-      'zip': [
-        { name: '7-Zip', url: 'https://www.7-zip.org' },
-        { name: 'WinRAR', url: 'https://www.rarlab.com' },
-        { name: 'The Unarchiver', url: 'https://theunarchiver.com' }
-      ],
-      'rar': [
-        { name: 'WinRAR', url: 'https://www.rarlab.com' },
-        { name: '7-Zip', url: 'https://www.7-zip.org' }
-      ],
-      '7z': [
-        { name: '7-Zip', url: 'https://www.7-zip.org' },
-        { name: 'Bandizip', url: 'https://www.bandisoft.com/bandizip' }
-      ],
-      'tar': [
-        { name: '7-Zip', url: 'https://www.7-zip.org' },
-        { name: 'WinRAR', url: 'https://www.rarlab.com' }
-      ]
-    }
-    
-    return appMap[ext] || []
-  }
-
   async openFileNatively(bucketName: string, fileName: string, fileObject?: FileObject): Promise<void> {
     try {
-      const fileUrl = this.getFileUrl(bucketName, fileName, fileObject)
-      
-      // Create a temporary link to trigger download with auto-open
-      const link = document.createElement('a')
-      link.href = fileUrl
-      link.download = fileName
-      link.target = '_blank'
-      
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      // Check if running in Electron environment
+      if (typeof window !== 'undefined' && window.electronAPI) {
+        // In Electron: Download and open with native app via IPC
+        const fileUrl = this.getFileUrl(bucketName, fileName, fileObject)
+        
+        // Download the file
+        const response = await fetch(fileUrl)
+        const blob = await response.blob()
+        
+        // Create object URL and trigger download
+        const objectUrl = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = objectUrl
+        link.download = fileName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(objectUrl)
+        
+        // After download, trigger native open via IPC
+        // The file will be in the Downloads folder
+        setTimeout(async () => {
+          try {
+            const result = await window.electronAPI!.openFile(fileName)
+            if (!result.success) {
+              console.error('Failed to open file:', result.error)
+            }
+          } catch (error) {
+            console.error('Error invoking electronAPI:', error)
+          }
+        }, 1000)
+      } else {
+        // Fallback for web (just download)
+        const fileUrl = this.getFileUrl(bucketName, fileName, fileObject)
+        const link = document.createElement('a')
+        link.href = fileUrl
+        link.download = fileName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+      }
     } catch (error) {
       console.error('Failed to open file natively:', error)
       throw new Error('Failed to open file')

@@ -1,10 +1,4 @@
 import { FileObject } from '../types/auth'
-import { api } from '../services/api'
-
-export interface RecommendedApp {
-  name: string
-  url: string | null
-}
 
 interface ContextMenuProps {
   x: number
@@ -25,7 +19,6 @@ export function ContextMenu({
   onDelete,
   onDownload
 }: ContextMenuProps) {
-  const suggestedApps = api.getRecommendedApps(file.key)
   
   const handleOpenClick = () => {
     onOpen(file)
@@ -56,9 +49,9 @@ export function ContextMenu({
       <button 
         className="context-menu-button"
         onClick={handleOpenClick}
-        title="Download and open with default application"
+        title="Open with default application"
       >
-        ↗️ Open with Default App
+        ↗️ Open
       </button>
       
       <button 
@@ -74,25 +67,6 @@ export function ContextMenu({
       >
         🗑️ Delete
       </button>
-      
-      {suggestedApps.length > 0 && (
-        <>
-          <hr className="context-menu-divider" />
-          <span className="context-menu-label">Suggested Apps:</span>
-          {suggestedApps.map((app) => (
-            <a
-              key={app.name}
-              href={app.url || '#'}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="context-menu-app"
-              onClick={app.url ? undefined : (e) => e.preventDefault()}
-            >
-              {app.name}
-            </a>
-          ))}
-        </>
-      )}
     </div>
   )
 }
