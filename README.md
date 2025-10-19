@@ -184,7 +184,8 @@ npx wrangler dev  # Runs on http://localhost:8787
 1. **Maintenance:** Add feature to copy files between buckets
 2. **Enhancement:** Switch login to Cloudflare Worker SSO (Zero Trust + GitHub)
 3. **Monitoring:** Set up automated dependency updates (Dependabot/Renovate)
-4. **Long-term:** Add AWS S3 bucket support with bidirectional S3↔R2 migration
+4. **Enhancement:** Auto-detect user's ligh/dark settings and match it.
+5. **Long-term:** Add AWS S3 bucket support with bidirectional S3 - R2 migration
 
 ---
 
