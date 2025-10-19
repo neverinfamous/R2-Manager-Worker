@@ -186,6 +186,8 @@ npx wrangler dev  # Runs on http://localhost:8787
 3. **Enhancement:** Auto-detect and match user's light/dark system settings.
 4. **Enhancement:** Configure GitHub repository for community standards.
 5. **Enhancement:** Set up automated dependency updates (Dependabot/Renovate)
+6. **Enhancement:** Set up Cloudflare web assets/api protections for apis.
+
 6. **Long-term:** Add AWS S3 bucket support with bidirectional S3 - R2 migration
 
 ---
