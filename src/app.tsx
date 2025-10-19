@@ -390,6 +390,14 @@ export default function BucketManager() {
           onClick={handleHardRefresh}
         />
         <div className="header-content">
+          {selectedBucket && (
+            <button 
+              onClick={() => setSelectedBucket(null)}
+              className="back-button"
+            >
+              ← Back to Buckets
+            </button>
+          )}
           <h1 className="app-title" onClick={handleHardRefresh}>
             R2 Bucket Manager
           </h1>
@@ -554,13 +562,7 @@ export default function BucketManager() {
         <div className="upload-overlay">
           <div className="upload-panel">
             <div className="upload-header">
-              <button onClick={() => setSelectedBucket(null)} className="back-button">
-                ← Back to Buckets
-              </button>
               <h2>{selectedBucket}</h2>
-              <button onClick={handleLogout} className="logout-button">
-                Logout
-              </button>
             </div>
 
             {error && <div className="error-message">{error}</div>}
