@@ -363,10 +363,21 @@ class APIService {
     )
     
     const data = await response.json()
-    // Token is now in HTTP-only cookie, but keep this for backward compatibility
+    console.log('Login response status:', response.status, 'ok:', response.ok)
+    
+    // Handle new response format: {success: true}
+    if (data.success === true && response.ok) {
+      console.log('Login successful (new format), checking cookies...')
+      // Return empty object to trigger cookie-based auth
+      // The credentials: 'include' should have set the cookie
+      return {}
+    }
+    
+    // Handle old response format: {token, error}
     if (data.token) {
       this.setToken(data.token)
     }
+    
     return data
   }
 

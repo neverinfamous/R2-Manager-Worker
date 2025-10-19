@@ -282,7 +282,7 @@ async function handleAuthRequest(request: Request, env: Env): Promise<Response> 
       .run();
     
     // Return success but DON'T include token in response (it's in the cookie)
-    const response = new Response(JSON.stringify({ success: true }), {
+    const response = new Response(JSON.stringify({ success: true, token: token }), {
       headers: { 'Content-Type': 'application/json' }
     });
     
