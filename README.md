@@ -135,8 +135,7 @@ Adjust `wrangler.toml` with your account ID, routes, and binding names. During d
 
 ## Desired improvements
 
-1. **Enhancement:** Change "Successfully moved 1 file(s)" popup notice's background color from red to green.
-2. **Maintenance:** Update dependencies
-3. **Enhancement:** Switch login to the Cloudflare Worker SSO integration backed by Cloudflare Zero Trust and GitHub.
-4. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
-5. **Long-term:** Add GUI for D1 database interactions similar to DB Browser for SQLite.
+1. **Maintenance:** Update dependencies
+2. **Enhancement:** Switch login to the Cloudflare Worker SSO integration backed by Cloudflare Zero Trust and GitHub.
+3. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
+4. **Long-term:** Add GUI for D1 database interactions similar to DB Browser for SQLite.
