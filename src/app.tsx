@@ -88,9 +88,11 @@ export default function BucketManager() {
       setBuckets(bucketList || [])
     } catch (err) {
       console.error('Error loading buckets:', err)
+      console.error('Full error object:', err)
       setError('Failed to load buckets')
       setBuckets([])
       if ((err as Error).message.includes('401')) {
+        console.log('Got 401, logging out...')
         handleLogout()
       }
     }
@@ -234,6 +236,7 @@ export default function BucketManager() {
 
   useEffect(() => {
     if (isAuthenticated) {
+      console.log('useEffect: isAuthenticated changed to true, loading buckets...')
       loadBuckets()
     }
   }, [isAuthenticated, loadBuckets])

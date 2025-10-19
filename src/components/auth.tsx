@@ -43,6 +43,7 @@ export function Auth({ onLogin }: AuthProps) {
       } else {
         const response = await api.login(email, password)
         console.log('Login response:', response)
+        console.log('Current cookies:', document.cookie)
         if (response.error) {
           setError(response.error)
           return
