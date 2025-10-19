@@ -1,4 +1,5 @@
 import { useCallback, useState, useEffect, useRef } from 'react'
+import type { JSX } from 'react'
 import { api } from './services/api'
 import { FileObject } from './types/auth'
 
@@ -196,8 +197,8 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0, availa
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadingTriggerRef = useRef<HTMLDivElement>(null)
   const sortedFilesRef = useRef<FileObject[]>([])
-  const debounceTimerRef = useRef<number>()
-  const refreshTimeoutRef = useRef<number>()
+  const debounceTimerRef = useRef<number | undefined>(undefined)
+  const refreshTimeoutRef = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     mountedRef.current = true
