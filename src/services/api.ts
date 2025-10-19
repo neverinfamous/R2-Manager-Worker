@@ -420,8 +420,13 @@ class APIService {
     return data.result
   }
 
-  async deleteBucket(name: string) {
-    const response = await fetch(`${WORKER_API}/api/buckets/${name}`, 
+  async deleteBucket(name: string, options: { force?: boolean } = {}) {
+    const url = new URL(`${WORKER_API}/api/buckets/${name}`)
+    if (options.force) {
+      url.searchParams.set('force', 'true')
+    }
+    
+    const response = await fetch(url.toString(), 
       this.getFetchOptions({
         method: 'DELETE',
         headers: this.getHeaders()
