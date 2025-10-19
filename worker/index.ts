@@ -509,6 +509,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           try {
             let cursor: string | undefined;
             let totalDeleted = 0;
+            let totalAttempted = 0;
             
             do {
               const listUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects');
@@ -517,6 +518,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
               }
               listUrl.searchParams.set('limit', '100');
               
+              console.log('[Buckets] Listing objects with cursor:', cursor || 'none');
               const listResponse = await fetch(listUrl.toString(), {
                 headers: cfHeaders
               });
@@ -527,6 +529,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
               
               const listData = await listResponse.json();
               const objects = listData.result?.objects || [];
+              console.log('[Buckets] Found', objects.length, 'objects to delete');
               
               if (objects.length === 0) {
                 break;
@@ -535,6 +538,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
               // Delete each object
               for (const obj of objects) {
                 try {
+                  totalAttempted++;
                   const deleteUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(obj.key);
                   const deleteResponse = await fetch(deleteUrl, {
                     method: 'DELETE',
@@ -543,17 +547,19 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
                   
                   if (deleteResponse.ok) {
                     totalDeleted++;
+                  } else {
+                    console.warn('[Buckets] Failed to delete object:', obj.key, 'status:', deleteResponse.status);
                   }
                 } catch (objErr) {
                   console.error('[Buckets] Failed to delete object:', obj.key, objErr);
-                  // Continue with next object
                 }
               }
               
               cursor = listData.result?.cursor;
+              console.log('[Buckets] Cursor after batch:', cursor);
             } while (cursor);
             
-            console.log('[Buckets] Deleted', totalDeleted, 'objects from bucket');
+            console.log('[Buckets] Object deletion complete - deleted', totalDeleted, 'of', totalAttempted, 'attempted');
           } catch (deleteErr) {
             console.error('[Buckets] Error deleting objects:', deleteErr);
             return new Response(JSON.stringify({ 
