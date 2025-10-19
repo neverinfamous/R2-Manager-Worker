@@ -25,18 +25,6 @@ The Cloudflare R2 Manager is a Vite-powered React application backed by a Cloudf
 ✅ All dependencies: Latest versions
 ```
 
-### Recent Changes (Oct 19, 2025)
-All three dependency upgrade phases completed successfully:
-1. **Phase 1:** ESLint hooks (5.2→7.0) + Node types (22.18→24.8)
-2. **Phase 2a:** React 18→19 upgrade (2 code lines changed)
-3. **Phase 2b:** Vite 5→7 upgrade (0 code lines changed)
-
-**Result:** Zero breaking changes, 43% build speedup, production-ready.
-
-### Code Changes Made
-- `src/filegrid.tsx`: Added JSX type import for React 19, fixed useRef calls
-- All other files: No changes needed
-
 ---
 
 ## Repository layout
@@ -52,8 +40,7 @@ All three dependency upgrade phases completed successfully:
 │   └── schema.sql       # D1 schema applied during deploy
 ├── public/              # Static assets served by Vite
 ├── package.json         # Dependencies (React 19, Vite 7, all latest)
-├── wrangler.toml        # Worker deployment configuration
-└── DEPENDENCY-UPDATE-REPORT.md  # Detailed upgrade documentation
+└── wrangler.toml        # Worker deployment configuration
 ```
 
 ---
@@ -196,8 +183,8 @@ npx wrangler dev  # Runs on http://localhost:8787
 
 1. **Maintenance:** Add feature to copy files between buckets
 2. **Enhancement:** Switch login to Cloudflare Worker SSO (Zero Trust + GitHub)
-3. **Long-term:** Add AWS S3 bucket support with bidirectional S3↔R2 migration
-4. **Monitoring:** Set up automated dependency updates (Dependabot/Renovate)
+3. **Monitoring:** Set up automated dependency updates (Dependabot/Renovate)
+4. **Long-term:** Add AWS S3 bucket support with bidirectional S3↔R2 migration
 
 ---
 
@@ -205,8 +192,6 @@ npx wrangler dev  # Runs on http://localhost:8787
 
 **Last Upgrade:** October 19, 2025 (All three phases completed)  
 **Current Status:** All dependencies at latest stable versions, 0 vulnerabilities
-
-See `DEPENDENCY-UPDATE-REPORT.md` for complete upgrade history, breaking changes assessment, and performance metrics.
 
 ### Key Dependencies
 - **react** 19.2.0, **react-dom** 19.2.0 - Latest UI framework
@@ -223,12 +208,6 @@ See `DEPENDENCY-UPDATE-REPORT.md` for complete upgrade history, breaking changes
 
 ## Production Deployment
 
-✅ **Status: PRODUCTION READY**
-
-All code is tested, type-safe, and optimized. Deploy with confidence:
-```bash
-npm run build        # Creates optimized bundle
-npx wrangler deploy  # Deploys to Cloudflare
-```
+✅ **Status: STABLE**
 
 **Performance:** 2.45s build time | 292.80KB bundle | 88.37KB gzip
