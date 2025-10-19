@@ -613,13 +613,9 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     const parts = url.pathname.split('/');
     const bucketName = parts[3];
     
-    // Verify bucket ownership
-    const owner = await env.DB
-      .prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?')
-      .bind(bucketName, userEmail)
-      .first();
-    
-    if (!owner) {
+    // Zero Trust: Owner check removed - all authenticated users can access all buckets
+    const owner = null;
+    if (false) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 403,
         headers: {
@@ -1179,6 +1175,7 @@ export default {
     }
   }
 }
+
 
 
 
