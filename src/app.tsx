@@ -254,8 +254,8 @@ export default function BucketManager() {
       console.log('[DeleteBucket] Response:', response)
       
       // Check if deletion failed because bucket isn't empty
-      // Cloudflare returns 409 Conflict for non-empty buckets
-      if (response.errors?.length > 0 && response.errors[0].code === 10008) {
+      // Cloudflare returns 409 Conflict (success: false, errors array) for non-empty buckets
+      if (response.success === false && response.errors?.length > 0) {
         // Bucket isn't empty - show confirmation dialog
         try {
           const files = await api.listFiles(name, undefined, 1000)
