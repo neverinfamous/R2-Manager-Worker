@@ -485,7 +485,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
       // Delete bucket
       if (request.method === 'DELETE' && url.pathname.startsWith('/api/buckets/')) {
         const bucketName = decodeURIComponent(url.pathname.slice(12)).replace(/^\/+/, '');
-        console.log('[Buckets] Deleting bucket:', bucketName);
+        const force = url.searchParams.get('force') === 'true';
+        console.log('[Buckets] Deleting bucket:', bucketName, 'force:', force);
         
         const owner = await env.DB
           .prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?')
@@ -500,6 +501,72 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
               ...corsHeaders
             }
           });
+        }
+        
+        // If force delete, first delete all objects in the bucket
+        if (force) {
+          console.log('[Buckets] Force delete enabled - deleting all objects first');
+          try {
+            let cursor: string | undefined;
+            let totalDeleted = 0;
+            
+            do {
+              const listUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects');
+              if (cursor) {
+                listUrl.searchParams.set('cursor', cursor);
+              }
+              listUrl.searchParams.set('limit', '100');
+              
+              const listResponse = await fetch(listUrl.toString(), {
+                headers: cfHeaders
+              });
+              
+              if (!listResponse.ok) {
+                throw new Error('Failed to list objects: ' + listResponse.status);
+              }
+              
+              const listData = await listResponse.json();
+              const objects = listData.result?.objects || [];
+              
+              if (objects.length === 0) {
+                break;
+              }
+              
+              // Delete each object
+              for (const obj of objects) {
+                try {
+                  const deleteUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(obj.key);
+                  const deleteResponse = await fetch(deleteUrl, {
+                    method: 'DELETE',
+                    headers: cfHeaders
+                  });
+                  
+                  if (deleteResponse.ok) {
+                    totalDeleted++;
+                  }
+                } catch (objErr) {
+                  console.error('[Buckets] Failed to delete object:', obj.key, objErr);
+                  // Continue with next object
+                }
+              }
+              
+              cursor = listData.result?.cursor;
+            } while (cursor);
+            
+            console.log('[Buckets] Deleted', totalDeleted, 'objects from bucket');
+          } catch (deleteErr) {
+            console.error('[Buckets] Error deleting objects:', deleteErr);
+            return new Response(JSON.stringify({ 
+              error: 'Failed to delete objects from bucket',
+              details: deleteErr instanceof Error ? deleteErr.message : 'Unknown error'
+            }), {
+              status: 500,
+              headers: {
+                'Content-Type': 'application/json',
+                ...corsHeaders
+              }
+            });
+          }
         }
         
         const response = await fetch(

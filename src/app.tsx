@@ -33,6 +33,11 @@ export default function BucketManager() {
   const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([])
   const [rejectedFiles, setRejectedFiles] = useState<{ file: File; error: string }[]>([])
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [deleteConfirmState, setDeleteConfirmState] = useState<{
+    bucketName: string | null
+    fileCount: number | null
+    isDeleting: boolean
+  } | null>(null)
 
   const acceptedFileTypes = useMemo(() => {
     const mimeTypes = api.getAllowedMimeTypes()
@@ -247,7 +252,23 @@ export default function BucketManager() {
     try {
       const response = await api.deleteBucket(name)
       if (response.errors?.length > 0 && response.errors[0].code === 10008) {
-        setError('Bucket isn\'t empty.')
+        // Bucket isn't empty - show confirmation dialog
+        try {
+          const files = await api.listFiles(name, undefined, 1000)
+          const fileCount = files.objects.length
+          setDeleteConfirmState({
+            bucketName: name,
+            fileCount,
+            isDeleting: false
+          })
+        } catch {
+          // If we can't get file count, show a generic count
+          setDeleteConfirmState({
+            bucketName: name,
+            fileCount: null,
+            isDeleting: false
+          })
+        }
         return
       }
       if (!response.success) {
@@ -263,6 +284,33 @@ export default function BucketManager() {
       if ((err as Error).message.includes('401')) {
         handleLogout()
       }
+    }
+  }
+
+  const confirmForceBucketDelete = async () => {
+    if (!deleteConfirmState?.bucketName) return
+
+    const bucketName = deleteConfirmState.bucketName
+    setError('')
+    setDeleteConfirmState(prev => prev ? { ...prev, isDeleting: true } : null)
+
+    try {
+      const response = await api.deleteBucket(bucketName, { force: true })
+
+      if (response.success) {
+        await loadBuckets()
+        if (selectedBucket === bucketName) {
+          setSelectedBucket(null)
+        }
+        setDeleteConfirmState(null)
+      } else {
+        setError(response.error || 'Failed to delete bucket')
+        setDeleteConfirmState(prev => prev ? { ...prev, isDeleting: false } : null)
+      }
+    } catch (err) {
+      setError('Failed to delete bucket')
+      console.error('Force delete error:', err)
+      setDeleteConfirmState(prev => prev ? { ...prev, isDeleting: false } : null)
     }
   }
 
@@ -481,6 +529,37 @@ export default function BucketManager() {
           </div>
         )}
       </div>
+
+      {deleteConfirmState && (
+        <div className="modal-overlay" onClick={() => !deleteConfirmState.isDeleting && setDeleteConfirmState(null)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2>Delete Non-Empty Bucket?</h2>
+            <p>
+              Bucket <strong>{deleteConfirmState.bucketName}</strong> contains{' '}
+              <strong>{deleteConfirmState.fileCount !== null ? deleteConfirmState.fileCount : 'multiple'}</strong> file(s).
+            </p>
+            <p style={{ color: '#ff6b6b', fontWeight: 'bold' }}>
+              ⚠️ This will permanently delete all files and the bucket. This cannot be undone.
+            </p>
+            <div className="modal-actions">
+              <button
+                className="modal-button cancel"
+                onClick={() => setDeleteConfirmState(null)}
+                disabled={deleteConfirmState.isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                className="modal-button delete"
+                onClick={confirmForceBucketDelete}
+                disabled={deleteConfirmState.isDeleting}
+              >
+                {deleteConfirmState.isDeleting ? 'Deleting...' : 'Delete Bucket & All Files'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
