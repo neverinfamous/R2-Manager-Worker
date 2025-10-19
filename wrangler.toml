@@ -9,7 +9,6 @@ placement = { mode = "off" }
 [assets]
 directory = "dist"
 binding = "ASSETS"
-single_page_app = true
 
 [[r2_buckets]]
 binding = "R2"
