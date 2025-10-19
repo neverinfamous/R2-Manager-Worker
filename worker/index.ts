@@ -518,9 +518,10 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const body = await request.json();
         const newBucketName = body.newName?.trim();
         console.log('[Buckets] Rename request:', oldBucketName, '->', newBucketName);
-        const owner = await env.DB.prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?').bind(oldBucketName, userEmail).first();
-        if (!owner) {
-          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        // Zero Trust: Removed ownership check
+        const owner = null; // All authenticated users can manage all buckets
+        if (false) { // Zero Trust: Owner check removed
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
         try {
           console.log('[Buckets] Creating new bucket:', newBucketName);
@@ -673,9 +674,10 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const body = await request.json();
         const newName = body.newName;
         console.log('[Buckets] Rename request:', bucketName, '->', newName);
-        const owner = await env.DB.prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?').bind(bucketName, userEmail).first();
-        if (!owner) {
-          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        // Zero Trust: Removed ownership check
+        const owner = null; // All authenticated users can manage all buckets
+        if (false) { // Zero Trust: Owner check removed
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
         return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
@@ -791,9 +793,10 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const body = await request.json();
         const newName = body.newName;
         console.log('[Buckets] Rename request:', bucketName, '->', newName);
-        const owner = await env.DB.prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?').bind(bucketName, userEmail).first();
-        if (!owner) {
-          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        // Zero Trust: Removed ownership check
+        const owner = null; // All authenticated users can manage all buckets
+        if (false) { // Zero Trust: Owner check removed
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
         return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
@@ -905,9 +908,10 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const body = await request.json();
         const newName = body.newName;
         console.log('[Buckets] Rename request:', bucketName, '->', newName);
-        const owner = await env.DB.prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?').bind(bucketName, userEmail).first();
-        if (!owner) {
-          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        // Zero Trust: Removed ownership check
+        const owner = null; // All authenticated users can manage all buckets
+        if (false) { // Zero Trust: Owner check removed
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
         return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
@@ -957,9 +961,10 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const body = await request.json();
         const newName = body.newName;
         console.log('[Buckets] Rename request:', bucketName, '->', newName);
-        const owner = await env.DB.prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?').bind(bucketName, userEmail).first();
-        if (!owner) {
-          return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        // Zero Trust: Removed ownership check
+        const owner = null; // All authenticated users can manage all buckets
+        if (false) { // Zero Trust: Owner check removed
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
         return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
@@ -1174,6 +1179,8 @@ export default {
     }
   }
 }
+
+
 
 
 
