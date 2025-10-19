@@ -1,6 +1,6 @@
 # R2 Manager & Worker
 
-Last Updated October 18, 2025 11:50 PM EST
+Last Updated October 19, 2025 12:29 AM EST
 
 R2 Manager is a Vite-powered React application backed by a Cloudflare Worker that proxies Cloudflare R2 and D1. The web client lets you authenticate, create and delete buckets, upload objects with chunked retries, and download multi-file archives, while the worker mediates all requests, issues signed URLs, and stores session metadata.
 
