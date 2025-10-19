@@ -510,13 +510,14 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
             let cursor: string | undefined;
             let totalDeleted = 0;
             let totalAttempted = 0;
+            let hasMoreObjects = true;
             
-            do {
+            while (hasMoreObjects) {
               const listUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects');
               if (cursor) {
                 listUrl.searchParams.set('cursor', cursor);
               }
-              listUrl.searchParams.set('limit', '100');
+              listUrl.searchParams.set('per_page', '100');
               
               console.log('[Buckets] Listing objects with cursor:', cursor || 'none');
               const listResponse = await fetch(listUrl.toString(), {
@@ -528,11 +529,11 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
               }
               
               const listData = await listResponse.json();
-              const objects = listData.result?.objects || [];
+              const objects = Array.isArray(listData.result) ? listData.result : [];
               console.log('[Buckets] Found', objects.length, 'objects to delete');
               
               if (objects.length === 0) {
-                break;
+                hasMoreObjects = false;
               }
               
               // Delete each object
@@ -552,28 +553,23 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
                     totalDeleted++;
                   } else {
                     console.warn('[Buckets] Failed to delete object:', obj.key, 'status:', deleteResponse.status);
-                    // Try to read error response
-                    try {
-                      const errorBody = await deleteResponse.text();
-                      console.warn('[Buckets] Error body:', errorBody);
-                    } catch (e) {
-                      // Ignore error reading body
-                    }
                   }
                 } catch (objErr) {
                   console.error('[Buckets] Failed to delete object:', obj.key, objErr);
                 }
               }
               
+              // Get cursor for next page
+              cursor = listData.cursor;
+              
               // Add small delay between batches to avoid rate limiting
-              if (cursor) {
+              if (objects.length > 0 && cursor) {
                 console.log('[Buckets] Waiting before next batch...');
                 await new Promise(resolve => setTimeout(resolve, 500));
+              } else {
+                hasMoreObjects = false;
               }
-              
-              cursor = listData.result?.cursor;
-              console.log('[Buckets] Cursor after batch:', cursor);
-            } while (cursor);
+            }
             
             console.log('[Buckets] Object deletion complete - deleted', totalDeleted, 'of', totalAttempted, 'attempted');
           } catch (deleteErr) {
