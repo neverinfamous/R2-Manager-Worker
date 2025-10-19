@@ -996,22 +996,6 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           });
         }
 
-        // Verify destination bucket ownership
-        const destOwner = await env.DB
-          .prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?')
-          .bind(destBucket, userEmail)
-          .first();
-
-        if (!destOwner) {
-          return new Response(JSON.stringify({ error: 'Unauthorized access to destination bucket' }), {
-            status: 403,
-            headers: {
-              'Content-Type': 'application/json',
-              ...corsHeaders
-            }
-          });
-        }
-
         if (bucketName === destBucket) {
           return new Response(JSON.stringify({ error: 'Source and destination buckets must be different' }), {
             status: 400,
