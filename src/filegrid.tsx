@@ -197,8 +197,10 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0 }: File
       if (debounceTimerRef.current) {
         window.clearTimeout(debounceTimerRef.current)
       }
-      if (refreshTimeoutRef.current) {
-        window.clearTimeout(refreshTimeoutRef.current)
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      const refreshTimeout = refreshTimeoutRef.current
+      if (refreshTimeout) {
+        window.clearTimeout(refreshTimeout)
       }
     }
   }, [])
@@ -357,7 +359,7 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0 }: File
         objects: sortedObjects
       }))
     }
-  }, [sortState, sortFiles, shouldRefresh])
+  }, [sortState, sortFiles, shouldRefresh, paginatedFiles.objects])
 
   useEffect(() => {
     setSelectedFiles([])
