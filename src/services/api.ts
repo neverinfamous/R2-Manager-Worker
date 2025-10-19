@@ -3,11 +3,6 @@ const WORKER_API = 'https://r2.adamic.tech'
 type ProgressCallback = (progress: number) => void
 type RetryCallback = (attempt: number, chunk: number, error: Error) => void
 
-interface AuthResponse {
-  token?: string
-  error?: string
-}
-
 interface FileObject {
   key: string
   size: number
@@ -185,14 +180,6 @@ class APIService {
     return `${size.toFixed(1)} ${units[unitIndex]}`
   }
 
-  setToken(token: string) {
-    this.token = token
-  }
-
-  clearToken() {
-    this.token = null
-  }
-
   private getHeaders(): HeadersInit {
     // Cookies are now handled automatically via credentials: 'include'
     // Keep token handling for backward compatibility during migration
@@ -334,65 +321,6 @@ class APIService {
         `Upload failed: ${failedChunks.length} chunks remaining. ` +
         `Last error: ${error instanceof Error ? error.message : 'Unknown error'}`
       )
-    }
-  }
-
-  async register(email: string, password: string, code: string): Promise<AuthResponse> {
-    const response = await fetch(`${WORKER_API}/api/auth/register`, 
-      this.getFetchOptions({
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password, code })
-      })
-    )
-    
-    return response.json()
-  }
-
-  async login(email: string, password: string): Promise<AuthResponse> {
-    const response = await fetch(`${WORKER_API}/api/auth/login`, 
-      this.getFetchOptions({
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
-      })
-    )
-    
-    const data = await response.json()
-    
-    // Handle new response format: {success: true, token?: string}
-    if (data.success === true && response.ok) {
-      // Store token if provided (fallback for CORS-blocked cookies)
-      if (data.token) {
-        this.setToken(data.token)
-        return { token: data.token }
-      }
-      // Return empty object to trigger cookie-based auth if no token
-      return {}
-    }
-    
-    // Handle old response format: {token, error}
-    if (data.token) {
-      this.setToken(data.token)
-    }
-    
-    return data
-  }
-
-  async logout() {
-    try {
-      await fetch(`${WORKER_API}/api/auth/logout`, 
-        this.getFetchOptions({
-          method: 'POST',
-          headers: this.getHeaders()
-        })
-      )
-    } finally {
-      this.clearToken()
     }
   }
 

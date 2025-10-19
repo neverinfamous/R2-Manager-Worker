@@ -1,7 +1,13 @@
 import { useCallback, useState, useEffect, useRef } from 'react'
 import type { JSX } from 'react'
 import { api } from './services/api'
-import { FileObject } from './types/auth'
+
+interface FileObject {
+  key: string
+  size: number
+  uploaded: string
+  url: string
+}
 
 interface FileGridProps {
   bucketName: string

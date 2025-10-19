@@ -1,11 +1,7 @@
-import { useCallback, useEffect, useState, useMemo } from 'react'
-import { useDropzone } from 'react-dropzone'
+import { useCallback, useEffect, useState } from 'react'
 import './app.css'
-import { FileGrid } from './filegrid'
 import { api } from './services/api'
 import { auth } from './services/auth'
-import { Auth } from './components/auth'
-import type { FileRejection, FileWithPath } from 'react-dropzone'
 
 const formatFileSize = (bytes: number): string => {
   const units = ['B', 'KB', 'MB', 'GB']
@@ -26,32 +22,12 @@ interface BucketObject {
   size?: number
 }
 
-interface UploadProgress {
-  fileName: string
-  progress: number
-  status: 'uploading' | 'retrying' | 'completed' | 'error'
-  error?: string
-  currentChunk?: number
-  totalChunks?: number
-  retryAttempt?: number
-}
-
-interface RejectedFile {
-  file: FileWithPath
-  error: string
-}
-
 export default function BucketManager() {
-  const [isAuthenticated, setIsAuthenticated] = useState(auth.isAuthenticated())
   const [buckets, setBuckets] = useState<BucketObject[]>([])
   const [selectedBucket, setSelectedBucket] = useState<string | null>(null)
   const [newBucketName, setNewBucketName] = useState('')
   const [isCreatingBucket, setIsCreatingBucket] = useState(false)
   const [error, setError] = useState<string>('')
-  const [isUploading, setIsUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([])
-  const [rejectedFiles, setRejectedFiles] = useState<RejectedFile[]>([])
-  const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [deleteConfirmState, setDeleteConfirmState] = useState<{
     bucketName: string | null
     fileCount: number | null
@@ -62,26 +38,13 @@ export default function BucketManager() {
   const [editError, setEditError] = useState('')
   const [isRenamingBucket, setIsRenamingBucket] = useState(false)
 
-  const acceptedFileTypes = useMemo(() => {
-    const mimeTypes = api.getAllowedMimeTypes()
-    return mimeTypes.reduce((acc, type) => {
-      acc[type] = []
-      return acc
-    }, {} as Record<string, string[]>)
-  }, [])
-
   const handleHardRefresh = () => {
     window.location.reload()
   }
 
-  const handleLogin = useCallback(() => {
-    setIsAuthenticated(true)
-  }, [])
-
   const handleLogout = useCallback(async () => {
-    await api.logout()
-    auth.clearToken()
-    setIsAuthenticated(false)
+    await auth.logout()
+    // No-op, Cloudflare Access handles auth
     setSelectedBucket(null)
     setBuckets([])
   }, [])
@@ -101,147 +64,15 @@ export default function BucketManager() {
     }
   }, [handleLogout])
 
-  const clearRejectedFiles = useCallback(() => {
-    setRejectedFiles([])
-  }, [])
 
-  const updateProgress = useCallback((
-    fileName: string,
-    progress: number,
-    status: UploadProgress['status'] = 'uploading',
-    currentChunk?: number,
-    totalChunks?: number,
-    retryAttempt?: number,
-    error?: string
-  ) => {
-    setUploadProgress(prev => {
-      const existing = prev.find(p => p.fileName === fileName)
-      if (existing) {
-        return prev.map(p => 
-          p.fileName === fileName
-            ? { 
-                ...p,
-                progress,
-                status,
-                currentChunk,
-                totalChunks,
-                retryAttempt,
-                error
-              }
-            : p
-        )
-      }
-      return [...prev, {
-        fileName,
-        progress,
-        status,
-        currentChunk,
-        totalChunks,
-        retryAttempt,
-        error
-      }]
-    })
-  }, [])
 
-  const onDrop = useCallback(async (
-    acceptedFiles: File[],
-    fileRejections: FileRejection[]
-  ) => {
-    if (!selectedBucket || isUploading) return
 
-    setRejectedFiles([])
-    
-    const newRejectedFiles = fileRejections.map(rejection => ({
-      file: rejection.file,
-      error: rejection.errors[0]?.message || 'File type not allowed'
-    }))
-    
-    if (newRejectedFiles.length > 0) {
-      setRejectedFiles(newRejectedFiles)
-    }
-
-    if (acceptedFiles.length > 0) {
-      setIsUploading(true)
-      setError('')
-      setUploadProgress([])
-      
-      try {
-        for (const file of acceptedFiles) {
-          try {
-            updateProgress(file.name, 0)
-            
-            await api.uploadFile(
-              selectedBucket,
-              file,
-              {
-                onProgress: (progress) => {
-                  updateProgress(file.name, progress)
-                },
-                onRetry: (attempt, chunk, error) => {
-                  updateProgress(
-                    file.name,
-                    0,
-                    'retrying',
-                    chunk,
-                    Math.ceil(file.size / (10 * 1024 * 1024)),
-                    attempt,
-                    error.message
-                  )
-                },
-                maxRetries: 3,
-                retryDelay: 1000
-              }
-            )
-            
-            updateProgress(file.name, 100, 'completed')
-            setRefreshTrigger(prev => prev + 1)
-          } catch (err) {
-            console.error(`Failed to upload ${file.name}:`, err)
-            updateProgress(
-              file.name,
-              0,
-              'error',
-              undefined,
-              undefined,
-              undefined,
-              err instanceof Error ? err.message : 'Unknown error'
-            )
-            
-            if ((err as Error).message.includes('401')) {
-              handleLogout()
-              return
-            }
-          }
-        }
-      } catch (err) {
-        console.error('Upload error:', err)
-        setError('Failed to upload one or more files')
-      } finally {
-        setIsUploading(false)
-      }
-    }
-  }, [selectedBucket, isUploading, updateProgress, handleLogout])
-
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    onDrop,
-    accept: acceptedFileTypes,
-    validator: (file) => {
-      const validation = api.validateFile(file)
-      if (!validation.valid) {
-        return {
-          code: "file-invalid-type",
-          message: validation.error || 'Invalid file'
-        }
-      }
-      return null
-    }
-  })
+  // File uploads currently disabled - Cloudflare Access simplified UI
+  // Keeping structure for future file upload support
 
   useEffect(() => {
-    if (isAuthenticated) {
-      loadBuckets()
-    }
-  }, [isAuthenticated, loadBuckets])
+    loadBuckets()
+  }, [loadBuckets])
 
   const createBucket = async () => {
     if (!newBucketName.trim()) return
@@ -388,142 +219,6 @@ export default function BucketManager() {
       setEditError(errorMessage)
       console.error('Rename error:', err)
     }
-  }
-
-  if (!isAuthenticated) {
-    return <Auth onLogin={handleLogin} />
-  }
-
-  if (selectedBucket) {
-    return (
-      <div className="container">
-        <header className="app-header">
-          <img 
-            src="/logo.png" 
-            alt="R2 Manager" 
-            className="app-logo" 
-            onClick={handleHardRefresh}
-          />
-          <div className="header-content">
-            <h1 className="app-title" onClick={handleHardRefresh}>
-              R2 Bucket Manager
-            </h1>
-            <div className="breadcrumb">
-              <button 
-                onClick={() => setSelectedBucket(null)}
-                className="back-button"
-              >
-                ← Back to Buckets
-              </button>
-              <button 
-                onClick={handleLogout}
-                className="logout-button"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </header>
-        <span className="current-bucket-title">{selectedBucket}</span>
-
-        {error && <div className="error-message">{error}</div>}
-
-        {rejectedFiles.length > 0 && (
-          <div className="rejected-files">
-            <div className="rejected-files-header">
-              <h3>Invalid Files</h3>
-              <button onClick={clearRejectedFiles} className="clear-rejected">
-                Clear
-              </button>
-            </div>
-            {rejectedFiles.map(({ file, error }) => (
-              <div key={file.name} className="rejected-file">
-                <span className="rejected-filename">{file.name}</span>
-                <span className="rejected-error">{error}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div 
-          {...getRootProps()} 
-          className={`dropzone ${isDragActive ? 'active' : ''} ${isUploading ? 'uploading' : ''}`}
-        >
-          <input 
-            {...getInputProps()} 
-            id="fileUpload"
-            name="fileUpload"
-          />
-          <div className="dropzone-content">
-            {isUploading ? (
-              <div className="upload-progress-container">
-                {uploadProgress.map(({
-                  fileName,
-                  progress,
-                  status,
-                  currentChunk,
-                  totalChunks,
-                  retryAttempt,
-                  error: uploadError
-                }) => (
-                  <div
-                    key={fileName}
-                    className={`upload-progress-item upload-${status}`}
-                  >
-                    <div className="upload-progress-info">
-                      <span className="upload-filename">{fileName}</span>
-                      <span className="upload-percentage">
-                        {status === 'retrying' ? (
-                          `Retrying chunk ${currentChunk}/${totalChunks} (Attempt ${retryAttempt})`
-                        ) : status === 'error' ? (
-                          'Failed'
-                        ) : (
-                          `${Math.round(progress)}%`
-                        )}
-                      </span>
-                    </div>
-                    <div className="upload-progress-bar">
-                      <div 
-                        className="upload-progress-fill"
-                        style={{ width: `${progress}%` }}
-                      />
-                    </div>
-                    {uploadError && (
-                      <div className="upload-error-message">
-                        {uploadError}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : isDragActive ? (
-              <p>Drop the files here...</p>
-            ) : (
-              <div className="upload-instructions">
-                <p>Drag & drop files here, or click to select files</p>
-                <div className="file-type-limits">
-                  <p>Accepted file types and size limits:</p>
-                  <ul>
-                    <li>Images (JPG, PNG, GIF, WebP) - up to 15MB</li>
-                    <li>Videos (MP4) - up to 100MB</li>
-                    <li>Documents (PDF, Office files, text) - up to 50MB</li>
-                    <li>Archives (ZIP, RAR, 7Z) - up to 100MB</li>
-                    <li>Code files (JS, TS, Python, etc.) - up to 10MB</li>
-                  </ul>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <FileGrid 
-          bucketName={selectedBucket}
-          onFilesChange={loadBuckets}
-          refreshTrigger={refreshTrigger}
-          availableBuckets={buckets.map(b => b.name)}
-        />
-      </div>
-    )
   }
 
   return (

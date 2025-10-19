@@ -130,44 +130,45 @@ export interface Env {
   ACCOUNT_ID: string
   REGISTRATION_CODE: string
   URL_SIGNING_KEY: string
+  TEAM_DOMAIN: string
+  POLICY_AUD: string
 }
 
 const CF_API = 'https://api.cloudflare.com/client/v4';
 
-// Auth helper functions
-async function generateToken(): Promise<string> {
-  const buffer = new Uint8Array(32);
-  crypto.getRandomValues(buffer);
-  return Array.from(buffer)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
-
-async function validateAuth(request: Request, env: Env): Promise<string | null> {
-  // Try to get token from cookie first (primary method)
-  let token: string | null = null;
+// JWT validation for Cloudflare Access
+async function validateAccessJWT(request: Request, env: Env): Promise<string | null> {
+  const token = request.headers.get('cf-access-jwt-assertion');
   
-  const cookieHeader = request.headers.get('Cookie');
-  if (cookieHeader) {
-    const match = cookieHeader.match(/auth_token=([^;]*)/);
-    token = match ? match[1] : null;
-  }
-  
-  // Fall back to Authorization header (for backward compatibility during migration)
   if (!token) {
-    const authHeader = request.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) return null;
-    token = authHeader.slice(7);
+    console.log('[Auth] No JWT token found in request headers');
+    return null;
   }
-  
-  if (!token) return null;
-  
-  const user = await env.DB
-    .prepare('SELECT user_id FROM sessions WHERE token = ? AND expires > ?')
-    .bind(token, new Date().toISOString())
-    .first<{ user_id: string }>();
-  
-  return user?.user_id || null;
+
+  try {
+    // Import jose dynamically for JWT verification
+    const { jwtVerify, createRemoteJWKSet } = await import('jose');
+    
+    const JWKS = createRemoteJWKSet(new URL(`${env.TEAM_DOMAIN}/cdn-cgi/access/certs`));
+    
+    const { payload } = await jwtVerify(token, JWKS, {
+      issuer: env.TEAM_DOMAIN,
+      audience: env.POLICY_AUD,
+    });
+
+    // Extract email from JWT payload
+    const email = payload.email as string;
+    if (!email) {
+      console.log('[Auth] JWT payload missing email');
+      return null;
+    }
+    
+    console.log('[Auth] JWT validated for user:', email);
+    return email;
+  } catch (error) {
+    console.error('[Auth] JWT validation failed:', error instanceof Error ? error.message : String(error));
+    return null;
+  }
 }
 
 // URL signing functions
@@ -196,150 +197,6 @@ function validateSignature(request: Request, env: Env): boolean {
   return signature === expectedSignature;
 }
 
-async function handleAuthRequest(request: Request, env: Env): Promise<Response> {
-  const url = new URL(request.url);
-  
-  if (url.pathname === '/api/auth/register') {
-    if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
-    
-    const { email, password, code } = await request.json();
-    
-    if (code !== env.REGISTRATION_CODE) {
-      return new Response(JSON.stringify({ error: 'Invalid registration code' }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    
-    const existing = await env.DB
-      .prepare('SELECT email FROM users WHERE email = ?')
-      .bind(email)
-      .first();
-    
-    if (existing) {
-      return new Response(JSON.stringify({ error: 'Email already registered' }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    
-    const salt = crypto.getRandomValues(new Uint8Array(16));
-    const hashBuffer = await crypto.subtle.digest(
-      'SHA-256',
-      new TextEncoder().encode(password + salt.toString())
-    );
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    
-    const userId = crypto.randomUUID();
-    await env.DB
-      .prepare('INSERT INTO users (user_id, email, password_hash, salt) VALUES (?, ?, ?, ?)')
-      .bind(userId, email, hashHex, salt.toString())
-      .run();
-    
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
-  
-  if (url.pathname === '/api/auth/login') {
-    if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
-    
-    const { email, password } = await request.json();
-    
-    const user = await env.DB
-      .prepare('SELECT user_id, password_hash, salt FROM users WHERE email = ?')
-      .bind(email)
-      .first<{ user_id: string, password_hash: string, salt: string }>();
-    
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    
-    const hashBuffer = await crypto.subtle.digest(
-      'SHA-256',
-      new TextEncoder().encode(password + user.salt)
-    );
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    
-    if (hashHex !== user.password_hash) {
-      return new Response(JSON.stringify({ error: 'Invalid credentials' }), {
-        status: 401,
-        headers: { 'Content-Type': 'application/json' }
-      });
-    }
-    
-    const token = await generateToken();
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-    
-    await env.DB
-      .prepare('INSERT INTO sessions (token, user_id, expires) VALUES (?, ?, ?)')
-      .bind(token, user.user_id, expires.toISOString())
-      .run();
-    
-    // Return success but DON'T include token in response (it's in the cookie)
-    const response = new Response(JSON.stringify({ success: true, token: token }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-    
-    // Set HTTP-only cookie with security flags
-    const isProduction = !request.url.includes('localhost');
-    const cookieFlags = [
-      `auth_token=${token}`,
-      'HttpOnly', // Prevents JavaScript access
-      'Path=/', // Available to entire app
-      'SameSite=Strict', // CSRF protection
-      `Max-Age=${24 * 60 * 60}` // 24 hours
-    ];
-    
-    if (isProduction) {
-      cookieFlags.push('Secure'); // HTTPS only in production
-    }
-    
-    response.headers.set('Set-Cookie', cookieFlags.join('; '));
-    return response;
-  }
-  
-  if (url.pathname === '/api/auth/logout') {
-    if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 });
-    
-    // Try to get token from cookie first, fall back to Authorization header
-    const cookieHeader = request.headers.get('Cookie');
-    let token: string | null = null;
-    
-    if (cookieHeader) {
-      const match = cookieHeader.match(/auth_token=([^;]*)/);
-      token = match ? match[1] : null;
-    }
-    
-    if (!token) {
-      const authHeader = request.headers.get('Authorization');
-      if (!authHeader?.startsWith('Bearer ')) {
-        return new Response('Unauthorized', { status: 401 });
-      }
-      token = authHeader.slice(7);
-    }
-    
-    await env.DB
-      .prepare('DELETE FROM sessions WHERE token = ?')
-      .bind(token)
-      .run();
-    
-    // Clear the cookie by setting Max-Age=0
-    const response = new Response(JSON.stringify({ success: true }), {
-      headers: { 'Content-Type': 'application/json' }
-    });
-    response.headers.set('Set-Cookie', 'auth_token=; HttpOnly; Path=/; Max-Age=0; SameSite=Strict');
-    return response;
-  }
-
-  return new Response('Not found', { status: 404 });
-}
-
 async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   console.log('[Request]', request.method, url.pathname);
@@ -353,15 +210,6 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   if (request.method === 'OPTIONS') {
     console.log('[CORS] Handling preflight request');
     return new Response(null, { headers: corsHeaders });
-  }
-
-  // Handle auth endpoints
-  if (url.pathname.startsWith('/api/auth/')) {
-    const response = await handleAuthRequest(request, env);
-    return new Response(response.body, {
-      status: response.status,
-      headers: { ...response.headers, ...corsHeaders }
-    });
   }
 
   // Check for signed file downloads
@@ -408,8 +256,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   }
 
   // Require auth for all other API endpoints
-  const userId = await validateAuth(request, env);
-  if (!userId && !url.pathname.startsWith('/api/auth/')) {
+  const userEmail = await validateAccessJWT(request, env);
+  if (!userEmail) {
     return new Response('Unauthorized', { 
       status: 401,
       headers: corsHeaders
@@ -436,8 +284,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const data = await response.json();
         
         const userBuckets = await env.DB
-          .prepare('SELECT bucket_name FROM bucket_owners WHERE user_id = ?')
-          .bind(userId)
+          .prepare('SELECT bucket_name FROM bucket_owners WHERE user_email = ?')
+          .bind(userEmail)
           .all<{ bucket_name: string }>();
         
         const filteredBuckets = data.result.buckets.filter((bucket: { name: string }) =>
@@ -481,8 +329,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         
         if (data.success) {
           await env.DB
-            .prepare('INSERT INTO bucket_owners (bucket_name, user_id) VALUES (?, ?)')
-            .bind(body.name, userId)
+            .prepare('INSERT INTO bucket_owners (bucket_name, user_email) VALUES (?, ?)')
+            .bind(body.name, userEmail)
             .run();
         }
         
@@ -501,8 +349,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         console.log('[Buckets] Deleting bucket:', bucketName, 'force:', force);
         
         const owner = await env.DB
-          .prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?')
-          .bind(bucketName, userId)
+          .prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?')
+          .bind(bucketName, userEmail)
           .first();
 
         if (!owner) {
@@ -672,7 +520,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const body = await request.json();
         const newBucketName = body.newName?.trim();
         console.log('[Buckets] Rename request:', oldBucketName, '->', newBucketName);
-        const owner = await env.DB.prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?').bind(oldBucketName, userId).first();
+        const owner = await env.DB.prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?').bind(oldBucketName, userEmail).first();
         if (!owner) {
           return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
@@ -768,8 +616,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     
     // Verify bucket ownership
     const owner = await env.DB
-      .prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?')
-      .bind(bucketName, userId)
+      .prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?')
+      .bind(bucketName, userEmail)
       .first();
     
     if (!owner) {
@@ -827,7 +675,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const body = await request.json();
         const newName = body.newName;
         console.log('[Buckets] Rename request:', bucketName, '->', newName);
-        const owner = await env.DB.prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?').bind(bucketName, userId).first();
+        const owner = await env.DB.prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?').bind(bucketName, userEmail).first();
         if (!owner) {
           return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
@@ -945,7 +793,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const body = await request.json();
         const newName = body.newName;
         console.log('[Buckets] Rename request:', bucketName, '->', newName);
-        const owner = await env.DB.prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?').bind(bucketName, userId).first();
+        const owner = await env.DB.prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?').bind(bucketName, userEmail).first();
         if (!owner) {
           return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
@@ -1059,7 +907,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const body = await request.json();
         const newName = body.newName;
         console.log('[Buckets] Rename request:', bucketName, '->', newName);
-        const owner = await env.DB.prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?').bind(bucketName, userId).first();
+        const owner = await env.DB.prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?').bind(bucketName, userEmail).first();
         if (!owner) {
           return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
@@ -1111,7 +959,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const body = await request.json();
         const newName = body.newName;
         console.log('[Buckets] Rename request:', bucketName, '->', newName);
-        const owner = await env.DB.prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?').bind(bucketName, userId).first();
+        const owner = await env.DB.prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?').bind(bucketName, userEmail).first();
         if (!owner) {
           return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
@@ -1151,8 +999,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
 
         // Verify destination bucket ownership
         const destOwner = await env.DB
-          .prepare('SELECT user_id FROM bucket_owners WHERE bucket_name = ? AND user_id = ?')
-          .bind(destBucket, userId)
+          .prepare('SELECT user_email FROM bucket_owners WHERE bucket_name = ? AND user_email = ?')
+          .bind(destBucket, userEmail)
           .first();
 
         if (!destOwner) {
