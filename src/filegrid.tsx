@@ -462,14 +462,7 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0, availa
     })
   }, [])
 
-  const handleOpenFile = useCallback(async (file: FileObject) => {
-    try {
-      await api.openFileNatively(bucketName, file.key, file)
-    } catch (err) {
-      console.error('Failed to open file:', err)
-      setError('Failed to open file')
-    }
-  }, [bucketName])
+
 
   const handleDeleteSingleFile = useCallback(async (file: FileObject) => {
     if (!window.confirm(`Delete ${file.key}?`)) return
@@ -978,7 +971,6 @@ export function FileGrid({ bucketName, onFilesChange, refreshTrigger = 0, availa
           y={contextMenu.y}
           file={contextMenu.file}
           onClose={() => setContextMenu(null)}
-          onOpen={handleOpenFile}
           onDelete={handleDeleteSingleFile}
           onDownload={handleDownloadSingleFile}
         />

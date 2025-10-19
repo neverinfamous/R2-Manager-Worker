@@ -5,7 +5,6 @@ interface ContextMenuProps {
   y: number
   file: FileObject
   onClose: () => void
-  onOpen: (file: FileObject) => void
   onDelete: (file: FileObject) => void
   onDownload: (file: FileObject) => void
 }
@@ -15,16 +14,10 @@ export function ContextMenu({
   y,
   file,
   onClose,
-  onOpen,
   onDelete,
   onDownload
 }: ContextMenuProps) {
   
-  const handleOpenClick = () => {
-    onOpen(file)
-    onClose()
-  }
-
   const handleDownloadClick = () => {
     onDownload(file)
     onClose()
@@ -46,14 +39,6 @@ export function ContextMenu({
       onMouseLeave={onClose}
       onClick={(e) => e.stopPropagation()}
     >
-      <button 
-        className="context-menu-button"
-        onClick={handleOpenClick}
-        title="Open with default application"
-      >
-        ↗️ Open
-      </button>
-      
       <button 
         className="context-menu-button"
         onClick={handleDownloadClick}

@@ -684,55 +684,7 @@ class APIService {
     }
   }
 
-  async openFileNatively(bucketName: string, fileName: string, fileObject?: FileObject): Promise<void> {
-    try {
-      // Check if running in Electron environment
-      const isElectron = typeof window !== 'undefined' && !!(window as any).electronAPI
-      console.log('[API] openFileNatively called for:', fileName, '| isElectron:', isElectron)
-      console.log('[API] userAgent:', typeof navigator !== 'undefined' ? navigator.userAgent : 'N/A')
-      
-      if (isElectron) {
-        // In Electron: Download file and open with native app
-        const fileUrl = this.getFileUrl(bucketName, fileName, fileObject)
-        console.log('[API] Running in Electron, downloading:', fileUrl)
-        
-        // Trigger download
-        const link = document.createElement('a')
-        link.href = fileUrl
-        link.download = fileName
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        
-        console.log('[API] Download triggered in Electron, waiting for handlers...')
-        
-        // Wait a bit for download to be intercepted and started, then call openFile IPC
-        setTimeout(async () => {
-          console.log('[API] Calling IPC openFile after download started:', fileName)
-          try {
-            const result = await (window as any).electronAPI.openFile(fileName)
-            console.log('[API] IPC openFile result:', result)
-          } catch (error) {
-            console.error('[API] IPC openFile error:', error)
-          }
-        }, 2000)
-      } else {
-        // Fallback for web (just download)
-        console.log('[API] Running in web browser, downloading file:', fileName)
-        const fileUrl = this.getFileUrl(bucketName, fileName, fileObject)
-        const link = document.createElement('a')
-        link.href = fileUrl
-        link.download = fileName
-        document.body.appendChild(link)
-        link.click()
-        document.body.removeChild(link)
-        console.log('[API] File downloaded - open from your Downloads folder or browser downloads')
-      }
-    } catch (error) {
-      console.error('[API] Failed to open file natively:', error)
-      throw new Error('Failed to open file')
-    }
-  }
+
 }
 
 export const api = new APIService();
