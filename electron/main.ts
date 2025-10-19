@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell, dialog, session } from 'electron'
+import { app, BrowserWindow, ipcMain, shell, session } from 'electron'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
@@ -20,8 +20,7 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.ts'),
       nodeIntegration: false,
-      contextIsolation: true,
-      enableRemoteModule: false
+      contextIsolation: true
     }
   })
 
@@ -40,7 +39,7 @@ function createWindow() {
   })
 
   // Set up download handler to track where files are saved
-  session.defaultSession.on('will-download', (event, item, webContents) => {
+  session.defaultSession.on('will-download', (event, item) => {
     console.log('[Electron] Download started:', item.getFilename())
     
     // Don't show the save dialog, just save to Downloads
@@ -52,22 +51,20 @@ function createWindow() {
     item.setSavePath(savePath)
     
     // After download completes, open the file
-    item.once('done', (event) => {
-      console.log('[Electron] Download done, state:', event)
-      if (event === 'completed') {
-        console.log('[Electron] Opening file:', savePath)
-        shell.openPath(savePath)
-          .then((error) => {
-            if (error) {
-              console.error('[Electron] Failed to open file:', error)
-            } else {
-              console.log('[Electron] File opened successfully')
-            }
-          })
-          .catch((error) => {
-            console.error('[Electron] Error opening file:', error)
-          })
-      }
+    item.once('done', () => {
+      console.log('[Electron] Download done, opening file')
+      console.log('[Electron] Opening file:', savePath)
+      shell.openPath(savePath)
+        .then((error) => {
+          if (error) {
+            console.error('[Electron] Failed to open file:', error)
+          } else {
+            console.log('[Electron] File opened successfully')
+          }
+        })
+        .catch((error) => {
+          console.error('[Electron] Error opening file:', error)
+        })
     })
   })
 }
