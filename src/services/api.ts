@@ -363,11 +363,9 @@ class APIService {
     )
     
     const data = await response.json()
-    console.log('Login response status:', response.status, 'ok:', response.ok)
     
     // Handle new response format: {success: true, token?: string}
     if (data.success === true && response.ok) {
-      console.log('Login successful (new format), token included:', !!data.token)
       // Store token if provided (fallback for CORS-blocked cookies)
       if (data.token) {
         this.setToken(data.token)
@@ -406,9 +404,6 @@ class APIService {
     )
     
     if (!response.ok) {
-      console.error(`listBuckets failed: ${response.status} ${response.statusText}`)
-      const errorText = await response.text()
-      console.error('Error response:', errorText)
       throw new Error(`API error: ${response.status}`)
     }
 

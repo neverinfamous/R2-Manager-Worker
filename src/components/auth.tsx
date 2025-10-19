@@ -42,8 +42,6 @@ export function Auth({ onLogin }: AuthProps) {
         }
       } else {
         const response = await api.login(email, password)
-        console.log('Login response:', response)
-        console.log('Current cookies:', document.cookie)
         if (response.error) {
           setError(response.error)
           return
@@ -52,7 +50,6 @@ export function Auth({ onLogin }: AuthProps) {
           auth.setToken(response.token)
           onLogin()
         } else {
-          console.warn('No token in response:', response)
           // Treat successful response without error as logged in (cookie-based auth)
           onLogin()
         }
