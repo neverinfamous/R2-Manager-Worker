@@ -6,6 +6,10 @@ compatibility_flags = ["nodejs_compat"]
 # Smart Placement disabled for SPA - UI responsiveness priority
 placement = { mode = "off" }
 
+[build]
+command = "npm run build"
+cwd = "."
+
 [assets]
 directory = "dist"
 binding = "ASSETS"
