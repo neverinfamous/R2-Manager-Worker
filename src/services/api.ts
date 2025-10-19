@@ -391,9 +391,12 @@ class APIService {
     )
     
     if (!response.ok) {
+      console.error(`listBuckets failed: ${response.status} ${response.statusText}`)
+      const errorText = await response.text()
+      console.error('Error response:', errorText)
       throw new Error(`API error: ${response.status}`)
     }
-    
+
     const data = await response.json()
     return data.result.buckets.map((bucket: CloudflareBucket) => ({
       name: bucket.name,
