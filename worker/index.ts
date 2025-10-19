@@ -284,8 +284,11 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const data = await response.json();
         
         // With Zero Trust auth, show all R2 buckets to authenticated users
-        // Access control is managed by Cloudflare Access, not the database
-        const filteredBuckets = data.result.buckets || [];
+        // Exclude system/internal buckets
+        const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki'];
+        const filteredBuckets = (data.result.buckets || []).filter((b: { name: string }) =>
+          !systemBuckets.includes(b.name)
+        );
         
         // Add size information to each bucket
         const bucketsWithSize = await Promise.all(
@@ -1171,5 +1174,7 @@ export default {
     }
   }
 }
+
+
 
 
