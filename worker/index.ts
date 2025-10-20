@@ -354,9 +354,6 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         );
         const data = await response.json();
         
-        if (data.success) {
-        }
-        
         return new Response(JSON.stringify(data), {
           headers: {
             'Content-Type': 'application/json',
@@ -530,11 +527,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const body = await request.json();
         const newBucketName = body.newName?.trim();
         console.log('[Buckets] Rename request:', oldBucketName, '->', newBucketName);
-        // Zero Trust: Removed ownership check
-        const owner = null; // All authenticated users can manage all buckets
-        if (false) { // Zero Trust: Owner check removed
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-        }
+        // Zero Trust: All authenticated users can manage all buckets
         try {
           console.log('[Buckets] Creating new bucket:', newBucketName);
           const createResponse = await fetch(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets', { method: 'POST', headers: cfHeaders, body: JSON.stringify({ name: newBucketName }) });
@@ -625,17 +618,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     const parts = url.pathname.split('/');
     const bucketName = parts[3];
     
-    // Zero Trust: Owner check removed - all authenticated users can access all buckets
-    const owner = null;
-    if (false) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 403,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
-    }
+    // Zero Trust: All authenticated users can access all buckets
 
     const cfHeaders = {
       'X-Auth-Email': env.CF_EMAIL,
@@ -676,19 +659,6 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           }
         });
   
-      // Rename bucket
-      if (request.method === 'PATCH' && url.pathname.startsWith('/api/buckets/')) {
-        const bucketName = decodeURIComponent(url.pathname.slice(12)).replace(/^\/+/, '');
-        const body = await request.json();
-        const newName = body.newName;
-        console.log('[Buckets] Rename request:', bucketName, '->', newName);
-        // Zero Trust: Removed ownership check
-        const owner = null; // All authenticated users can manage all buckets
-        if (false) { // Zero Trust: Owner check removed
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-        }
-        return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-      }
     } catch (err) {
         console.error('[Files] ZIP download error:', err);
         return new Response(JSON.stringify({ 
@@ -795,19 +765,6 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         });
 
   
-      // Rename bucket
-      if (request.method === 'PATCH' && url.pathname.startsWith('/api/buckets/')) {
-        const bucketName = decodeURIComponent(url.pathname.slice(12)).replace(/^\/+/, '');
-        const body = await request.json();
-        const newName = body.newName;
-        console.log('[Buckets] Rename request:', bucketName, '->', newName);
-        // Zero Trust: Removed ownership check
-        const owner = null; // All authenticated users can manage all buckets
-        if (false) { // Zero Trust: Owner check removed
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-        }
-        return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-      }
     } catch (err) {
         console.error('[Files] List error:', err);
         return new Response(JSON.stringify({ 
@@ -910,19 +867,6 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           }
         });
   
-      // Rename bucket
-      if (request.method === 'PATCH' && url.pathname.startsWith('/api/buckets/')) {
-        const bucketName = decodeURIComponent(url.pathname.slice(12)).replace(/^\/+/, '');
-        const body = await request.json();
-        const newName = body.newName;
-        console.log('[Buckets] Rename request:', bucketName, '->', newName);
-        // Zero Trust: Removed ownership check
-        const owner = null; // All authenticated users can manage all buckets
-        if (false) { // Zero Trust: Owner check removed
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-        }
-        return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-      }
     } catch (err) {
         console.error('[Files] Upload error:', err);
         return new Response(JSON.stringify({
@@ -963,19 +907,6 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           }
         });
   
-      // Rename bucket
-      if (request.method === 'PATCH' && url.pathname.startsWith('/api/buckets/')) {
-        const bucketName = decodeURIComponent(url.pathname.slice(12)).replace(/^\/+/, '');
-        const body = await request.json();
-        const newName = body.newName;
-        console.log('[Buckets] Rename request:', bucketName, '->', newName);
-        // Zero Trust: Removed ownership check
-        const owner = null; // All authenticated users can manage all buckets
-        if (false) { // Zero Trust: Owner check removed
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-        }
-        return new Response(JSON.stringify({ error: 'Bucket renaming is not supported by Cloudflare R2 API' }), { status: 400, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
-      }
     } catch (err) {
         console.error('[Files] Delete error:', err);
         return new Response(JSON.stringify({
@@ -1081,6 +1012,114 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         console.error('[Files] Move error:', err);
         return new Response(JSON.stringify({
           error: 'Move failed',
+          details: err instanceof Error ? err.message : 'Unknown error'
+        }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
+    // Copy file
+    if (request.method === 'POST' && parts[parts.length - 1] === 'copy') {
+      try {
+        const sourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
+        const body = await request.json();
+        const destBucket = body.destinationBucket;
+        
+        if (!destBucket) {
+          return new Response(JSON.stringify({ error: 'Missing destination bucket' }), {
+            status: 400,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+
+        if (bucketName === destBucket) {
+          return new Response(JSON.stringify({ error: 'Source and destination buckets must be different' }), {
+            status: 400,
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+
+        console.log('[Files] Copying file:', sourceKey, 'from:', bucketName, 'to:', destBucket);
+
+        // 1. Fetch file from source bucket
+        const getUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + sourceKey;
+        const getResponse = await fetch(getUrl, { headers: cfHeaders });
+
+        if (!getResponse.ok) {
+          if (getResponse.status === 404) {
+            return new Response(JSON.stringify({ error: 'Source file not found' }), {
+              status: 404,
+              headers: {
+                'Content-Type': 'application/json',
+                ...corsHeaders
+              }
+            });
+          }
+          throw new Error('Failed to fetch file: ' + getResponse.status);
+        }
+
+        // 2. Preserve metadata from source
+        const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
+        const fileBuffer = await getResponse.arrayBuffer();
+
+        // 3. Check if file exists in destination and generate unique name if needed
+        let destKey = sourceKey;
+        const checkUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + destKey;
+        const checkResponse = await fetch(checkUrl, { method: 'HEAD', headers: cfHeaders });
+
+        if (checkResponse.ok) {
+          // File exists, auto-rename with timestamp
+          const timestamp = Date.now();
+          const lastDotIndex = sourceKey.lastIndexOf('.');
+          if (lastDotIndex > 0) {
+            const name = sourceKey.substring(0, lastDotIndex);
+            const ext = sourceKey.substring(lastDotIndex);
+            destKey = `${name}-copy-${timestamp}${ext}`;
+          } else {
+            destKey = `${sourceKey}-copy-${timestamp}`;
+          }
+          console.log('[Files] File exists in destination, renaming to:', destKey);
+        }
+
+        // 4. Upload to destination bucket
+        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + destKey;
+        const putResponse = await fetch(putUrl, {
+          method: 'PUT',
+          headers: {
+            ...cfHeaders,
+            'Content-Type': contentType
+          },
+          body: fileBuffer
+        });
+
+        if (!putResponse.ok) {
+          throw new Error('Failed to upload to destination: ' + putResponse.status);
+        }
+
+        console.log('[Files] Copy completed successfully');
+
+        return new Response(JSON.stringify({ success: true, newKey: destKey }), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+
+      } catch (err) {
+        console.error('[Files] Copy error:', err);
+        return new Response(JSON.stringify({
+          error: 'Copy failed',
           details: err instanceof Error ? err.message : 'Unknown error'
         }), {
           status: 500,
