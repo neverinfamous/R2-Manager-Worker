@@ -1,7 +1,7 @@
 # Cloudflare R2 Bucket Manager
 
-**Last Updated:** October 19, 2025 | **Status:** ✅ Stable 
-**Tech Stack:** React 19.2.0 | Vite 7.1.10 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
+**Last Updated:** October 20, 2025 | **Status:** ✅ Stable 
+**Tech Stack:** React 19.2.0 | Vite 7.1.11 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 A web application for managing Cloudflare R2 buckets with GitHub SSO authentication via Cloudflare Access (Zero Trust) and Worker.
 
@@ -46,7 +46,7 @@ worker/
 ```
 
 ### Current Stack Versions
-- **React:** 19.2.0 | **Vite:** 7.1.10 | **TypeScript:** 5.9.3 | **Wrangler:** 4.43.0 | **Node:** 25.x
+- **React:** 19.2.0 | **Vite:** 7.1.11 | **TypeScript:** 5.9.3 | **Wrangler:** 4.43.0 | **Node:** 25.x
 
 ---
 
@@ -138,6 +138,7 @@ npx wrangler deploy
 |-------|-------|-----|
 | 403 on bucket ops | Ownership checks still in code | ✅ FIXED: Removed all ownership checks (Access handles auth) |
 | Buckets don't appear after creation | Page not refreshing list | ✅ FIXED: Proper state updates in React |
+| Vite dev server vulnerability (Windows) | server.fs.deny bypass via backslash | ✅ FIXED: Updated Vite to 7.1.11 (CVE-2025-30208) |
 
 ---
 
