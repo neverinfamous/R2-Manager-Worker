@@ -1,13 +1,13 @@
 # Cloudflare R2 Bucket Manager
 
-**Last Updated:** October 20, 2025 | **Status:** ✅ Production Ready  
+**Last Updated:** October 19, 2025 | **Status:** ✅ Stable 
 **Tech Stack:** React 19.2.0 | Vite 7.1.10 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
-A web application for managing Cloudflare R2 buckets with GitHub SSO authentication via Cloudflare Access (Zero Trust).
+A web application for managing Cloudflare R2 buckets with GitHub SSO authentication via Cloudflare Access (Zero Trust) and Worker.
 
 ---
 
-## 🔐 Authentication (AI Critical Info)
+## 🔐 Authentication
 
 **System:** Cloudflare Access Zero Trust + GitHub SSO (ONE-CLICK setup)
 - No custom auth logic - all handled by Cloudflare Access
@@ -136,9 +136,6 @@ npx wrangler deploy
 
 | Issue | Cause | Fix |
 |-------|-------|-----|
-| 500 on `/api/buckets` POST | bucket_owners insert failing | ✅ FIXED: Removed DB insert (Zero Trust doesn't need it) |
-| "Failed to Load Buckets" | JWT not sent in requests | ✅ FIXED: Read JWT from cookie, not header |
-| Site.webmanifest CORS errors | Access blocks manifest requests | ✅ FIXED: Worker serves directly before JWT validation |
 | 403 on bucket ops | Ownership checks still in code | ✅ FIXED: Removed all ownership checks (Access handles auth) |
 | Buckets don't appear after creation | Page not refreshing list | ✅ FIXED: Proper state updates in React |
 
@@ -207,7 +204,9 @@ const response = await fetch(
 
 ## 🚧 Future Work
 
-1. Add Cloudflare Web Assets to protect `/api/*` endpoints
-2. Implement granular access policies per bucket (multi-user support)
-3. Add audit logging for file operations
-4. Support for service-to-service authentication (M2M via mTLS)
+1. **Enhancement:** Add Cloudflare Web Assets to protect `/api/*` endpoints
+2. **Enhancement:** Add feature to copy files between buckets. 
+3. **Enhancement:** Detect and match users light/dark mode system setting.
+4. **Enhancement:** Configure repository for community standards with license, security policy, etc
+5. **Enhancement:** Set up dependabot, codeql, secrets scanning, etc.
+6. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
