@@ -212,6 +212,35 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Serve site.webmanifest directly (avoids Cloudflare Access CORS block)
+  if (url.pathname === '/site.webmanifest') {
+    return new Response(JSON.stringify({
+      name: "R2 Bucket Manager",
+      short_name: "R2 Manager",
+      start_url: "/",
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: "#000000",
+      icons: []
+    }), {
+      headers: {
+        'Content-Type': 'application/manifest+json',
+        'Cache-Control': 'max-age=86400',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
+  }
+
+  // Serve other static assets first
+  if (url.pathname.startsWith('/manifest.json') || url.pathname.startsWith('/favicon.ico')) {
+    try {
+      return await env.ASSETS.fetch(request);
+    } catch (e) {
+      console.error('[Assets] Failed to serve static asset:', e);
+      return new Response('Not Found', { status: 404 });
+    }
+  }
+
   // Check for signed file downloads
   if (url.pathname.includes('/download/')) {
     if (validateSignature(request, env)) {
