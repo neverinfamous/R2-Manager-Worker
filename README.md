@@ -205,8 +205,8 @@ const response = await fetch(
 
 ## 🚧 Future Work
 
-1. **Enhancement:** Add Cloudflare Web Assets to protect `/api/*` endpoints
-2. **Enhancement:** Add feature to copy files between buckets. 
+1. **Enhancement:** Add feature to copy files between buckets.
+2. **Enhancement:** Add Cloudflare Web Assets to protect `/api/*` endpoints
 3. **Enhancement:** Detect and match users light/dark mode system setting.
 4. **Enhancement:** Configure repository for community standards with license, security policy, etc
 5. **Enhancement:** Set up dependabot, codeql, secrets scanning, etc.

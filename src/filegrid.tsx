@@ -197,8 +197,10 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   } | null>(null)
   const [isTransferring, setIsTransferring] = useState(false)
   const [transferDropdownOpen, setTransferDropdownOpen] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null)
 
   const gridRef = useRef<HTMLDivElement>(null)
+  const transferButtonRef = useRef<HTMLButtonElement>(null)
   const lastSelectedRef = useRef<string | null>(null)
   const loadingRef = useRef<LoadingState>({ isLoading: false })
   const mountedRef = useRef<boolean>(true)
@@ -581,6 +583,17 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     setTransferDropdownOpen(false)
   }, [])
 
+  const handleTransferButtonClick = useCallback(() => {
+    if (!transferDropdownOpen && transferButtonRef.current) {
+      const rect = transferButtonRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left
+      })
+    }
+    setTransferDropdownOpen(!transferDropdownOpen)
+  }, [transferDropdownOpen])
+
   const selectedFileObjects = paginatedFiles.objects.filter(f => selectedFiles.includes(f.key))
   const totalSelectedSize = selectedFileObjects.reduce((sum, file) => sum + file.size, 0)
   const isOverSizeLimit = totalSelectedSize > 100 * 1024 * 1024 // 100MB in bytes
@@ -672,14 +685,21 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             <>
               <div className={`transfer-dropdown-container ${transferDropdownOpen ? 'open' : ''}`}>
                 <button 
+                  ref={transferButtonRef}
                   className="action-button transfer-button"
-                  onClick={() => setTransferDropdownOpen(!transferDropdownOpen)}
+                  onClick={handleTransferButtonClick}
                 >
                   Transfer
                   <span className="dropdown-arrow">▼</span>
                 </button>
-                {transferDropdownOpen && (
-                  <div className="transfer-dropdown-menu">
+                {transferDropdownOpen && dropdownPosition && (
+                  <div 
+                    className="transfer-dropdown-menu"
+                    style={{
+                      top: `${dropdownPosition.top}px`,
+                      left: `${dropdownPosition.left}px`
+                    }}
+                  >
                     <button onClick={() => openTransferDialog('move')}>
                       Move to...
                     </button>
