@@ -183,7 +183,10 @@ function generateSignature(path: string, env: Env): string {
 function validateSignature(request: Request, env: Env): boolean {
   const url = new URL(request.url);
   const signature = url.searchParams.get('sig');
-  if (!signature) return false;
+  if (!signature) {
+    console.log('[Signature] No signature provided');
+    return false;
+  }
 
   // Decode the path before generating signature
   const decodedPath = decodeURIComponent(url.pathname);
@@ -193,6 +196,15 @@ function validateSignature(request: Request, env: Env): boolean {
   const pathWithQuery = queryString ? decodedPath + '?' + queryString : decodedPath;
   
   const expectedSignature = generateSignature(pathWithQuery, env);
+  
+  console.log('[Signature] Validation:', {
+    path: url.pathname,
+    decodedPath,
+    pathWithQuery,
+    providedSig: signature,
+    expectedSig: expectedSignature,
+    match: signature === expectedSignature
+  });
   
   return signature === expectedSignature;
 }
@@ -243,23 +255,35 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
 
   // Check for signed file downloads
   if (url.pathname.includes('/download/')) {
+    console.log('[Download] Request:', url.pathname, 'query:', url.search);
+    
     if (validateSignature(request, env)) {
       const pathParts = url.pathname.split('/');
       const bucketName = pathParts[3];
       const fileName = decodeURIComponent(pathParts[5]);
 
+      console.log('[Download] Attempting download:', {
+        bucket: bucketName,
+        file: fileName,
+        pathParts
+      });
+
       try {
-        const response = await fetch(
-          CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(fileName),
-          {
-            headers: {
-              'X-Auth-Email': env.CF_EMAIL,
-              'X-Auth-Key': env.API_KEY
-            }
+        const fetchUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(fileName);
+        console.log('[Download] Fetching from R2:', fetchUrl);
+        
+        const response = await fetch(fetchUrl, {
+          headers: {
+            'X-Auth-Email': env.CF_EMAIL,
+            'X-Auth-Key': env.API_KEY
           }
-        );
+        });
+
+        console.log('[Download] R2 response status:', response.status);
 
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('[Download] R2 error:', errorText);
           throw new Error('Download failed: ' + response.status);
         }
 
@@ -275,16 +299,27 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         });
       } catch (err) {
         console.error('[Files] Download error:', err);
-        return new Response('Download failed', { 
+        return new Response(JSON.stringify({ 
+          error: 'Download failed', 
+          details: err instanceof Error ? err.message : String(err)
+        }), { 
           status: 500,
-          headers: corsHeaders
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
         });
       }
     } else {
       console.error('[Files] Invalid signature for download:', url.pathname);
-      return new Response('Invalid signature', { 
+      return new Response(JSON.stringify({ 
+        error: 'Invalid signature' 
+      }), { 
         status: 403,
-        headers: corsHeaders
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        }
       });
     }
   }
