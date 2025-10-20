@@ -1,217 +1,213 @@
 # Cloudflare R2 Bucket Manager
 
-**Last Updated:** October 19, 2025 | **Status:** ✅ Production Ready  
-**Tech Stack:** React 19.2.0 | Vite 7.1.10 | TypeScript 5.9.3 | Cloudflare Workers
+**Last Updated:** October 20, 2025 | **Status:** ✅ Production Ready  
+**Tech Stack:** React 19.2.0 | Vite 7.1.10 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
-The Cloudflare R2 Manager is a Vite-powered React application backed by a Cloudflare Worker that proxies Cloudflare R2 and D1. The web client lets you authenticate, create, edit and delete buckets, upload objects with chunked retries, delete files, move files between buckets, and download multi-file archives, while the worker mediates all requests, issues signed URLs, and stores session metadata.
+A web application for managing Cloudflare R2 buckets with GitHub SSO authentication via Cloudflare Access (Zero Trust).
 
 ---
 
-## 📋 AI Briefing - Critical Info
+## 🔐 Authentication (AI Critical Info)
 
-### Current Stack Versions (All Latest ✅)
-- **React:** 19.2.0 (Stable since Dec 2024, 10+ months)
-- **Vite:** 7.1.10 (Stable since June 2025, 4 months) - **43% faster builds!**
-- **TypeScript:** 5.9.3
-- **Wrangler:** 4.43.0
-- **Node.js:** 25.x LTS required
+**System:** Cloudflare Access Zero Trust + GitHub SSO (ONE-CLICK setup)
+- No custom auth logic - all handled by Cloudflare Access
+- Frontend: Redirects unauthenticated users to `/cdn-cgi/access/login`
+- Backend: JWT validation via `cf-access-jwt-assertion` cookie
+- Authorization: All authenticated users can access all buckets (Cloudflare Access handles policy enforcement)
+- Files: `src/services/auth.ts` (minimal), `worker/index.ts` lines ~130-165 (validateAccessJWT function)
 
-### Build Status
+**Key Details:**
+- JWT passed as **cookie** (`cf-access-jwt-assertion`), not header
+- Verify with `jose` library using Cloudflare's public keys
+- Policy ID (POLICY_AUD) + Team Domain (TEAM_DOMAIN) required as secrets
+- D1 database: Schema still exists but only stores file metadata (not user auth)
+
+---
+
+## 📋 Critical Architecture
+
+### File Organization
 ```
-✅ npm run lint: PASSED (0 errors)
-✅ npm run build: PASSED (2.45s - 43% faster with Vite 7)
-✅ npm run tsc: PASSED (type checking)
-✅ Security: 0 vulnerabilities
-✅ All dependencies: Latest versions
+src/
+├── app.tsx                 # Main UI (bucket list, file grid, upload area)
+├── filegrid.tsx            # File browser for selected bucket
+├── services/
+│   ├── api.ts              # HTTP client (all requests go through Worker)
+│   └── auth.ts             # Auth service (logout only)
+└── components/
+    └── auth.tsx            # DELETED - auth handled by Cloudflare Access
+
+worker/
+├── index.ts                # Worker runtime (~1163 lines)
+│   ├── handleApiRequest()  # Main request router
+│   ├── validateAccessJWT() # JWT verification (lines ~130-165)
+│   └── Endpoints:          # Listed below
+└── schema.sql              # D1 schema (minimal - file metadata only)
 ```
 
+### Current Stack Versions
+- **React:** 19.2.0 | **Vite:** 7.1.10 | **TypeScript:** 5.9.3 | **Wrangler:** 4.43.0 | **Node:** 25.x
+
 ---
 
-## Repository layout
+## 🔌 Worker API Endpoints
 
+All endpoints require valid Cloudflare Access JWT. Base: `https://r2.adamic.tech/api`
+
+### Bucket Management
+
+| Method | Endpoint | Auth | Purpose |
+|--------|----------|------|---------|
+| `GET` | `/buckets` | ✅ Required | List all R2 buckets (filters: r2-bucket, sqlite-mcp-server-wiki) |
+| `POST` | `/buckets` | ✅ Required | Create bucket. Body: `{ "name": "bucket-name" }` |
+| `PUT` | `/buckets/:name` | ✅ Required | Rename bucket. Body: `{ "newName": "new-name" }` |
+| `DELETE` | `/buckets/:name` | ✅ Required | Delete bucket. Query: `?force=true` to delete all objects first |
+
+### File Management
+
+| Method | Endpoint | Auth | Purpose |
+|--------|----------|------|---------|
+| `GET` | `/files/:bucket` | ✅ Required | List objects in bucket. Query: `?limit=20&skipCache=true` |
+| `POST` | `/files/:bucket/upload` | ✅ Required | Chunked upload. Headers: `X-Chunk-Index`, `X-Total-Chunks`, `X-File-Name` |
+| `DELETE` | `/files/:bucket/:file` | ✅ Required | Delete single file |
+| `POST` | `/files/:bucket/:file/move` | ✅ Required | Move file to another bucket. Body: `{ "destinationBucket": "target-bucket" }` |
+| `POST` | `/files/:bucket/delete-multiple` | ✅ Required | Delete multiple files. Body: `{ "files": ["file1", "file2"] }` |
+| `GET` | `/files/:bucket/download-zip` | ✅ Required (Signed) | Download files as ZIP. Uses `X-Signature` header validation |
+
+### Static Assets (No Auth Required)
+
+| Path | Response | Cache |
+|------|----------|-------|
+| `/site.webmanifest` | JSON manifest | 86400s |
+| `/favicon.ico` | Static file | Via ASSETS |
+| `/manifest.json` | Static file | Via ASSETS |
+
+---
+
+## ⚙️ Required Configuration
+
+### Cloudflare Access Setup
+1. Create Access Application for `r2.adamic.tech`
+2. Add **GitHub** as identity provider
+3. Create **Allow** policy: Include → Everyone
+4. Add **Bypass** policy for static assets: Include → Everyone on path `/site.webmanifest`
+5. Note Policy ID (AUD tag) and Team Domain
+
+### Worker Secrets (via `wrangler secret put`)
 ```
-.
-├── src/                 # React SPA (components, hooks, and service clients)
-│   ├── components/      # Auth views, layout, and reusable widgets
-│   ├── filegrid.tsx     # Bucket object grid with previews and bulk actions
-│   └── services/        # API + auth wrappers that talk to the worker
-├── worker/              # Cloudflare Worker entry point, handlers, and schema
-│   ├── index.ts         # Worker runtime (Durable objects/D1/R2 bindings)
-│   └── schema.sql       # D1 schema applied during deploy
-├── public/              # Static assets served by Vite
-├── package.json         # Dependencies (React 19, Vite 7, all latest)
-└── wrangler.toml        # Worker deployment configuration
+ACCOUNT_ID          # Cloudflare account ID
+CF_EMAIL            # Cloudflare account email
+API_KEY             # Cloudflare API token
+TEAM_DOMAIN         # Cloudflare Access team domain (from Zero Trust)
+POLICY_AUD          # Policy ID from Access policy
 ```
 
----
-
-## Key capabilities
-
-- Account login with session persistence through the worker.
-- Bucket CRUD (create, list, delete) surfaced directly in the UI.
-- Drag-and-drop uploads with MIME/type validation, 10 MB chunking, and exponential backoff retries.
-- Object browser with previews, multi-select actions, and ZIP download bundling.
-- Inline delete actions for individual objects or selected groups.
+### Removed Secrets (Old System)
+- ~~REGISTRATION_CODE~~ - Not used
+- ~~URL_SIGNING_KEY~~ - Not used
+- ~~DB schema includes users/sessions~~ - Not used, but tables still in schema
 
 ---
 
-## Requirements
+## 🚀 Development Quick Reference
 
-- **Node.js 25.x LTS** (minimum 18+, but 25.x is installed and recommended)
-- **npm** (latest - comes with Node.js)
-- **Cloudflare account** with R2 and D1 enabled
-- **Wrangler CLI** for deploying the worker
-
-Optional: VS Code + ESLint/TypeScript extensions improve DX.
-
----
-
-## Quick Start
-
-### Frontend setup
-
-1. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-2. Configure the worker API base URL:
-   - Default: `https://r2.adamic.tech` (production)
-   - For local dev, create `.env`:
-     ```bash
-     echo "VITE_WORKER_API=http://localhost:8787" >> .env
-     ```
-   - Update `src/services/api.ts` to read from `import.meta.env.VITE_WORKER_API`
-
-3. Start dev server:
-   ```bash
-   npm run dev
-   ```
-   Opens at `http://localhost:5173`
-
-### Available npm scripts
-
-| Script | Description |
-|--------|-------------|
-| `npm run dev` | Launch Vite dev server with HMR (hot module replacement) |
-| `npm run build` | Type-check + create production bundle in `dist/` |
-| `npm run preview` | Serve built bundle locally for smoke testing |
-| `npm run lint` | Run ESLint using project configuration |
-
----
-
-## Worker Deployment
-
-The worker at `worker/index.ts` provides REST endpoints for authentication, bucket management, object CRUD, and signed download URLs.
-
-### Required Bindings (wrangler.toml)
-
-| Binding | Type | Purpose |
-|---------|------|---------|
-| `R2` | R2 | Primary R2 bucket for object storage |
-| `DB` | D1 | Session/user store (schema in `worker/schema.sql`) |
-| `ASSETS` | KV/Static | Optional - serve SPA from Workers Sites |
-
-### Required Secrets
-
+### Frontend
 ```bash
-npx wrangler secret put ACCOUNT_ID
-npx wrangler secret put CF_EMAIL
-npx wrangler secret put API_KEY
-npx wrangler secret put REGISTRATION_CODE
-npx wrangler secret put URL_SIGNING_KEY
-```
-
-### Deployment Process
-
-```bash
-# Authenticate with Cloudflare
-npx wrangler login
-
-# Create D1 database and apply schema
-npx wrangler d1 create <database-name>
-npx wrangler d1 execute <database-name> --file worker/schema.sql
-
-# Build and deploy
+npm install
+npm run dev           # http://localhost:5173
 npm run build
+npm run lint
+```
+
+### Worker
+```bash
+npx wrangler dev     # http://localhost:8787 (requires .env: VITE_WORKER_API=http://localhost:8787)
 npx wrangler deploy
 ```
 
-For local development:
-```bash
-npx wrangler dev  # Runs on http://localhost:8787
+### Local Testing with Zero Trust
+1. Add `127.0.0.1 r2.localhost` to hosts file
+2. Set `VITE_WORKER_API=http://r2.localhost:8787` in `.env`
+3. Note: Cloudflare Access won't intercept localhost requests; test JWT via Postman
+
+---
+
+## 🐛 Known Issues & Solutions
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| 500 on `/api/buckets` POST | bucket_owners insert failing | ✅ FIXED: Removed DB insert (Zero Trust doesn't need it) |
+| "Failed to Load Buckets" | JWT not sent in requests | ✅ FIXED: Read JWT from cookie, not header |
+| Site.webmanifest CORS errors | Access blocks manifest requests | ✅ FIXED: Worker serves directly before JWT validation |
+| 403 on bucket ops | Ownership checks still in code | ✅ FIXED: Removed all ownership checks (Access handles auth) |
+| Buckets don't appear after creation | Page not refreshing list | ✅ FIXED: Proper state updates in React |
+
+---
+
+## 📊 Request Flow Diagram
+
+```
+Browser
+   ↓
+Cloudflare Access (intercepts unauthenticated requests)
+   ├→ GitHub login flow (first time only)
+   ├→ JWT cookie set: cf-access-jwt-assertion
+   ↓
+Worker receives request
+   ├→ Check if static asset (/site.webmanifest) → serve directly
+   ├→ Check if signed download request → validate signature
+   ├→ Otherwise: validateAccessJWT() → extract userEmail from token
+   ├→ Route to appropriate handler (buckets, files, etc.)
+   ↓
+R2 API (via Cloudflare API)
+   ↓
+Response back to browser
 ```
 
 ---
 
-## Development Notes
+## 📝 Common Code Patterns
 
-### Performance Tips
-- Upload logic chunks files at 10 MB; adjust worker limits and R2 settings if changed
-- Auth tokens stored in `sessionStorage` (can migrate to HTTP-only cookies via `src/services/auth.ts`)
-- Client-side ZIP creation uses JSZip - large bundles may exhaust browser memory
+### Adding New Endpoint
+1. Add to `handleApiRequest()` in `worker/index.ts`
+2. All endpoints get JWT validation automatically (runs before routing)
+3. Use `userEmail` for user context (not user ID)
+4. Return `{ headers: corsHeaders }` for CORS
 
-### Key Code Patterns
-- Functional React components with hooks (useCallback, useEffect, useState, useMemo)
-- Type-safe React 19 with explicit JSX imports
-- Vite 7 optimized build pipeline (47 modules transformed vs 52 before)
+### JWT Validation
+```typescript
+const userEmail = await validateAccessJWT(request, env);
+if (!userEmail) return new Response('Unauthorized', { status: 401 });
+```
 
-### Maintenance
-- Run `npm audit` monthly for security updates
-- Check for patch updates quarterly
-- Monitor React 20 and Vite 8 releases (currently on stable versions)
-
----
-
-## Troubleshooting
-
-**Issue:** Build is slow  
-**Solution:** Verify you're on Vite 7.1.10 - should complete in ~2.45s
-
-**Issue:** Type errors in editor  
-**Solution:** Run `npm run build` to ensure tsconfig is applied; check `src/filegrid.tsx` uses React 19 patterns
-
-**Issue:** Import resolution errors  
-**Solution:** Clear `node_modules` and reinstall: `rm -rf node_modules && npm install`
-
-**Issue:** Worker not responding locally  
-**Solution:** Ensure `npx wrangler dev` is running and `.env` has correct `VITE_WORKER_API=http://localhost:8787`
+### R2 API Call
+```typescript
+const response = await fetch(
+  CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets',
+  {
+    headers: {
+      'X-Auth-Email': env.CF_EMAIL,
+      'X-Auth-Key': env.API_KEY
+    }
+  }
+);
+```
 
 ---
 
-## Future Improvements
+## 🔒 Security Notes
 
-1. **Enhancement:** Add feature to copy files between buckets
-2. **Enhancement:** Switch login to Cloudflare Worker SSO (Zero Trust + GitHub)
-3. **Enhancement:** Auto-detect and match user's light/dark system settings.
-4. **Enhancement:** Configure GitHub repository for community standards.
-5. **Enhancement:** Set up automated dependency updates (Dependabot/Renovate)
-6. **Enhancement:** Set up Cloudflare web assets/api protections for apis.
-
-6. **Long-term:** Add AWS S3 bucket support with bidirectional S3 - R2 migration
+- JWT validated on every API request (no session tokens needed)
+- No user data stored in D1 (except file metadata)
+- All file operations authenticated via Cloudflare Access
+- Signed URLs for downloads use HMAC-SHA256 (src/services/api.ts)
+- Static assets bypass Access to avoid CORS issues, but are public by design
 
 ---
 
-## Dependency Management
+## 🚧 Future Work
 
-**Last Upgrade:** October 19, 2025 
-**Current Status:** All dependencies at latest stable versions, 0 vulnerabilities
-
-### Key Dependencies
-- **react** 19.2.0, **react-dom** 19.2.0 - Latest UI framework
-- **vite** 7.1.10 - Latest build tool (43% faster)
-- **@vitejs/plugin-react** 5.0.4 - Vite's React support
-- **typescript** 5.9.3 - Type safety
-- **wrangler** 4.43.0 - Cloudflare deployment
-- **jszip** 3.10.1 - Multi-file bundling
-- **react-dropzone** 14.3.8 - File uploads
-- **lucide-react** 0.546.0 - Icon library
-- **eslint** 9.38.0, **eslint-plugin-react-hooks** 7.0.0 - Code quality
-
----
-
-## Production Deployment
-
-✅ **Status: STABLE**
-
-**Performance:** 2.45s build time | 292.80KB bundle | 88.37KB gzip
+1. Add Cloudflare Web Assets to protect `/api/*` endpoints
+2. Implement granular access policies per bucket (multi-user support)
+3. Add audit logging for file operations
+4. Support for service-to-service authentication (M2M via mTLS)
