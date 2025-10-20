@@ -250,7 +250,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
 
       try {
         const response = await fetch(
-          CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + fileName,
+          CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(fileName),
           {
             headers: {
               'X-Auth-Email': env.CF_EMAIL,
@@ -273,14 +273,19 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
             ...corsHeaders
           }
         });
-  
-    } catch (err) {
+      } catch (err) {
         console.error('[Files] Download error:', err);
         return new Response('Download failed', { 
           status: 500,
           headers: corsHeaders
         });
       }
+    } else {
+      console.error('[Files] Invalid signature for download:', url.pathname);
+      return new Response('Invalid signature', { 
+        status: 403,
+        headers: corsHeaders
+      });
     }
   }
 
