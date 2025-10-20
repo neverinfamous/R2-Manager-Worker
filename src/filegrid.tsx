@@ -188,14 +188,15 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     direction: 'desc'
   })
   const [shouldRefresh, setShouldRefresh] = useState(false)
-  const [isMoving, setIsMoving] = useState(false)
-  const [moveDestination, setMoveDestination] = useState<string | null>(null)
-  const [moveState, setMoveState] = useState<{
+  const [transferState, setTransferState] = useState<{
     isDialogOpen: boolean
+    mode: 'move' | 'copy' | null
     targetBucket: string | null
-    isMoving: boolean
+    isTransferring: boolean
     progress: number
   } | null>(null)
+  const [isTransferring, setIsTransferring] = useState(false)
+  const [transferDropdownOpen, setTransferDropdownOpen] = useState(false)
 
   const gridRef = useRef<HTMLDivElement>(null)
   const lastSelectedRef = useRef<string | null>(null)
@@ -221,6 +222,21 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       }
     }
   }, [])
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (transferDropdownOpen && !target.closest('.transfer-dropdown-container')) {
+        setTransferDropdownOpen(false)
+      }
+    }
+
+    if (transferDropdownOpen) {
+      document.addEventListener('click', handleClickOutside)
+      return () => document.removeEventListener('click', handleClickOutside)
+    }
+  }, [transferDropdownOpen])
 
   const sortFiles = useCallback((files: FileObject[]) => {
     return [...files].sort((a, b) => {
@@ -518,42 +534,52 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     }
   }, [bucketName])
 
-  const handleMoveFiles = useCallback(async () => {
-    if (selectedFiles.length === 0) return
-
-    if (!moveDestination) {
-      setError('Please select a destination bucket.')
-      return
-    }
-
-    if (moveDestination === bucketName) {
-      setError('Cannot move to the same bucket')
-      setMoveDestination(null)
-      return
-    }
-
+  const handleTransferFiles = useCallback(async () => {
+    if (!transferState?.mode || !transferState.targetBucket) return
+    
+    setIsTransferring(true)
     setError('')
-    setIsMoving(true)
-
+    
     try {
-      await api.moveFiles(bucketName, selectedFiles, moveDestination, (completed, total) => {
-        setError(`Moving files: ${completed}/${total}...`)
-      })
-
+      const apiMethod = transferState.mode === 'move' ? api.moveFiles.bind(api) : api.copyFiles.bind(api)
+      
+      await apiMethod(
+        bucketName, 
+        selectedFiles, 
+        transferState.targetBucket, 
+        (completed, total) => {
+          const action = transferState.mode === 'move' ? 'Moving' : 'Copying'
+          setError(`${action} files: ${completed}/${total}...`)
+        }
+      )
+      
       setSelectedFiles([])
       setShouldRefresh(true)
-      setMoveDestination(null)
-      setMoveState(null)
-      setError(`Successfully moved ${selectedFiles.length} file(s)`)
+      setTransferState(null)
       
+      const action = transferState.mode === 'move' ? 'moved' : 'copied'
+      setError(`Successfully ${action} ${selectedFiles.length} file(s)`)
       setTimeout(() => setError(''), 3000)
+      
       onFilesChange?.()
     } catch (err) {
-      console.error('Move failed:', err)
-      setError('Failed to move one or more files')
-      setIsMoving(false)
+      console.error('Transfer failed:', err)
+      setError(`Failed to ${transferState.mode} one or more files`)
+    } finally {
+      setIsTransferring(false)
     }
-  }, [bucketName, selectedFiles, moveDestination, onFilesChange])
+  }, [transferState, selectedFiles, bucketName, onFilesChange])
+
+  const openTransferDialog = useCallback((mode: 'move' | 'copy') => {
+    setTransferState({
+      isDialogOpen: true,
+      mode,
+      targetBucket: null,
+      isTransferring: false,
+      progress: 0
+    })
+    setTransferDropdownOpen(false)
+  }, [])
 
   const selectedFileObjects = paginatedFiles.objects.filter(f => selectedFiles.includes(f.key))
   const totalSelectedSize = selectedFileObjects.reduce((sum, file) => sum + file.size, 0)
@@ -644,12 +670,25 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
           {selectedFiles.length > 0 && (
             <>
-              <button 
-                onClick={() => setMoveState({ isDialogOpen: true, targetBucket: null, isMoving: false, progress: 0 })}
-                className="action-button move-button"
-              >
-                Move Selected
-              </button>
+              <div className={`transfer-dropdown-container ${transferDropdownOpen ? 'open' : ''}`}>
+                <button 
+                  className="action-button transfer-button"
+                  onClick={() => setTransferDropdownOpen(!transferDropdownOpen)}
+                >
+                  Transfer
+                  <span className="dropdown-arrow">▼</span>
+                </button>
+                {transferDropdownOpen && (
+                  <div className="transfer-dropdown-menu">
+                    <button onClick={() => openTransferDialog('move')}>
+                      Move to...
+                    </button>
+                    <button onClick={() => openTransferDialog('copy')}>
+                      Copy to...
+                    </button>
+                  </div>
+                )}
+              </div>
               <button 
                 onClick={handleDelete}
                 className="action-button delete-button"
@@ -896,18 +935,18 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         </div>
       )}
 
-      {moveState?.isDialogOpen && (
-        <div className="modal-overlay" onClick={() => !moveState.isMoving && setMoveState(null)}>
+      {transferState?.isDialogOpen && (
+        <div className="modal-overlay" onClick={() => !isTransferring && setTransferState(null)}>
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2>Move {selectedFiles.length} File(s)</h2>
+            <h2>{transferState.mode === 'move' ? 'Move' : 'Copy'} {selectedFiles.length} File(s)</h2>
             <p>From bucket: <strong>{bucketName}</strong></p>
             
             <div className="bucket-selector">
               <label>Select destination bucket:</label>
               <select
-                value={moveDestination || ''}
-                onChange={(e) => setMoveDestination(e.target.value || null)}
-                disabled={isMoving}
+                value={transferState.targetBucket || ''}
+                onChange={(e) => setTransferState(prev => prev ? { ...prev, targetBucket: e.target.value || null } : null)}
+                disabled={isTransferring}
               >
                 <option value="">-- Choose a bucket --</option>
                 {availableBuckets?.filter(b => b !== bucketName).map(bucket => (
@@ -916,7 +955,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
               </select>
             </div>
 
-            {isMoving && (
+            {isTransferring && (
               <div className="move-progress">
                 <p>{error}</p>
                 <div className="progress-bar">
@@ -928,20 +967,20 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             <div className="modal-actions">
               <button
                 className="modal-button cancel"
-                onClick={() => {
-                  setMoveState(null)
-                  setMoveDestination(null)
-                }}
-                disabled={isMoving}
+                onClick={() => setTransferState(null)}
+                disabled={isTransferring}
               >
                 Cancel
               </button>
               <button
-                className="modal-button move"
-                onClick={handleMoveFiles}
-                disabled={!moveDestination || isMoving}
+                className={`modal-button ${transferState.mode === 'move' ? 'move' : 'copy'}`}
+                onClick={handleTransferFiles}
+                disabled={!transferState.targetBucket || isTransferring}
               >
-                {isMoving ? 'Moving...' : 'Move Files'}
+                {isTransferring 
+                  ? (transferState.mode === 'move' ? 'Moving...' : 'Copying...') 
+                  : (transferState.mode === 'move' ? 'Move Files' : 'Copy Files')
+                }
               </button>
             </div>
           </div>

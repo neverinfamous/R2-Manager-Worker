@@ -612,6 +612,37 @@ class APIService {
     }
   }
 
+  async copyFile(sourceBucket: string, sourceKey: string, destBucket: string): Promise<void> {
+    const response = await fetch(
+      `${WORKER_API}/api/files/${sourceBucket}/${encodeURIComponent(sourceKey)}/copy`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ destinationBucket: destBucket })
+      })
+    )
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: `Failed to copy file: ${response.status}` }))
+      throw new Error(error.error || 'Failed to copy file')
+    }
+  }
+
+  async copyFiles(
+    sourceBucket: string,
+    fileKeys: string[],
+    destBucket: string,
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<void> {
+    for (let i = 0; i < fileKeys.length; i++) {
+      await this.copyFile(sourceBucket, fileKeys[i], destBucket)
+      onProgress?.(i + 1, fileKeys.length)
+    }
+  }
+
 
 }
 
