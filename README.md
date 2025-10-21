@@ -460,7 +460,6 @@ custom_domain = true
 ### Planned Work
 
 **High Priority**
-- **copy signed url** - Peovide user with copy button for signed url to get shareable link to file.
 - **Wiki** - Split current README.md into a shorter version for main repository and a GitHub Wiki for complete documentation.
 
 **Future Enhancements**

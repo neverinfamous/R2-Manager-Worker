@@ -376,6 +376,8 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
   const [bucketDropdownOpen, setBucketDropdownOpen] = useState(false)
   const [bucketDropdownPosition, setBucketDropdownPosition] = useState<{ top: number; left: number } | null>(null)
+  const [copyingUrl, setCopyingUrl] = useState<string | null>(null)
+  const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
 
   const gridRef = useRef<HTMLDivElement>(null)
   const transferButtonRef = useRef<HTMLButtonElement>(null)
@@ -870,6 +872,32 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     }
   }, [bucketName, onBucketNavigate])
 
+  const handleCopySignedUrl = useCallback(async (fileName: string, event: React.MouseEvent) => {
+    event.stopPropagation()
+    
+    try {
+      setCopyingUrl(fileName)
+      setError('')
+      
+      const signedUrl = await api.getSignedUrl(bucketName, fileName)
+      
+      await navigator.clipboard.writeText(signedUrl)
+      
+      setCopiedUrl(fileName)
+      setInfoMessage(`Copied link for ${fileName}`)
+      
+      setTimeout(() => {
+        setCopiedUrl(null)
+        setInfoMessage('')
+      }, 3000)
+    } catch (err) {
+      console.error('Failed to copy signed URL:', err)
+      setError('Failed to copy link')
+    } finally {
+      setCopyingUrl(null)
+    }
+  }, [bucketName])
+
   return (
     <div className="file-grid-container">
       {onBack && (
@@ -1148,6 +1176,28 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                     {formatFileSize(file.size)} • {new Date(file.uploaded).toLocaleDateString()}
                   </p>
                 </div>
+
+                <button
+                  className="copy-url-button"
+                  onClick={(e) => handleCopySignedUrl(file.key, e)}
+                  disabled={copyingUrl === file.key}
+                  title="Copy shareable link"
+                >
+                  {copyingUrl === file.key ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" opacity="0.3" />
+                    </svg>
+                  ) : copiedUrl === file.key ? (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ) : (
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                    </svg>
+                  )}
+                </button>
               </div>
             )
           })}
@@ -1215,6 +1265,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                     </span>
                   )}
                 </th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -1257,6 +1308,22 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                     <td>{formatFileSize(file.size)}</td>
                     <td>{getFileExtension(file.key).toUpperCase()}</td>
                     <td>{new Date(file.uploaded).toLocaleDateString()}</td>
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <button
+                        className="copy-url-button-list"
+                        onClick={(e) => handleCopySignedUrl(file.key, e)}
+                        disabled={copyingUrl === file.key}
+                        title="Copy shareable link"
+                      >
+                        {copyingUrl === file.key ? (
+                          'Copying...'
+                        ) : copiedUrl === file.key ? (
+                          '✓ Copied'
+                        ) : (
+                          'Copy Link'
+                        )}
+                      </button>
+                    </td>
                   </tr>
                 )
               })}

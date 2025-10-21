@@ -722,6 +722,23 @@ class APIService {
     }
   }
 
+  async getSignedUrl(bucketName: string, fileName: string): Promise<string> {
+    const response = await fetch(
+      `${WORKER_API}/api/files/${bucketName}/signed-url/${encodeURIComponent(fileName)}`,
+      this.getFetchOptions({
+        method: 'GET',
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: `Failed to generate signed URL: ${response.status}` }))
+      throw new Error(error.error || 'Failed to generate signed URL')
+    }
+
+    const data = await response.json()
+    return data.url
+  }
 
 }
 

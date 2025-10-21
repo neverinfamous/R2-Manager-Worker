@@ -930,6 +930,68 @@
   background: #059669;
 }
 
+/* Copy URL Button Styles */
+.copy-url-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(37, 99, 235, 0.9);
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  z-index: 10;
+}
+
+.file-item:hover .copy-url-button {
+  opacity: 1;
+}
+
+.copy-url-button:hover:not(:disabled) {
+  background: rgba(29, 78, 216, 0.95);
+  transform: scale(1.05);
+}
+
+.copy-url-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.copy-url-button svg {
+  width: 18px;
+  height: 18px;
+  color: white;
+}
+
+.copy-url-button-list {
+  background: #2563EB;
+  color: white;
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.copy-url-button-list:hover:not(:disabled) {
+  background: #1D4ED8;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.copy-url-button-list:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 .move-button {
   background: #4C6EF5;
   color: white;

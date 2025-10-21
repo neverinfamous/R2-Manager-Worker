@@ -929,6 +929,46 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
       }
     }
 
+    // Get signed URL for file
+    if (request.method === 'GET' && parts[4] === 'signed-url') {
+      try {
+        const key = decodeURIComponent(parts[5]);
+        console.log('[Files] Generating signed URL for:', key);
+        
+        // Create the download path
+        const downloadPath = '/api/files/' + bucketName + '/download/' + key;
+        const version = Date.now();
+        const versionedPath = downloadPath + '?ts=' + version;
+        const signature = generateSignature(versionedPath, env);
+        const signedUrl = versionedPath + '&sig=' + signature;
+        
+        // Return the full URL
+        const fullUrl = new URL(signedUrl, request.url).toString();
+        
+        return new Response(JSON.stringify({ 
+          success: true,
+          url: fullUrl
+        }), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+  
+      } catch (err) {
+        console.error('[Files] Signed URL generation error:', err);
+        return new Response(JSON.stringify({
+          error: 'Failed to generate signed URL'
+        }), { 
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
     // Delete file
     if (request.method === 'DELETE' && parts[4] === 'delete') {
       try {
