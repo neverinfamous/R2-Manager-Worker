@@ -460,7 +460,6 @@ custom_domain = true
 ### Planned Work
 
 **High Priority**
-- **Add Ctrl-click and shift-click multi-select** - Enable shift and alt click to multi-select files for copy, delete, download, and move.
 - **jump/navigate to bucket** - Add Jump/Navigate to Bucket xx dropdown on list files display/page.
 - **Wiki** - Split current README.md into a shorter version for main repository and a GitHub Wiki for complete documentation.
 
