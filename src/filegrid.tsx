@@ -153,6 +153,17 @@ const getFileTypeIcon = (filename: string): JSX.Element => {
     )
   }
   
+  // Database files - cylindrical database icon
+  if (ext === 'db' || ext === 'sqlite' || ext === 'sqlite3') {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <ellipse cx="12" cy="5" rx="8" ry="3" />
+        <path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5" />
+        <path d="M20 12c0 1.7-3.6 3-8 3s-8-1.3-8-3" />
+      </svg>
+    )
+  }
+  
   // JSON/XML files - code brackets icon
   if (ext === 'json' || ext === 'xml') {
     return (

@@ -100,7 +100,10 @@ class APIService {
         'text/markdown',
         'text/csv',
         'application/rtf',
-        'text/rtf'
+        'text/rtf',
+        'application/x-sqlite3',
+        'application/vnd.sqlite3',
+        'application/x-db'
       ]
     },
     archive: {
@@ -227,6 +230,7 @@ class APIService {
       'pdf': 'document', 'doc': 'document', 'docx': 'document',
       'xls': 'document', 'xlsx': 'document', 'ppt': 'document', 'pptx': 'document',
       'txt': 'document', 'md': 'document', 'csv': 'document', 'rtf': 'document',
+      'db': 'document', 'sqlite': 'document', 'sqlite3': 'document',
       // Archives
       'zip': 'archive', 'rar': 'archive', '7z': 'archive', 'tar': 'code', 'gz': 'archive',
       // Code files
