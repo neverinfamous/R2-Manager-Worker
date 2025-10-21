@@ -457,7 +457,7 @@ custom_domain = true
 
 ## 📋 Roadmap
 
-### Planned
+### Planned Work
 
 **High Priority**
 - **Add Ctrl-click and shift-click multi-select** - Enable shift and alt click to multi-select files for copy, delete, download, and move.
