@@ -9,6 +9,12 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
 
 ---
 
+## 🎯 Why It Exists
+
+Cloudflare's dashboard lacks full-featured R2 file management capabilities. This tool provides a self-hosted alternative for developers and enterprises wanting complete control over their R2 buckets, advanced file operations, and seamless SSO integration. Perfect for teams that need more than the dashboard offers but want to stay on the Cloudflare edge network.
+
+---
+
 ## ✨ Features
 
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets
@@ -269,6 +275,18 @@ npx wrangler dev
 npx wrangler deploy
 ```
 
+### Technical Notes
+
+**ES Modules Configuration:**
+- `package.json` includes `"type": "module"` to ensure proper ES module support with Vite 7+
+- This configuration avoids subtle import/export syntax issues and ensures consistent behavior across the project
+- All source files should use ES6 import/export syntax (not CommonJS)
+
+**Wrangler Configuration:**
+- The `wrangler.toml` is configured with both local and production environments
+- Local development uses `--local` flag by default (no secrets required)
+- Production deployment automatically binds your R2 bucket and D1 database based on `wrangler.toml` settings
+
 ---
 
 ## 📋 Architecture
@@ -319,6 +337,8 @@ All endpoints require valid Cloudflare Access JWT (automatically handled by Clou
 | `POST` | `/buckets` | Create bucket (Body: `{ "name": "bucket-name" }`) |
 | `PATCH` | `/buckets/:name` | Rename bucket (Body: `{ "newName": "new-name" }`) |
 | `DELETE` | `/buckets/:name` | Delete bucket (Query: `?force=true` to delete all objects first) |
+
+**Note on Bucket Rename:** Since R2 doesn't have native bucket rename functionality, this operation performs a copy of all objects to the new bucket followed by deletion of the original. Ensure adequate rate limits during this operation on large buckets.
 
 ### File Management
 
@@ -424,6 +444,31 @@ custom_domain = true
 - For custom domains, your domain must be active on Cloudflare
 - Custom domains automatically create DNS records and SSL certificates
 - The `binding` values (e.g., `BUCKET`, `DB`) are how you access these resources in your Worker code
+
+---
+
+## 📋 Roadmap
+
+### In Progress
+- 🔧 **Configurable Deployment** - Support multiple Cloudflare account setups
+
+### Planned Features
+
+**High Priority (Next Iteration)**
+- 🔐 **Role-Based Access Control (RBAC)** - Define user roles (Admin, Editor, Viewer) with fine-grained permissions
+- 📊 **File Metadata Viewer** - Display file timestamps, size, and quick copy for signed URLs
+- 📝 **Audit Logging** - Track all user actions (upload, delete, rename) in D1 database
+
+**Medium Priority**
+- 🔍 **Advanced Search & Filtering** - Full-text search and filter by file type, size, date
+- 📦 **Bulk Operations** - Rename, move, or delete multiple files simultaneously
+- 🏷️ **Custom Metadata** - Add and manage custom metadata on files
+
+**Future Enhancements**
+- 📱 **Offline Upload Queue** - Service worker support for resumable uploads offline
+- 🎨 **Custom Branding** - `VITE_APP_BRAND` config for enterprise deployments
+- ⚡ **Performance Caching** - Intelligent caching layer for frequently accessed files
+- 🔄 **File Versioning** - Track and restore previous versions of files
 
 ---
 
