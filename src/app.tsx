@@ -390,15 +390,7 @@ export default function BucketManager() {
           onClick={handleNavigateHome}
           style={{ cursor: 'pointer' }}
         />
-        <div className="header-content">
-          {selectedBucket && (
-            <button 
-              onClick={() => setSelectedBucket(null)}
-              className="back-button"
-            >
-              ← Back to Buckets
-            </button>
-          )}
+        <div className="header-content">         
           <h1 className="app-title" onClick={handleNavigateHome} style={{ cursor: 'pointer' }}>
             R2 Bucket Manager
           </h1>
