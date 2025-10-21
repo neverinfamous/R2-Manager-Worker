@@ -449,9 +449,6 @@ custom_domain = true
 
 ## 📋 Roadmap
 
-### In Progress
-- 🔧 **Configurable Deployment** - Support multiple Cloudflare account setups
-
 ### Planned Features
 
 **High Priority (Next Iteration)**
