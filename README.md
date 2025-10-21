@@ -460,20 +460,19 @@ custom_domain = true
 ### Planned Features
 
 **High Priority**
-- 📊 **Last Modified Bucket File List Filter** - Add last modified filter for bucket file lists.
-- ⚡ **Performance Caching** - Intelligent caching layer for frequently accessed files
+- **UI Improvement** - Combine Preview/List Buttons into Toggle
+- **Performance Caching** - Intelligent caching layer for frequently accessed files
 
 **Medium Priority**
-
-- 🔄 **File Versioning** - Track and restore previous versions of files
-- 🔍 **Advanced Search & Filtering** - Full-text search and filter by file type, size, date
+- **File Versioning** - Track and restore previous versions of files
+- **Advanced Search & Filtering** - Full-text search and filter by file type, size, date
 
 **Future Enhancements**
-- 🔐 **Per-bucket ownership in D1 database and-or Role-Based Access Control (RBAC)** - Define user roles (Admin, Editor, Viewer) with fine-grained permissions
-- 📝 **Audit Logging** - Track all user actions (copy, edit, delete, downlload, move, rename, upload) in D1 database
-- 📱 **Offline Upload Queue** - Service worker support for resumable uploads offline
-- 🎨 **Custom Branding** - `VITE_APP_BRAND` config for enterprise deployments
-- 🏷️ **Custom Metadata** - Add and manage custom metadata on files
+- **Audit Logging** - Track all user actions (copy, edit, delete, downlload, move, rename, upload) in D1 database
+-  **Per-bucket ownership in D1 database and-or Role-Based Access Control (RBAC)** - Define user roles (Admin, Editor, Viewer) with fine-grained permissions
+- **Offline Upload Queue** - Service worker support for resumable uploads offline
+- **Custom Branding** - `VITE_APP_BRAND` config for enterprise deployments
+- **Custom Metadata** - Add and manage custom metadata on files
 
 ---
 
