@@ -628,6 +628,11 @@
   min-width: 120px;
   position: relative;
   overflow: hidden;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .action-button:disabled {
@@ -935,6 +940,8 @@
   font-weight: 500;
   white-space: nowrap;
   flex-shrink: 0;
+  height: 36px;
+  box-sizing: border-box;
 }
 
 .view-mode-toggle-button:hover {
@@ -1466,6 +1473,8 @@
   min-width: 80px;
   white-space: nowrap;
   flex-shrink: 0;
+  height: 36px;
+  box-sizing: border-box;
 }
 
 .sort-button:hover {
