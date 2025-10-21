@@ -636,10 +636,10 @@ export default function BucketManager() {
                     <div className="file-type-limits">
                       <p>Accepted file types and size limits:</p>
                       <ul>
-                        <li>Archives (ZIP, RAR, 7Z, TAR, GZ) - up to 500MB</li>
+                        <li>Archives (7Z, GZ, RAR, TAR, ZIP) - up to 500MB</li>
                         <li>Code files (CSS, HTML, JS, TS, Python, SQL, etc.) - up to 10MB</li>
                         <li>Documents (PDF, Word, Excel, PowerPoint, RTF, CSV, text) - up to 50MB</li>
-                        <li>Images (JPG, PNG, GIF, WebP, AVIF, HEIC, SVG) - up to 15MB</li>
+                        <li>Images (AVIF, BMP, GIF, HEIC, JPG, PNG, SVG, WebP) - up to 15MB</li>
                         <li>Jupyter Notebooks (.ipynb) - up to 10MB</li>
                         <li>Videos (MP4, MOV, WebM) - up to 500MB</li>
 

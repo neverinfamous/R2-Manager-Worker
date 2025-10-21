@@ -75,12 +75,13 @@ const getFileExtension = (filename: string): string => {
 }
 
 const isImageFile = (filename: string): boolean => {
-  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp']
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.heic', '.svg', '.bmp']
   return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext))
 }
 
 const isVideoFile = (filename: string): boolean => {
-  return getFileExtension(filename) === 'mp4'
+  const ext = getFileExtension(filename)
+  return ext === 'mp4' || ext === 'mov' || ext === 'webm'
 }
 
 const getFileTypeIcon = (filename: string): JSX.Element => {
@@ -191,7 +192,7 @@ const getFileTypeIcon = (filename: string): JSX.Element => {
   }
   
   // Archive icons - compressed folder
-  if (ext === 'zip' || ext === 'rar' || ext === '7z' || ext === 'tar') {
+  if (ext === 'zip' || ext === 'rar' || ext === '7z' || ext === 'tar' || ext === 'gz') {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
         <path d="M12 2v8l6 4v6a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-6l6-4V2z" />
@@ -221,7 +222,7 @@ const getFileTypeIcon = (filename: string): JSX.Element => {
       ext === 'py' || ext === 'java' || ext === 'cpp' || ext === 'c' || 
       ext === 'cs' || ext === 'go' || ext === 'rs' || ext === 'php' || 
       ext === 'rb' || ext === 'swift' || ext === 'kt' || ext === 'html' || 
-      ext === 'css' || ext === 'yaml' || ext === 'yml') {
+      ext === 'css' || ext === 'yaml' || ext === 'yml' || ext === 'sql') {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
