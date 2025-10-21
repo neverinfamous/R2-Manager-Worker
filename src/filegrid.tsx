@@ -743,7 +743,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
   const selectedFileObjects = paginatedFiles.objects.filter(f => selectedFiles.includes(f.key))
   const totalSelectedSize = selectedFileObjects.reduce((sum, file) => sum + file.size, 0)
-  const isOverSizeLimit = totalSelectedSize > 100 * 1024 * 1024 // 100MB in bytes
+  const isOverSizeLimit = totalSelectedSize > 500 * 1024 * 1024 // 500MB in bytes
 
   const deselectAll = useCallback(() => {
     setSelectedFiles([])
@@ -796,7 +796,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             <span className="selected-count">
               {selectedFiles.length} selected ({formatFileSize(totalSelectedSize)})
               {isOverSizeLimit && (
-                <span className="size-warning"> - Exceeds 100MB limit</span>
+                <span className="size-warning"> - Exceeds 500MB limit</span>
               )}
             </span>
           )}
@@ -807,7 +807,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                 onClick={downloadSelected}
                 className={`action-button download-button ${downloadProgress?.status || ''}`}
                 disabled={isOverSizeLimit}
-                title={isOverSizeLimit ? 'Total size exceeds 100MB limit' : undefined}
+                title={isOverSizeLimit ? 'Total size exceeds 500MB limit' : undefined}
               >
                 {downloadProgress ? (
                   downloadProgress.status === 'error' ? 'Download Failed' :
