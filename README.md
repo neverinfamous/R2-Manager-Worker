@@ -460,9 +460,8 @@ custom_domain = true
 ### Planned Work
 
 **High Priority**
-- **Deselect All/Select All toggle** - Combine "Select All" and "Deselect All" into single toggle button.
 - **Add Ctrl-click and shift-click multi-select** - Enable shift and alt click to multi-select files for copy, delete, download, and move.
-- **Add Inter-Bucket navigation to Bucket file list pages** - Add Jump/Navigate to Bucket xx dropdown on Bucket list files display/page.
+- **jump/navigate to bucket** - Add Jump/Navigate to Bucket xx dropdown on list files display/page.
 - **Wiki** - Split current README.md into a shorter version for main repository and a GitHub Wiki for complete documentation.
 
 **Future Enhancements**
