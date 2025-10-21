@@ -608,9 +608,11 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     event.stopPropagation()
     
     const isShiftClick = 'shiftKey' in event && event.shiftKey && lastSelectedRef.current
+    const isCtrlClick = 'ctrlKey' in event && (event.ctrlKey || event.metaKey)
     const lastSelected = lastSelectedRef.current
 
     if (isShiftClick && lastSelected) {
+      // Shift-click: Select range from last selected to current
       const fileKeys = sortedFilesRef.current.map(f => f.key)
       const currentIndex = fileKeys.indexOf(key)
       const lastIndex = fileKeys.indexOf(lastSelected)
@@ -620,7 +622,16 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       
       const newSelection = fileKeys.slice(start, end + 1)
       setSelectedFiles(prev => Array.from(new Set([...prev, ...newSelection])))
+    } else if (isCtrlClick) {
+      // Ctrl/Cmd-click: Toggle individual selection without clearing others
+      setSelectedFiles(prev => {
+        const newSelection = prev.includes(key)
+          ? prev.filter(k => k !== key)
+          : [...prev, key]
+        return newSelection
+      })
     } else {
+      // Regular click or checkbox: Toggle individual selection
       setSelectedFiles(prev => {
         const newSelection = prev.includes(key)
           ? prev.filter(k => k !== key)
