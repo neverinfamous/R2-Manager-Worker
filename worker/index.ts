@@ -743,10 +743,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
             'Cache-Control': skipCache ? 'no-cache' : 'max-age=60'
           }
         });
-		console.log('[Files] Full API response:', {
-			status: response.status,
-			data: await response.clone().json()
-		});
+        
         if (!response.ok) {
           throw new Error('Failed to list files: ' + response.status);
         }
@@ -788,11 +785,25 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         // Sort objects by upload date
         objects.sort((a, b) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime());
 
+        // Determine if there are more results
+        // hasMore should be true only if the API indicates truncation AND we have a cursor for the next page
+        const apiHasMore = data.result_info?.is_truncated || false;
+        const hasValidCursor = !!data.result_info?.cursor;
+        const hasMore = apiHasMore && hasValidCursor;
+
+        console.log('[Files] Pagination info:', {
+          apiTruncated: apiHasMore,
+          cursor: data.result_info?.cursor,
+          hasMore: hasMore,
+          objectsReturned: objects.length,
+          requestedLimit: limit
+        });
+
         return new Response(JSON.stringify({
           objects,
           pagination: {
             cursor: data.result_info?.cursor,
-            hasMore: data.result_info?.is_truncated || false
+            hasMore: hasMore
           }
         }), {
           headers: {
