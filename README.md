@@ -240,8 +240,7 @@ const response = await fetch(
 
 ## 🚧 Future Work
 
-1. **Enhancement:** Add Cloudflare Web Assets to protect `/api/*` endpoints
-2. **Enhancement:** Detect and match users light/dark mode system setting.
-3. **Enhancement:** Configure repository for community standards with license, security policy, etc
-4. **Enhancement:** Set up dependabot, codeql, secrets scanning, etc.
-5. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
+1. **Enhancement:** Detect and match users light/dark mode system setting.
+2. **Enhancement:** Configure repository for community standards with license, security policy, etc
+3. **Enhancement:** Set up dependabot, codeql, secrets scanning, etc.
+4. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
