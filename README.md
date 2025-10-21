@@ -464,7 +464,7 @@ custom_domain = true
 - **Wiki** - Split current README.md into a shorter version for main repository and a GitHub Wiki for complete documentation.
 
 **Future Enhancements**
-- **Audit Logging** - Track all user actions (copy, edit, delete, downlload, move, rename, upload) in D1 database.
+- **Audit Logging** - Track all user actions (copy, edit, delete, download, move, rename, upload) in D1 database.
 -  **Per-bucket ownership in D1 database and-or Role-Based Access Control (RBAC)** - Define user roles (Admin, Editor, Viewer) with fine-grained. permissions (schema?)
 - **File Versioning** - Track and restore previous versions of files.
 - **Offline Upload Queue** - Add service worker support for resumable uploads offline.
