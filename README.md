@@ -462,7 +462,8 @@ custom_domain = true
 **High Priority**
 - **UI Improvement** - Combine Preview/List Buttons into Toggle
 - **Performance Caching** - Intelligent caching layer for frequently accessed files
-- **Wiki** - Split current README.md into a shorter version for  main repository and a GitHub Wiki for complete documentation.
+- **Wiki** - Split current README.md into a shorter version for main repository and a GitHub Wiki for complete documentation.
+
 **Medium Priority**
 - **File Versioning** - Track and restore previous versions of files
 - **Advanced Search & Filtering** - Full-text search and filter by file type, size, date
