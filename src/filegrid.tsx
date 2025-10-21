@@ -823,8 +823,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       type: 'Type',
       uploaded: 'Uploaded'
     }
-    const arrow = sortState.direction === 'asc' ? '▲' : '▼'
-    return `${fieldLabels[sortState.field]} ${arrow}`
+    return fieldLabels[sortState.field]
   }, [sortState])
 
   return (
@@ -936,8 +935,8 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                 className="action-button sort-button-combined"
                 onClick={handleSortButtonClick}
               >
-                Sort: {getSortLabel()}
-                <span className="dropdown-arrow">▼</span>
+                <span>Sort: {getSortLabel()}</span>
+                <span className="sort-direction-indicator">{sortState.direction === 'asc' ? '▲' : '▼'}</span>
               </button>
               {sortDropdownOpen && sortDropdownPosition && (
                 <div 
