@@ -110,11 +110,6 @@ TEAM_DOMAIN         # Cloudflare Access team domain (from Zero Trust)
 POLICY_AUD          # Policy ID from Access policy
 ```
 
-### Removed Secrets (Old System)
-- ~~REGISTRATION_CODE~~ - Not used
-- ~~URL_SIGNING_KEY~~ - Not used
-- ~~DB schema includes users/sessions~~ - Not used, but tables still in schema
-
 ---
 
 ## 🚀 Development Quick Reference
@@ -240,5 +235,6 @@ const response = await fetch(
 
 ## 🚧 Future Work
 
-1. **Enhancement:** Detect and match users light/dark mode system setting.
-2. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
+1. **Enhancement:** Configure application for new users on their own cloudflare account and remove r2.adamic.tech domain conifguration/information from readme
+2. **Enhancement:** Detect and match users light/dark mode system setting.
+3. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
