@@ -388,7 +388,6 @@ By default, all authenticated users can access all buckets. To restrict access:
 
 1. Update Cloudflare Access policies to specific GitHub users/orgs
 2. Modify worker JWT validation to check user email against allowlist
-3. Implement per-bucket ownership in D1 database (requires code changes)
 
 ---
 
@@ -467,7 +466,7 @@ custom_domain = true
 - 🔄 **File Versioning** - Track and restore previous versions of files
 
 **Future Enhancements**
-- 🔐 **Role-Based Access Control (RBAC)** - Define user roles (Admin, Editor, Viewer) with fine-grained permissions
+- 🔐 **Per-bucket ownership in D1 database and-or Role-Based Access Control (RBAC)** - Define user roles (Admin, Editor, Viewer) with fine-grained permissions
 - 📝 **Audit Logging** - Track all user actions (copy, edit, delete, downlload, move, rename, upload) in D1 database
 - 📱 **Offline Upload Queue** - Service worker support for resumable uploads offline
 - 🎨 **Custom Branding** - `VITE_APP_BRAND` config for enterprise deployments
