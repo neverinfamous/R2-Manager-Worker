@@ -1,6 +1,6 @@
 # Cloudflare R2 Bucket Manager
 
-**Last Updated:** October 20, 2025 9:45 PM EST | **Status:** ✅ Stable 
+**Last Updated:** October 20, 2025 11:02 PM EST | **Status:** ✅ Stable 
 **Tech Stack:** React 19.2.0 | Vite 7.1.11 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 A web application for managing Cloudflare R2 buckets with GitHub SSO authentication via Cloudflare Access (Zero Trust) and Worker.
@@ -240,7 +240,5 @@ const response = await fetch(
 
 ## 🚧 Future Work
 
-1. **Enhancement:** Configure repository for community standards with license, security policy, etc
-2. **Enhancement:** Set up dependabot, codeql, secrets scanning, etc.
-3. **Enhancement:** Detect and match users light/dark mode system setting.
-4. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
+1. **Enhancement:** Detect and match users light/dark mode system setting.
+2. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
