@@ -1093,7 +1093,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         console.log('[Files] Copying file:', sourceKey, 'from:', bucketName, 'to:', destBucket);
 
         // 1. Fetch file from source bucket
-        const getUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(sourceKey);
+        const getUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + sourceKey;
         console.log('[Files] Fetching from source:', getUrl);
         const getResponse = await fetch(getUrl, { headers: cfHeaders });
 
@@ -1118,7 +1118,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
 
         // 3. Check if file exists in destination and generate unique name if needed
         let destKey = sourceKey;
-        const checkUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + encodeURIComponent(destKey);
+        const checkUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + destKey;
         const checkResponse = await fetch(checkUrl, { method: 'HEAD', headers: cfHeaders });
 
         if (checkResponse.ok) {
@@ -1135,8 +1135,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           console.log('[Files] File exists in destination, renaming to:', destKey);
         }
 
-        // 4. Upload to destination bucket
-        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + encodeURIComponent(destKey);
+        // 4. Upload to destination bucket (use decoded key like uploads do)
+        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + destKey;
         console.log('[Files] Uploading to destination:', putUrl);
         const putResponse = await fetch(putUrl, {
           method: 'PUT',
