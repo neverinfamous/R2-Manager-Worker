@@ -70,6 +70,8 @@ class APIService {
         'image/png',
         'image/gif',
         'image/webp',
+        'image/avif',
+        'image/heic',
         'image/svg+xml',
         'image/bmp'
       ]
@@ -78,7 +80,9 @@ class APIService {
       maxSize: 500 * 1024 * 1024, // 500MB
       description: 'Videos',
       accept: [
-        'video/mp4'
+        'video/mp4',
+        'video/quicktime',
+        'video/webm'
       ]
     },
     document: {
@@ -94,7 +98,9 @@ class APIService {
         'application/vnd.openxmlformats-officedocument.presentationml.presentation',
         'text/plain',
         'text/markdown',
-        'text/csv'
+        'text/csv',
+        'application/rtf',
+        'text/rtf'
       ]
     },
     archive: {
@@ -106,7 +112,9 @@ class APIService {
         'application/x-7z-compressed',
         'application/x-rar-compressed',
         'application/x-tar',
-        'application/x-gtar'
+        'application/x-gtar',
+        'application/gzip',
+        'application/x-gzip'
       ]
     },
     code: {
@@ -154,7 +162,9 @@ class APIService {
         'text/markdown',
         'application/x-tar',
         'application/x-gtar',
-        'text/plain'
+        'text/plain',
+        'application/sql',
+        'text/x-sql'
       ]
     }
   }
@@ -210,22 +220,22 @@ class APIService {
     const extensionMap: Record<string, string> = {
       // Images
       'jpg': 'image', 'jpeg': 'image', 'png': 'image', 'gif': 'image', 
-      'webp': 'image', 'svg': 'image', 'bmp': 'image',
+      'webp': 'image', 'avif': 'image', 'heic': 'image', 'svg': 'image', 'bmp': 'image',
       // Videos
-      'mp4': 'video',
+      'mp4': 'video', 'mov': 'video', 'webm': 'video',
       // Documents
       'pdf': 'document', 'doc': 'document', 'docx': 'document',
       'xls': 'document', 'xlsx': 'document', 'ppt': 'document', 'pptx': 'document',
-      'txt': 'document', 'md': 'document', 'csv': 'document',
+      'txt': 'document', 'md': 'document', 'csv': 'document', 'rtf': 'document',
       // Archives
-      'zip': 'archive', 'rar': 'archive', '7z': 'archive', 'tar': 'code',
+      'zip': 'archive', 'rar': 'archive', '7z': 'archive', 'tar': 'code', 'gz': 'archive',
       // Code files
       'js': 'code', 'jsx': 'code', 'ts': 'code', 'tsx': 'code',
       'py': 'code', 'java': 'code', 'c': 'code', 'cpp': 'code', 'cc': 'code',
       'cs': 'code', 'go': 'code', 'rs': 'code', 'php': 'code',
       'rb': 'code', 'swift': 'code', 'kt': 'code', 'html': 'code',
       'css': 'code', 'json': 'code', 'xml': 'code', 'yaml': 'code', 'yml': 'code',
-      'ipynb': 'code', 'parquet': 'document'
+      'sql': 'code', 'ipynb': 'code', 'parquet': 'document'
     }
     
     const category = extensionMap[ext]
