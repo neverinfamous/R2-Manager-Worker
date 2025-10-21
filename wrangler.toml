@@ -23,6 +23,12 @@ binding = "DB"
 database_name = "r2manager"
 database_id = "7c4e1036-b1ee-4aaa-b0b2-20ca3fe6e3d9"
 
+# KV Storage for bucket listing cache
+[[kv_namespaces]]
+binding = "CACHE_KV"
+id = "152e6a2775804979b19c3cc22d81a28d"
+preview_id = "23e056b1ee1d4b548bcd3d51869109f5"
+
 [observability.logs]
 enabled = true
 

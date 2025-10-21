@@ -708,6 +708,39 @@ class APIService {
     }
   }
 
+  async getCacheInfo(): Promise<Response> {
+    return fetch(`${WORKER_API}/api/cache/info`, 
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+  }
+
+  async getCacheStats(): Promise<Response> {
+    return fetch(`${WORKER_API}/api/cache/stats`, 
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+  }
+
+  async clearCache(): Promise<Response> {
+    return fetch(`${WORKER_API}/api/cache/clear`, 
+      this.getFetchOptions({
+        method: 'DELETE',
+        headers: this.getHeaders()
+      })
+    )
+  }
+
+  async clearBucketCache(bucketName: string): Promise<Response> {
+    return fetch(`${WORKER_API}/api/cache/bucket/${bucketName}`, 
+      this.getFetchOptions({
+        method: 'DELETE',
+        headers: this.getHeaders()
+      })
+    )
+  }
 
 }
 

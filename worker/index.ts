@@ -1,4 +1,5 @@
 import JSZip from 'jszip';
+import { CacheService } from './cache-service';
 
 // Cloudflare Workers types
 declare global {
@@ -125,6 +126,7 @@ export interface Env {
   R2: R2Bucket
   ASSETS: Fetcher
   DB: D1Database
+  CACHE_KV: KVNamespace
   CF_EMAIL: string
   API_KEY: string
   ACCOUNT_ID: string
@@ -331,6 +333,12 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
       headers: corsHeaders
     });
   }
+
+  // Initialize cache service
+  const cacheService = new CacheService(env.CACHE_KV, {
+    bucketListingTTL: 300,      // 5 minutes
+    enableCache: true,
+  });
 
   // Bucket Management Routes
   if (url.pathname.startsWith('/api/buckets')) {
@@ -718,29 +726,46 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         console.log('[Files] Listing files in bucket:', bucketName);
         const cursor = url.searchParams.get('cursor');
         const limit = parseInt(url.searchParams.get('limit') || '20');
-        const skipCache = url.searchParams.get('skipCache') === 'true';
+        const sortBy = url.searchParams.get('sortBy') || 'last_modified';
+        const order = url.searchParams.get('order') || 'desc';
+        
+        // Check cache first
+        const cachedListing = await cacheService.getBucketListing(
+          request, 
+          bucketName, 
+          cursor || undefined, 
+          limit,
+          sortBy,
+          order
+        );
+        
+        if (cachedListing) {
+          return new Response(JSON.stringify(cachedListing), {
+            headers: {
+              'Content-Type': 'application/json',
+              'X-Cache': 'HIT',
+              'X-Cache-Type': 'kv-listing-cache',
+              ...corsHeaders
+            }
+          });
+        }
         
         let apiUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects'
           + '?include=customMetadata,httpMetadata'
           + '&per_page=' + limit
           + '&delimiter=/'
-          + '&order=desc'
-          + '&sort_by=last_modified';
+          + '&order=' + order
+          + '&sort_by=' + sortBy;
         
         if (cursor) {
           apiUrl += '&cursor=' + cursor;
-        }
-
-        // Add cache-busting parameter if requested
-        if (skipCache) {
-          apiUrl += '&_t=' + Date.now();
         }
         
         console.log('[Files] List request URL:', apiUrl);
         const response = await fetch(apiUrl, { 
           headers: {
             ...cfHeaders,
-            'Cache-Control': skipCache ? 'no-cache' : 'max-age=60'
+            'Cache-Control': 'max-age=60'
           }
         });
         
@@ -799,16 +824,23 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           requestedLimit: limit
         });
 
-        return new Response(JSON.stringify({
+        const result = {
           objects,
           pagination: {
             cursor: data.result_info?.cursor,
             hasMore: hasMore
           }
-        }), {
+        };
+
+        // Cache the result
+        await cacheService.setBucketListing(bucketName, result, cursor || undefined, limit, sortBy, order);
+
+        return new Response(JSON.stringify(result), {
           headers: {
             'Content-Type': 'application/json',
-            'Cache-Control': skipCache ? 'no-cache' : 'public, max-age=60',
+            'X-Cache': 'MISS',
+            'X-Cache-Type': 'kv-listing-cache',
+            'Cache-Control': 'public, max-age=60',
             ...corsHeaders
           }
         });
@@ -896,13 +928,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           console.log('[Files] Chunk uploaded:', chunkId);
         }
 
-        // Force a cache refresh of the file listing
-        await fetch(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects?skipCache=true', {
-          headers: {
-            ...cfHeaders,
-            'Cache-Control': 'no-cache'
-          }
-        });
+        // Invalidate cache for this bucket
+        await cacheService.invalidateBucketListing(bucketName);
 
         return new Response(JSON.stringify({ 
           success: true,
@@ -946,6 +973,9 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         if (!response.ok) {
           throw new Error('Delete failed: ' + response.status);
         }
+
+        // Invalidate cache for this bucket
+        await cacheService.invalidateBucketListing(bucketName);
 
         return new Response(JSON.stringify({ success: true }), {
           headers: {
@@ -1047,6 +1077,9 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
 
         console.log('[Files] Move completed successfully');
 
+        // Invalidate cache for both buckets
+        await cacheService.invalidateMultipleBuckets([bucketName, destBucket]);
+
         return new Response(JSON.stringify({ success: true }), {
           headers: {
             'Content-Type': 'application/json',
@@ -1135,6 +1168,9 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
 
         console.log('[Files] Copy completed successfully');
 
+        // Invalidate cache for destination bucket only
+        await cacheService.invalidateBucketListing(destBucket);
+
         return new Response(JSON.stringify({ success: true }), {
           headers: {
             'Content-Type': 'application/json',
@@ -1147,6 +1183,115 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         return new Response(JSON.stringify({
           error: 'Copy failed'
         }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
+    return new Response('Not Found', { 
+      status: 404,
+      headers: corsHeaders
+    });
+  }
+
+  // Cache Management Routes
+  if (url.pathname.startsWith('/api/cache')) {
+    const parts = url.pathname.split('/').filter(Boolean);
+
+    // GET /api/cache/stats - Get cache statistics
+    if (request.method === 'GET' && parts[2] === 'stats') {
+      try {
+        const stats = await cacheService.getCacheStats();
+        return new Response(JSON.stringify(stats), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      } catch (err) {
+        console.error('[Cache] Stats error:', err);
+        return new Response(JSON.stringify({ error: 'Failed to get cache stats' }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
+    // GET /api/cache/info - Get cache architecture information
+    if (request.method === 'GET' && parts[2] === 'info') {
+      try {
+        const info = cacheService.getCacheArchitectureInfo();
+        return new Response(JSON.stringify({ 
+          architecture: info,
+          kvOnly: true,
+          tieredCacheCompatible: true,
+          cacheReserveCompatible: true,
+        }), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      } catch (err) {
+        console.error('[Cache] Info error:', err);
+        return new Response(JSON.stringify({ error: 'Failed to get cache info' }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
+    // DELETE /api/cache/clear - Clear all caches (admin only)
+    if (request.method === 'DELETE' && parts[2] === 'clear') {
+      try {
+        const count = await cacheService.clearAllCaches();
+        return new Response(JSON.stringify({ 
+          message: 'All caches cleared',
+          entriesDeleted: count,
+        }), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      } catch (err) {
+        console.error('[Cache] Clear error:', err);
+        return new Response(JSON.stringify({ error: 'Failed to clear caches' }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
+    // DELETE /api/cache/bucket/:bucket - Clear cache for specific bucket
+    if (request.method === 'DELETE' && parts[2] === 'bucket' && parts[3]) {
+      try {
+        const bucketName = parts[3];
+        await cacheService.invalidateBucketListing(bucketName);
+        return new Response(JSON.stringify({ 
+          message: `Cache cleared for bucket: ${bucketName}` 
+        }), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      } catch (err) {
+        console.error('[Cache] Clear bucket error:', err);
+        return new Response(JSON.stringify({ error: 'Failed to clear bucket cache' }), {
           status: 500,
           headers: {
             'Content-Type': 'application/json',

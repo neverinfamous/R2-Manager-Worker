@@ -78,6 +78,33 @@ export default function BucketManager() {
     setBuckets([])
   }, [])
 
+  const handleShowCacheInfo = useCallback(async () => {
+    try {
+      const response = await api.getCacheInfo()
+      const data = await response.json()
+      
+      alert(`Cache Architecture:\n\n${data.architecture}\n\nKV-Only: ${data.kvOnly}\nTiered Cache Compatible: ${data.tieredCacheCompatible}\nCache Reserve Compatible: ${data.cacheReserveCompatible}`)
+    } catch (err) {
+      console.error('Failed to get cache info:', err)
+      setError('Failed to get cache info')
+    }
+  }, [])
+
+  const handleClearCache = useCallback(async () => {
+    if (!confirm('Clear all caches? This will temporarily slow down bucket listings until cache rebuilds.')) {
+      return
+    }
+    
+    try {
+      const response = await api.clearCache()
+      const data = await response.json()
+      alert(`All caches cleared (${data.entriesDeleted} entries)`)
+    } catch (err) {
+      console.error('Failed to clear caches:', err)
+      setError('Failed to clear caches')
+    }
+  }, [])
+
   const loadBuckets = useCallback(async () => {
     try {
       setError('')
@@ -394,6 +421,20 @@ export default function BucketManager() {
           <h1 className="app-title" onClick={handleNavigateHome} style={{ cursor: 'pointer' }}>
             R2 Bucket Manager
           </h1>
+          <button
+            onClick={handleShowCacheInfo}
+            className="cache-info-button"
+            title="View cache architecture"
+          >
+            Cache Info
+          </button>
+          <button
+            onClick={handleClearCache}
+            className="cache-clear-button"
+            title="Clear all caches"
+          >
+            Clear Cache
+          </button>
           <button 
             onClick={handleLogout}
             className="logout-button"
