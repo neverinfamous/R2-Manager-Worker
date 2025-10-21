@@ -1092,12 +1092,10 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
 
         console.log('[Files] Copying file:', sourceKey, 'from:', bucketName, 'to:', destBucket);
 
-        // 1. Fetch file from source bucket
+        // 1. Fetch file from source bucket (same as move)
         const getUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + sourceKey;
-        console.log('[Files] Fetching from source:', getUrl);
         const getResponse = await fetch(getUrl, { headers: cfHeaders });
 
-        console.log('[Files] Source fetch status:', getResponse.status);
         if (!getResponse.ok) {
           if (getResponse.status === 404) {
             return new Response(JSON.stringify({ error: 'Source file not found' }), {
@@ -1111,33 +1109,12 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           throw new Error('Failed to fetch file: ' + getResponse.status);
         }
 
-        // 2. Preserve metadata from source
+        // 2. Preserve metadata from source (same as move)
         const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
         const fileBuffer = await getResponse.arrayBuffer();
-        console.log('[Files] Fetched file, size:', fileBuffer.byteLength, 'contentType:', contentType);
 
-        // 3. Check if file exists in destination and generate unique name if needed
-        let destKey = sourceKey;
-        const checkUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + destKey;
-        const checkResponse = await fetch(checkUrl, { method: 'HEAD', headers: cfHeaders });
-
-        if (checkResponse.ok) {
-          // File exists, auto-rename with timestamp
-          const timestamp = Date.now();
-          const lastDotIndex = sourceKey.lastIndexOf('.');
-          if (lastDotIndex > 0) {
-            const name = sourceKey.substring(0, lastDotIndex);
-            const ext = sourceKey.substring(lastDotIndex);
-            destKey = `${name}-copy-${timestamp}${ext}`;
-          } else {
-            destKey = `${sourceKey}-copy-${timestamp}`;
-          }
-          console.log('[Files] File exists in destination, renaming to:', destKey);
-        }
-
-        // 4. Upload to destination bucket (use decoded key like uploads do)
-        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + destKey;
-        console.log('[Files] Uploading to destination:', putUrl);
+        // 3. Upload to destination bucket (same as move, no renaming)
+        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + sourceKey;
         const putResponse = await fetch(putUrl, {
           method: 'PUT',
           headers: {
@@ -1147,26 +1124,13 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           body: fileBuffer
         });
 
-        console.log('[Files] Upload response status:', putResponse.status);
         if (!putResponse.ok) {
-          const errorText = await putResponse.text();
-          console.error('[Files] Upload error:', errorText);
           throw new Error('Failed to upload to destination: ' + putResponse.status);
         }
 
-        // 5. Verify the file was actually created
-        const verifyUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + destKey;
-        const verifyResponse = await fetch(verifyUrl, { method: 'HEAD', headers: cfHeaders });
-        console.log('[Files] Verification response status:', verifyResponse.status);
-        
-        if (!verifyResponse.ok) {
-          console.error('[Files] File verification failed - file was not created!');
-          throw new Error('File upload succeeded but verification failed: ' + verifyResponse.status);
-        }
+        console.log('[Files] Copy completed successfully');
 
-        console.log('[Files] Copy completed and verified successfully to key:', destKey);
-
-        return new Response(JSON.stringify({ success: true, newKey: destKey }), {
+        return new Response(JSON.stringify({ success: true }), {
           headers: {
             'Content-Type': 'application/json',
             ...corsHeaders
