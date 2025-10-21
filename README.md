@@ -44,38 +44,48 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
    ```
 
 3. **Configure environment**
-   ```bash
-   # Copy template and configure for development
-   cp .env.example .env
    
-   # Edit .env - for local development, use:
-   # VITE_WORKER_API=http://localhost:8787
+   Copy the template:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Then edit `.env` and set for local development:
+   ```
+   VITE_WORKER_API=http://localhost:8787
    ```
 
 4. **Configure Wrangler**
-   ```bash
-   # Copy template and customize
-   cp wrangler.toml.example wrangler.toml
    
-   # Edit wrangler.toml and update:
-   # - bucket_name (your R2 bucket name)
-   # - database_name and database_id (your D1 database details)
-   # - Optional: custom domain routing
+   Copy the template:
+   ```bash
+   cp wrangler.toml.example wrangler.toml
    ```
+   
+   Then edit `wrangler.toml` and update these fields:
+   - `bucket_name` - your R2 bucket name
+   - `database_name` and `database_id` - your D1 database details
+   - (Optional) custom domain routing
 
 5. **Create Cloudflare resources**
+   
+   Login to Cloudflare:
    ```bash
-   # Login to Cloudflare
    wrangler login
+   ```
    
-   # Create R2 bucket
+   Create R2 bucket (replace `your-bucket-name`):
+   ```bash
    wrangler r2 bucket create your-bucket-name
+   ```
    
-   # Create D1 database
+   Create D1 database (replace `your-database-name`, and copy the `database_id` from output):
+   ```bash
    wrangler d1 create your-database-name
-   # Copy the database_id from output to wrangler.toml
+   ```
    
-   # Initialize database schema
+   Initialize database schema (replace `your-database-name`):
+   ```bash
    wrangler d1 execute your-database-name --file=worker/schema.sql
    ```
 
@@ -105,15 +115,24 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
      - Copy your **Team Domain** (e.g., `yourteam.cloudflareaccess.com`)
 
 7. **Set Worker Secrets**
+   
+   Set each secret individually (you'll be prompted to enter each value):
    ```bash
-   # Set required secrets (you'll be prompted for values)
-   wrangler secret put ACCOUNT_ID       # From Cloudflare Dashboard
-   wrangler secret put CF_EMAIL         # Your Cloudflare account email
-   wrangler secret put API_KEY          # API token from Cloudflare Dashboard
-   wrangler secret put TEAM_DOMAIN      # From Zero Trust (e.g., yourteam.cloudflareaccess.com)
-   wrangler secret put POLICY_AUD       # From Access application
+   wrangler secret put ACCOUNT_ID
    ```
-
+   ```bash
+   wrangler secret put CF_EMAIL
+   ```
+   ```bash
+   wrangler secret put API_KEY
+   ```
+   ```bash
+   wrangler secret put TEAM_DOMAIN
+   ```
+   ```bash
+   wrangler secret put POLICY_AUD
+   ```
+   
    **Where to find these values:**
    - `ACCOUNT_ID`: Dashboard → Overview (right sidebar)
    - `CF_EMAIL`: Your Cloudflare login email
@@ -124,17 +143,20 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
    - `POLICY_AUD`: Access → Applications → Your App → Overview → Application Audience (AUD) Tag
 
 8. **Deploy**
+   
+   Build frontend:
    ```bash
-   # Build frontend
    npm run build
-   
-   # Deploy to Cloudflare
-   wrangler deploy
-   
-   # Your app is now live! Access at:
-   # - Custom domain: https://your-subdomain.your-domain.com
-   # - Workers.dev: https://r2.yourname.workers.dev
    ```
+   
+   Deploy to Cloudflare:
+   ```bash
+   wrangler deploy
+   ```
+   
+   Your app is now live! Access at:
+   - Custom domain: `https://your-subdomain.your-domain.com`
+   - Workers.dev: `https://r2.yourname.workers.dev`
 
 ---
 
@@ -142,30 +164,58 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
 
 ### Local Development
 
+**Terminal 1: Start Vite dev server**
 ```bash
-# Terminal 1: Start Vite dev server
 npm run dev
-# Frontend available at http://localhost:5173
-
-# Terminal 2: Start Wrangler worker
-npx wrangler dev
-# Worker API available at http://localhost:8787
 ```
+Frontend available at `http://localhost:5173`
+
+**Terminal 2: Start Wrangler worker**
+```bash
+npx wrangler dev
+```
+Worker API available at `http://localhost:8787`
 
 **Note:** Cloudflare Access won't intercept localhost requests. For testing JWT authentication locally:
 1. Add `127.0.0.1 r2.localhost` to your hosts file
-2. Set `VITE_WORKER_API=http://r2.localhost:8787` in `.env`
+2. Set this in `.env`:
+   ```
+   VITE_WORKER_API=http://r2.localhost:8787
+   ```
 3. Or test JWT validation via Postman using production tokens
 
 ### Build Commands
 
+Run any of these commands individually:
+
+**Start Vite dev server:**
 ```bash
-npm run dev           # Start Vite dev server
-npm run build         # Build for production
-npm run lint          # Run ESLint
-npm run preview       # Preview production build
-npx wrangler dev      # Start local worker
-npx wrangler deploy   # Deploy to Cloudflare
+npm run dev
+```
+
+**Build for production:**
+```bash
+npm run build
+```
+
+**Run ESLint:**
+```bash
+npm run lint
+```
+
+**Preview production build:**
+```bash
+npm run preview
+```
+
+**Start local worker:**
+```bash
+npx wrangler dev
+```
+
+**Deploy to Cloudflare:**
+```bash
+npx wrangler deploy
 ```
 
 ---
@@ -336,20 +386,24 @@ zone_name = "your-domain.com"
 
 ### Testing JWT Authentication
 
-Use this curl command to test JWT validation:
+Test JWT validation with this curl command:
 
 ```bash
-# Get JWT cookie from browser DevTools → Application → Cookies
 curl -H "Cookie: cf-access-jwt-assertion=YOUR_JWT_TOKEN" \
      https://YOUR_DOMAIN/api/buckets
 ```
 
+To get your JWT token:
+1. Open your browser DevTools (F12)
+2. Go to Application → Cookies
+3. Find the `cf-access-jwt-assertion` cookie and copy its value
+4. Replace `YOUR_JWT_TOKEN` in the command above
+
 ### Debug Mode
 
-Enable verbose logging in worker:
+Enable verbose logging in worker by adding this code to `worker/index.ts` at the top of the fetch handler:
 
 ```typescript
-// worker/index.ts - Add at top of fetch handler
 console.log('Request:', {
   url: request.url,
   method: request.method,
