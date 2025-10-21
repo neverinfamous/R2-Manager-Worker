@@ -1154,7 +1154,17 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           throw new Error('Failed to upload to destination: ' + putResponse.status);
         }
 
-        console.log('[Files] Copy completed successfully to key:', destKey);
+        // 5. Verify the file was actually created
+        const verifyUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + destKey;
+        const verifyResponse = await fetch(verifyUrl, { method: 'HEAD', headers: cfHeaders });
+        console.log('[Files] Verification response status:', verifyResponse.status);
+        
+        if (!verifyResponse.ok) {
+          console.error('[Files] File verification failed - file was not created!');
+          throw new Error('File upload succeeded but verification failed: ' + verifyResponse.status);
+        }
+
+        console.log('[Files] Copy completed and verified successfully to key:', destKey);
 
         return new Response(JSON.stringify({ success: true, newKey: destKey }), {
           headers: {
