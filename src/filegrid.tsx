@@ -53,7 +53,7 @@ interface SortState {
   direction: SortDirection
 }
 
-const ITEMS_PER_PAGE = 20
+const ITEMS_PER_PAGE = 1000 // Fetch all files in one request (R2 API supports up to 1000)
 const INTERSECTION_THRESHOLD = 0.5
 const DEBOUNCE_DELAY = 250
 
