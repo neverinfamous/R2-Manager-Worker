@@ -461,15 +461,12 @@ custom_domain = true
 
 **High Priority**
 - **Add Inter-Bucket navigation to Bucket file list pages** - Add Jump/Navigate to Bucket xx dropdown on Bucket list files display/page.
-- **Bucket File List Filtering** - Filter bucket file lists by name, type, size, and date.
-
-**Medium Priority**
-- **File Versioning** - Track and restore previous versions of files.
 - **Wiki** - Split current README.md into a shorter version for main repository and a GitHub Wiki for complete documentation.
 
 **Future Enhancements**
 - **Audit Logging** - Track all user actions (copy, edit, delete, downlload, move, rename, upload) in D1 database.
 -  **Per-bucket ownership in D1 database and-or Role-Based Access Control (RBAC)** - Define user roles (Admin, Editor, Viewer) with fine-grained. permissions (schema?)
+- **File Versioning** - Track and restore previous versions of files.
 - **Offline Upload Queue** - Add service worker support for resumable uploads offline.
 - **Custom Branding** - `VITE_APP_BRAND` config for enterprise deployments
 - **Custom Metadata** - Add and manage custom metadata on files.
