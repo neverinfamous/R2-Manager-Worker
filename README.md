@@ -179,7 +179,7 @@ Worker API: `http://localhost:8787`
 
 ### Planned Features
 
-- **Manage folders within R2 Buckets** - Create, copy, edit (folder name), move, and delete folders.
+- **Manage folders in R2 Buckets** - Create folder in bucket, edit folder (name), copy folders to another bucket, move folders to another bucket, delete folders.
 - **Filter by filename** - Filter through file lists by filename input.
 - **Audit Logging** - Track all user actions in D1 database
 - **Role-Based Access Control (RBAC)** - Fine-grained permissions
