@@ -71,76 +71,120 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
    
    Login to Cloudflare:
    ```bash
-   wrangler login
+   npx wrangler login
    ```
    
    Create R2 bucket (replace `your-bucket-name`):
    ```bash
-   wrangler r2 bucket create your-bucket-name
+   npx wrangler r2 bucket create your-bucket-name
    ```
    
-   Create D1 database (replace `your-database-name`, and copy the `database_id` from output):
+   **Note:** Bucket names must:
+   - Only contain lowercase letters (a-z), numbers (0-9), and hyphens (-)
+   - Not begin or end with a hyphen
+   - Be between 3-63 characters in length
+   
+   Create D1 database (replace `your-database-name`):
    ```bash
-   wrangler d1 create your-database-name
+   npx wrangler d1 create your-database-name
    ```
    
-   Initialize database schema (replace `your-database-name`):
+   Copy the `database_id` from the output. When prompted "Would you like Wrangler to add it on your behalf?", select `No` (you'll add it manually to `wrangler.toml`).
+   
+   Initialize database schema:
    ```bash
-   wrangler d1 execute your-database-name --file=worker/schema.sql
+   npx wrangler d1 execute your-database-name --remote --file=worker/schema.sql
    ```
 
 6. **Configure Cloudflare Access (Zero Trust)**
    
    Navigate to [Cloudflare Zero Trust](https://one.dash.cloudflare.com/):
    
-   - **Add Identity Provider:**
-     - Go to Settings → Authentication → Login methods
-     - Click "Add new" → Select "GitHub"
-     - Follow GitHub OAuth setup instructions
-     - Save your Client ID and Client Secret
+   - **Add Identity Provider (GitHub OAuth):**
+     1. In GitHub, go to **Settings** → **Developer Settings** → **OAuth Apps** → **New OAuth App**
+     2. Enter an **Application name** (e.g., "R2 Manager")
+     3. Set **Homepage URL** to: `https://<your-team-name>.cloudflareaccess.com`
+     4. Set **Authorization callback URL** to: `https://<your-team-name>.cloudflareaccess.com/cdn-cgi/access/callback`
+     5. Click **Register application** and copy the **Client ID** and **Client Secret**
+     6. In Zero Trust, go to **Settings** → **Authentication** → **Login methods** → **Add new** → **GitHub**
+     7. Paste your GitHub **Client ID** and **Client Secret**, then click **Save**
+     8. Test the connection by clicking **Test** next to your GitHub login method
    
    - **Create Access Application:**
-     - Go to Access → Applications → Add an application
-     - Select "Self-hosted"
-     - Application name: "R2 Manager"
-     - Session Duration: 24 hours (or your preference)
-     - Application domain: Your worker domain (e.g., `r2.yourdomain.com` or `r2.yourname.workers.dev`)
+     1. Go to **Access** → **Applications** → **Add an application** → **Self-hosted**
+     2. **Application name:** "R2 Manager" (or your preference)
+     3. **Session Duration:** 24 hours (or your preference)
+     4. Click **Add public hostname**
+     5. Select your domain and enter the subdomain (e.g., `r2.yourdomain.com` or use `workers.dev`)
+     6. Click **Next**
    
-   - **Configure Policies:**
-     - **Allow Policy:** Include → Everyone (or specific GitHub users/organizations)
-     - **Bypass Policy:** Include → Everyone on path `/site.webmanifest` (for static assets)
+   - **Configure Access Policies:**
+     1. **Allow Policy:**
+        - **Policy name:** "Allow authenticated users"
+        - **Action:** Allow
+        - **Include:** Select your GitHub identity provider (or specific emails/groups)
+        - Click **Next**
+     2. **Bypass Policy (for static assets):**
+        - Create a second policy if needed
+        - **Policy name:** "Bypass static assets"
+        - **Action:** Bypass
+        - **Include:** Everyone
+        - **Path:** `/site.webmanifest`, `/favicon.ico`, `/logo.png`, and other public assets
    
-   - **Note Configuration:**
-     - Copy your **Policy AUD** (Application Audience tag)
-     - Copy your **Team Domain** (e.g., `yourteam.cloudflareaccess.com`)
+   - **Save Configuration Values:**
+     - After saving the application, go to **Applications** → select your app → **Overview**
+     - Copy the **Application Audience (AUD) Tag** (you'll need this for `POLICY_AUD`)
+     - Your **Team Domain** is shown in **Settings** → **Custom Pages** (e.g., `yourteam.cloudflareaccess.com`)
 
 7. **Set Worker Secrets**
    
-   Set each secret individually (you'll be prompted to enter each value):
+   Set each secret individually using the `npx wrangler secret put` command. You'll be prompted to enter each value:
+   
    ```bash
-   wrangler secret put ACCOUNT_ID
+   npx wrangler secret put ACCOUNT_ID
    ```
    ```bash
-   wrangler secret put CF_EMAIL
+   npx wrangler secret put CF_EMAIL
    ```
    ```bash
-   wrangler secret put API_KEY
+   npx wrangler secret put API_KEY
    ```
    ```bash
-   wrangler secret put TEAM_DOMAIN
+   npx wrangler secret put TEAM_DOMAIN
    ```
    ```bash
-   wrangler secret put POLICY_AUD
+   npx wrangler secret put POLICY_AUD
    ```
    
    **Where to find these values:**
-   - `ACCOUNT_ID`: Dashboard → Overview (right sidebar)
-   - `CF_EMAIL`: Your Cloudflare login email
-   - `API_KEY`: Dashboard → My Profile → API Tokens → Create Token
-     - Use "Edit Cloudflare Workers" template
-     - Add R2 permissions: Account → R2 → Edit
-   - `TEAM_DOMAIN`: Zero Trust → Settings → Custom Pages (shown at top)
-   - `POLICY_AUD`: Access → Applications → Your App → Overview → Application Audience (AUD) Tag
+   - `ACCOUNT_ID`: 
+     - Go to [Cloudflare Dashboard](https://dash.cloudflare.com/) → Select your account
+     - Find your Account ID in the right sidebar or under **Account Home**
+   
+   - `CF_EMAIL`: Your Cloudflare account login email address
+   
+   - `API_KEY`: Create an API token with proper permissions:
+     1. Go to [API Tokens page](https://dash.cloudflare.com/profile/api-tokens)
+     2. Click **Create Token** → Find **Edit Cloudflare Workers** → Click **Use template**
+     3. **Required permissions:**
+        - Account → Workers Scripts → Edit
+        - Account → Workers KV Storage → Edit  
+        - Account → Workers R2 Storage → Edit
+        - Account → D1 → Edit
+        - Zone → Workers Routes → Edit (if using custom domain)
+     4. Set **Account Resources** to the account you want to deploy to
+     5. Set **Zone Resources** to your domain (if using custom domain)
+     6. Click **Continue to summary** → **Create Token**
+     7. **Copy the token immediately** (you won't be able to see it again)
+   
+   - `TEAM_DOMAIN`: 
+     - In Zero Trust dashboard, go to **Settings** → **Custom Pages**
+     - Your team domain is shown at the top (format: `https://yourteam.cloudflareaccess.com`)
+     - Enter the **full URL** including `https://`
+   
+   - `POLICY_AUD`: 
+     - Go to **Access** → **Applications** → Select your R2 Manager application
+     - On the **Overview** tab, copy the **Application Audience (AUD) Tag**
 
 8. **Deploy**
    
@@ -151,12 +195,18 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
    
    Deploy to Cloudflare:
    ```bash
-   wrangler deploy
+   npx wrangler deploy
    ```
    
-   Your app is now live! Access at:
-   - Custom domain: `https://your-subdomain.your-domain.com`
-   - Workers.dev: `https://r2.yourname.workers.dev`
+   Your app is now live! Access it at:
+   - **Custom domain** (if configured in `wrangler.toml`): `https://your-subdomain.your-domain.com`
+   - **Workers.dev subdomain**: `https://r2-manager-worker.<your-subdomain>.workers.dev`
+   
+   **Note:** The deployment will automatically:
+   - Upload your Worker script to Cloudflare's global network
+   - Bind your R2 bucket and D1 database
+   - Configure routes based on your `wrangler.toml` settings
+   - Make your secrets available to the Worker
 
 ---
 
@@ -176,13 +226,14 @@ npx wrangler dev
 ```
 Worker API available at `http://localhost:8787`
 
-**Note:** Cloudflare Access won't intercept localhost requests. For testing JWT authentication locally:
-1. Add `127.0.0.1 r2.localhost` to your hosts file
-2. Set this in `.env`:
-   ```
-   VITE_WORKER_API=http://r2.localhost:8787
-   ```
-3. Or test JWT validation via Postman using production tokens
+**Important Notes about Local Development:**
+- Cloudflare Access authentication is **not enforced** on localhost during development
+- JWT validation will be skipped for local requests
+- For testing with authentication:
+  - Deploy to production and test there, OR
+  - Use your deployed Worker URL in `.env`: `VITE_WORKER_API=https://your-worker.workers.dev`
+- Local development uses `--local` flag by default, which doesn't require secrets to be set
+- To test against remote resources (D1, R2), use `npx wrangler dev --remote`
 
 ### Build Commands
 
@@ -337,21 +388,42 @@ By default, all authenticated users can access all buckets. To restrict access:
 Key settings to customize in `wrangler.toml`:
 
 ```toml
-# R2 Bucket
+name = "r2-manager-worker"
+main = "worker/index.ts"
+compatibility_date = "2024-01-01"
+
+# R2 Bucket binding
 [[r2_buckets]]
-bucket_name = "your-bucket-name"  # Must match created bucket
+binding = "BUCKET"  # Variable name used in your Worker code
+bucket_name = "your-bucket-name"  # Must match the bucket you created
 
-# D1 Database
+# D1 Database binding
 [[d1_databases]]
-database_name = "your-database-name"
-database_id = "your-database-id"  # From wrangler d1 create output
+binding = "DB"  # Variable name used in your Worker code
+database_name = "your-database-name"  # Name of your D1 database
+database_id = "your-database-id"  # UUID from wrangler d1 create output
 
-# Custom Domain (optional)
+# Custom Domain (optional - for production deployment)
+# Option 1: Custom Domain (recommended)
 [[routes]]
-pattern = "your-subdomain.your-domain.com"
+pattern = "r2.yourdomain.com"
 custom_domain = true
-zone_name = "your-domain.com"
+
+# Option 2: Route with existing DNS (if you have an origin server)
+# [[routes]]
+# pattern = "r2.yourdomain.com/*"
+# zone_name = "yourdomain.com"
+
+# Workers.dev subdomain (enabled by default)
+# Your Worker will be accessible at: https://r2-manager-worker.<your-subdomain>.workers.dev
 ```
+
+**Important Notes:**
+- `bucket_name` must exactly match the R2 bucket you created
+- `database_id` is the UUID shown when you ran `wrangler d1 create`
+- For custom domains, your domain must be active on Cloudflare
+- Custom domains automatically create DNS records and SSL certificates
+- The `binding` values (e.g., `BUCKET`, `DB`) are how you access these resources in your Worker code
 
 ---
 
@@ -360,70 +432,98 @@ zone_name = "your-domain.com"
 ### Common Issues
 
 **❌ "Failed to authenticate" error**
-- Verify `TEAM_DOMAIN` and `POLICY_AUD` secrets are set correctly
-- Check Cloudflare Access policies include your GitHub account
-- Clear browser cookies and re-authenticate
+- Verify `TEAM_DOMAIN` includes the full URL: `https://yourteam.cloudflareaccess.com`
+- Confirm `POLICY_AUD` matches the Application Audience Tag in Zero Trust dashboard
+- Check your GitHub account is allowed in the Access policy
+- Clear browser cookies and try re-authenticating
+- Verify the JWT cookie `cf-access-jwt-assertion` is being set (check browser DevTools → Application → Cookies)
 
 **❌ "Bucket not found" error**
-- Ensure bucket name in `wrangler.toml` matches created bucket
-- Run `wrangler r2 bucket list` to verify bucket exists
-- Check `ACCOUNT_ID` secret is correct
+- Run `npx wrangler r2 bucket list` to verify the bucket exists
+- Ensure `bucket_name` in `wrangler.toml` exactly matches the created bucket (case-sensitive)
+- Verify `ACCOUNT_ID` secret is correct
+- Check your API token has R2 Storage permissions
 
 **❌ "Database error" messages**
-- Verify D1 database exists: `wrangler d1 list`
-- Check database schema initialized: `wrangler d1 execute <db-name> --file=worker/schema.sql`
-- Confirm `database_id` in `wrangler.toml` is correct
+- List databases: `npx wrangler d1 list`
+- Verify schema is initialized: `npx wrangler d1 execute <db-name> --remote --command="SELECT name FROM sqlite_master WHERE type='table'"`
+- Confirm `database_id` in `wrangler.toml` matches the UUID from `wrangler d1 create` output
+- Ensure your API token has D1 Edit permissions
 
 **❌ Worker deployment fails**
-- Run `wrangler login` to re-authenticate
-- Check all required secrets are set: `wrangler secret list`
-- Verify `npm run build` completes without errors
+- Re-authenticate: `npx wrangler login`
+- List secrets to verify they're set: `npx wrangler secret list`
+- Check for build errors: `npm run build`
+- Verify `wrangler.toml` syntax is correct (especially multiline arrays)
+- Ensure your API token has Workers Scripts Edit permission
 
 **❌ CORS errors in browser**
-- Ensure Cloudflare Access is configured correctly
-- Check that static assets have Bypass policy
-- Verify `credentials: 'include'` is set in API client
+- Verify Cloudflare Access application domain matches your Worker domain
+- Create a Bypass policy for static assets (`/favicon.ico`, `/logo.png`, etc.)
+- Check that API requests include credentials: `credentials: 'include'` in fetch calls
+- Ensure the Worker is deployed to the correct domain
 
 ### Testing JWT Authentication
 
-Test JWT validation with this curl command:
+Test JWT validation with curl:
 
 ```bash
 curl -H "Cookie: cf-access-jwt-assertion=YOUR_JWT_TOKEN" \
      https://YOUR_DOMAIN/api/buckets
 ```
 
-To get your JWT token:
-1. Open your browser DevTools (F12)
-2. Go to Application → Cookies
-3. Find the `cf-access-jwt-assertion` cookie and copy its value
-4. Replace `YOUR_JWT_TOKEN` in the command above
+**To get your JWT token:**
+1. Open your browser and log in to your deployed Worker
+2. Open DevTools (F12) → **Application** tab → **Cookies**
+3. Find `cf-access-jwt-assertion` and copy its value
+4. Replace `YOUR_JWT_TOKEN` in the curl command above
+5. Replace `YOUR_DOMAIN` with your Worker's domain
+
+**To verify JWT payload:**
+1. Copy your JWT token
+2. Visit [jwt.io](https://jwt.io/)
+3. Paste the token in the "Encoded" section
+4. Verify:
+   - `iss` matches your team domain: `https://<team-name>.cloudflareaccess.com`
+   - `aud` contains your Application Audience Tag
+   - Token is not expired (check `exp` timestamp)
 
 ### Debug Mode
 
-Enable verbose logging in worker by adding this code to `worker/index.ts` at the top of the fetch handler:
+Enable verbose logging in your Worker:
+
+1. Add logging to `worker/index.ts` at the top of the fetch handler:
 
 ```typescript
 console.log('Request:', {
   url: request.url,
   method: request.method,
-  headers: Object.fromEntries(request.headers)
+  headers: Object.fromEntries(request.headers),
+  jwtToken: request.headers.get('cf-access-jwt-assertion') ? 'Present' : 'Missing'
 })
 ```
 
-View logs in real-time:
+2. View real-time logs:
 ```bash
-wrangler tail
+npx wrangler tail
 ```
+
+3. Or view logs in the dashboard:
+   - Go to **Workers & Pages** → Select your Worker → **Logs** tab
+   - Real-time logs show all console.log output and errors
 
 ---
 
 ## 📚 Additional Resources
 
-- [Cloudflare Workers Docs](https://developers.cloudflare.com/workers/)
-- [Cloudflare R2 Docs](https://developers.cloudflare.com/r2/)
-- [Cloudflare Access Docs](https://developers.cloudflare.com/cloudflare-one/policies/access/)
-- [Wrangler CLI Reference](https://developers.cloudflare.com/workers/wrangler/)
+- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
+- [Cloudflare R2 Storage Documentation](https://developers.cloudflare.com/r2/)
+- [Cloudflare D1 Database Documentation](https://developers.cloudflare.com/d1/)
+- [Cloudflare Access (Zero Trust) Documentation](https://developers.cloudflare.com/cloudflare-one/policies/access/)
+- [Cloudflare Access JWT Validation](https://developers.cloudflare.com/cloudflare-one/identity/authorization-cookie/validating-json/)
+- [Wrangler CLI Commands Reference](https://developers.cloudflare.com/workers/wrangler/commands/)
+- [Wrangler Configuration Reference](https://developers.cloudflare.com/workers/wrangler/configuration/)
+- [Creating Cloudflare API Tokens](https://developers.cloudflare.com/fundamentals/api/get-started/create-token/)
 - [React 19 Documentation](https://react.dev/)
 - [Vite Documentation](https://vite.dev/)
 
