@@ -8,6 +8,9 @@ on:
   schedule:
     - cron: '23 2 * * 1'
 
+env:
+  CODEQL_ACTION_FEATURE_SANDWICH: false
+
 jobs:
   analyze:
     name: Analyze
@@ -30,9 +33,13 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
+          db-location: ${{ runner.temp }}/codeql_databases
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
+        with:
+          upload: always
+          wait-for-processing: false
