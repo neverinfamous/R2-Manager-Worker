@@ -300,8 +300,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
       } catch (err) {
         console.error('[Files] Download error:', err);
         return new Response(JSON.stringify({ 
-          error: 'Download failed', 
-          details: err instanceof Error ? err.message : String(err)
+          error: 'Download failed'
         }), { 
           status: 500,
           headers: {
@@ -637,7 +636,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           return new Response(JSON.stringify({ success: true, newName: newBucketName }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         } catch (err) {
           console.error('[Buckets] Rename error:', err);
-          return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'Rename failed' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+          return new Response(JSON.stringify({ error: 'Rename failed' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
       }
     } catch (err) {
@@ -702,8 +701,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     } catch (err) {
         console.error('[Files] ZIP download error:', err);
         return new Response(JSON.stringify({ 
-          error: 'Failed to create zip file', 
-          details: err.message 
+          error: 'Failed to create zip file'
         }), {
           status: 500,
           headers: {
@@ -808,8 +806,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     } catch (err) {
         console.error('[Files] List error:', err);
         return new Response(JSON.stringify({ 
-          error: 'Failed to list files', 
-          details: err.message
+          error: 'Failed to list files'
         }), {
           status: 500,
           headers: {
@@ -910,8 +907,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     } catch (err) {
         console.error('[Files] Upload error:', err);
         return new Response(JSON.stringify({
-          error: 'Upload failed',
-          details: err.message
+          error: 'Upload failed'
         }), { 
           status: 500,
           headers: {
@@ -950,8 +946,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     } catch (err) {
         console.error('[Files] Delete error:', err);
         return new Response(JSON.stringify({
-          error: 'Delete failed',
-          details: err.message
+          error: 'Delete failed'
         }), { 
           status: 500,
           headers: {
@@ -1051,8 +1046,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
       } catch (err) {
         console.error('[Files] Move error:', err);
         return new Response(JSON.stringify({
-          error: 'Move failed',
-          details: err instanceof Error ? err.message : 'Unknown error'
+          error: 'Move failed'
         }), {
           status: 500,
           headers: {
@@ -1140,8 +1134,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
       } catch (err) {
         console.error('[Files] Copy error:', err);
         return new Response(JSON.stringify({
-          error: 'Copy failed',
-          details: err instanceof Error ? err.message : 'Unknown error'
+          error: 'Copy failed'
         }), {
           status: 500,
           headers: {
