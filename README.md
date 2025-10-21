@@ -461,9 +461,12 @@ custom_domain = true
 
 **High Priority**
 - 📊 **Last Modified Bucket File List Filter** - Add last modified filter for bucket file lists.
-- 🔍 **Advanced Search & Filtering** - Full-text search and filter by file type, size, date
-- 🔄 **File Versioning** - Track and restore previous versions of files
 - ⚡ **Performance Caching** - Intelligent caching layer for frequently accessed files
+
+**Medium Priority**
+
+- 🔄 **File Versioning** - Track and restore previous versions of files
+- 🔍 **Advanced Search & Filtering** - Full-text search and filter by file type, size, date
 
 **Future Enhancements**
 - 🔐 **Per-bucket ownership in D1 database and-or Role-Based Access Control (RBAC)** - Define user roles (Admin, Editor, Viewer) with fine-grained permissions
