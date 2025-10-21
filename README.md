@@ -180,6 +180,7 @@ Worker API: `http://localhost:8787`
 ### Planned Features
 
 - **Create, copy, edit, move, and delete folders/subfolders** - Manage folders, and subfolders if possible, within R2 Buckets.
+- **Filter by filename** - Filter through file lists by filename input.
 - **Audit Logging** - Track all user actions in D1 database
 - **Role-Based Access Control (RBAC)** - Fine-grained permissions
 - **File Versioning** - Track and restore previous versions
