@@ -451,21 +451,18 @@ custom_domain = true
 
 ### Planned Features
 
-**High Priority (Next Iteration)**
-- 🔐 **Role-Based Access Control (RBAC)** - Define user roles (Admin, Editor, Viewer) with fine-grained permissions
-- 📊 **File Metadata Viewer** - Display file timestamps and quick copy for signed URLs
-- 📝 **Audit Logging** - Track all user actions (copy, edit, delete, downlload, move, rename, upload) in D1 database
-
-**Medium Priority**
+**High Priority**
+- ⚡ **Performance Caching** - Intelligent caching layer for frequently accessed files
+- 📊 **File Metadata Viewer** - Display file timestamps
+- 🔄 **File Versioning** - Track and restore previous versions of files
 - 🔍 **Advanced Search & Filtering** - Full-text search and filter by file type, size, date
-- 📦 **Bulk Operations** - Rename multiple files simultaneously
-- 🏷️ **Custom Metadata** - Add and manage custom metadata on files
 
 **Future Enhancements**
+- 🔐 **Role-Based Access Control (RBAC)** - Define user roles (Admin, Editor, Viewer) with fine-grained permissions
+- 📝 **Audit Logging** - Track all user actions (copy, edit, delete, downlload, move, rename, upload) in D1 database
 - 📱 **Offline Upload Queue** - Service worker support for resumable uploads offline
 - 🎨 **Custom Branding** - `VITE_APP_BRAND` config for enterprise deployments
-- ⚡ **Performance Caching** - Intelligent caching layer for frequently accessed files
-- 🔄 **File Versioning** - Track and restore previous versions of files
+- 🏷️ **Custom Metadata** - Add and manage custom metadata on files
 
 ---
 
