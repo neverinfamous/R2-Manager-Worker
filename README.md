@@ -456,12 +456,12 @@ custom_domain = true
 
 **High Priority (Next Iteration)**
 - 🔐 **Role-Based Access Control (RBAC)** - Define user roles (Admin, Editor, Viewer) with fine-grained permissions
-- 📊 **File Metadata Viewer** - Display file timestamps, size, and quick copy for signed URLs
+- 📊 **File Metadata Viewer** - Display file timestamps and quick copy for signed URLs
 - 📝 **Audit Logging** - Track all user actions (upload, delete, rename) in D1 database
 
 **Medium Priority**
 - 🔍 **Advanced Search & Filtering** - Full-text search and filter by file type, size, date
-- 📦 **Bulk Operations** - Rename, move, or delete multiple files simultaneously
+- 📦 **Bulk Operations** - Rename multiple files simultaneously
 - 🏷️ **Custom Metadata** - Add and manage custom metadata on files
 
 **Future Enhancements**
