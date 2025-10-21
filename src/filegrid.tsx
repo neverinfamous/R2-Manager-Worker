@@ -243,6 +243,18 @@ const getFileTypeIcon = (filename: string): JSX.Element => {
     )
   }
 
+  // Image file icon - for image files that can't be previewed
+  if (ext === 'jpg' || ext === 'jpeg' || ext === 'png' || ext === 'gif' || 
+      ext === 'webp' || ext === 'avif' || ext === 'heic' || ext === 'svg' || ext === 'bmp') {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" />
+        <polyline points="21 15 16 10 5 21" />
+      </svg>
+    )
+  }
+
   // Generic document icon (no custom icon)
   return (
     <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -346,6 +358,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   const [isTransferring, setIsTransferring] = useState(false)
   const [transferDropdownOpen, setTransferDropdownOpen] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null)
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
 
   const gridRef = useRef<HTMLDivElement>(null)
   const transferButtonRef = useRef<HTMLButtonElement>(null)
@@ -387,6 +400,10 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       return () => document.removeEventListener('click', handleClickOutside)
     }
   }, [transferDropdownOpen])
+
+  const handleImageError = useCallback((fileName: string) => {
+    setFailedImages(prev => new Set(prev).add(fileName))
+  }, [])
 
   const sortFiles = useCallback((files: FileObject[]) => {
     return [...files].sort((a, b) => {
@@ -971,12 +988,13 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                 </div>
                 
                 <div className="file-preview">
-                  {isImage ? (
+                  {isImage && !failedImages.has(file.key) ? (
                     <img 
                       src={fileUrl}
                       alt={file.key}
                       loading="lazy"
                       draggable={false}
+                      onError={() => handleImageError(file.key)}
                     />
                   ) : isVideo ? (
                     <VideoPlayer
@@ -1088,12 +1106,17 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                     </td>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        {isImageFile(file.key) && (
+                        {isImageFile(file.key) && !failedImages.has(file.key) ? (
                           <img 
                             src={api.getFileUrl(bucketName, file.key, file)}
                             alt={file.key}
                             style={{ width: '32px', height: '32px', objectFit: 'cover' }}
+                            onError={() => handleImageError(file.key)}
                           />
+                        ) : !isImageFile(file.key) ? null : (
+                          <div style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {getFileTypeIcon(file.key)}
+                          </div>
                         )}
                         <span>{file.key}</span>
                       </div>
