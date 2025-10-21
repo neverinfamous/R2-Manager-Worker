@@ -72,6 +72,11 @@ export default function BucketManager() {
     setSelectedBucket(null)
   }, [])
 
+  const handleBucketNavigate = useCallback((bucketName: string) => {
+    // Navigate to a different bucket
+    setSelectedBucket(bucketName)
+  }, [])
+
   const handleLogout = useCallback(async () => {
     await auth.logout()
     setSelectedBucket(null)
@@ -658,6 +663,7 @@ export default function BucketManager() {
               onFilesChange={loadBuckets}
               refreshTrigger={refreshTrigger}
               availableBuckets={buckets.map(b => b.name)}
+              onBucketNavigate={handleBucketNavigate}
             />
           </div>
         </div>

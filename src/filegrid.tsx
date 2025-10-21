@@ -15,6 +15,7 @@ interface FileGridProps {
   refreshTrigger?: number
   availableBuckets?: string[]
   onBack?: () => void
+  onBucketNavigate?: (bucketName: string) => void
 }
 
 interface DownloadProgress {
@@ -339,7 +340,7 @@ const VideoPlayer = ({ src, className, onClick }: VideoPlayerProps) => {
   )
 }
 
-export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0, availableBuckets }: FileGridProps) {
+export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0, availableBuckets, onBucketNavigate }: FileGridProps) {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
   const [error, setError] = useState<string>('')
   const [infoMessage, setInfoMessage] = useState<string>('')
@@ -373,10 +374,13 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null)
   const [sortDropdownPosition, setSortDropdownPosition] = useState<{ top: number; left: number } | null>(null)
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
+  const [bucketDropdownOpen, setBucketDropdownOpen] = useState(false)
+  const [bucketDropdownPosition, setBucketDropdownPosition] = useState<{ top: number; left: number } | null>(null)
 
   const gridRef = useRef<HTMLDivElement>(null)
   const transferButtonRef = useRef<HTMLButtonElement>(null)
   const sortButtonRef = useRef<HTMLButtonElement>(null)
+  const bucketButtonRef = useRef<HTMLButtonElement>(null)
   const lastSelectedRef = useRef<string | null>(null)
   const loadingRef = useRef<LoadingState>({ isLoading: false })
   const mountedRef = useRef<boolean>(true)
@@ -411,13 +415,16 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       if (sortDropdownOpen && !target.closest('.sort-dropdown-container')) {
         setSortDropdownOpen(false)
       }
+      if (bucketDropdownOpen && !target.closest('.bucket-nav-dropdown-container')) {
+        setBucketDropdownOpen(false)
+      }
     }
 
-    if (transferDropdownOpen || sortDropdownOpen) {
+    if (transferDropdownOpen || sortDropdownOpen || bucketDropdownOpen) {
       document.addEventListener('click', handleClickOutside)
       return () => document.removeEventListener('click', handleClickOutside)
     }
-  }, [transferDropdownOpen, sortDropdownOpen])
+  }, [transferDropdownOpen, sortDropdownOpen, bucketDropdownOpen])
 
   const handleImageError = useCallback((fileName: string) => {
     setFailedImages(prev => new Set(prev).add(fileName))
@@ -840,6 +847,29 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     return fieldLabels[sortState.field]
   }, [sortState])
 
+  const handleBucketButtonClick = useCallback(() => {
+    if (!bucketDropdownOpen && bucketButtonRef.current) {
+      const rect = bucketButtonRef.current.getBoundingClientRect()
+      setBucketDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left
+      })
+    }
+    setBucketDropdownOpen(!bucketDropdownOpen)
+  }, [bucketDropdownOpen])
+
+  const handleBucketSelect = useCallback((selectedBucket: string) => {
+    if (selectedBucket === bucketName) {
+      setBucketDropdownOpen(false)
+      return
+    }
+    setBucketDropdownOpen(false)
+    // Call the parent callback to navigate to the selected bucket
+    if (onBucketNavigate) {
+      onBucketNavigate(selectedBucket)
+    }
+  }, [bucketName, onBucketNavigate])
+
   return (
     <div className="file-grid-container">
       {onBack && (
@@ -952,6 +982,40 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           )}
 
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
+            {availableBuckets && availableBuckets.length > 1 && (
+              <div className={`bucket-nav-dropdown-container ${bucketDropdownOpen ? 'open' : ''}`}>
+                <button 
+                  ref={bucketButtonRef}
+                  className="action-button bucket-nav-button"
+                  onClick={handleBucketButtonClick}
+                  title="Navigate to another bucket"
+                >
+                  <span>Jump to Bucket</span>
+                  <span className="dropdown-arrow">▼</span>
+                </button>
+                {bucketDropdownOpen && bucketDropdownPosition && (
+                  <div 
+                    className="bucket-nav-dropdown-menu"
+                    style={{
+                      top: `${bucketDropdownPosition.top}px`,
+                      left: `${bucketDropdownPosition.left}px`
+                    }}
+                  >
+                    {availableBuckets.map(bucket => (
+                      <button 
+                        key={bucket}
+                        onClick={() => handleBucketSelect(bucket)}
+                        className={bucket === bucketName ? 'current-bucket' : ''}
+                        disabled={bucket === bucketName}
+                      >
+                        {bucket}
+                        {bucket === bucketName && <span className="current-indicator"> (current)</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <div className={`sort-dropdown-container ${sortDropdownOpen ? 'open' : ''}`}>
               <button 
                 ref={sortButtonRef}
