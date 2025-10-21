@@ -1,4 +1,4 @@
-const WORKER_API = 'https://r2.adamic.tech'
+const WORKER_API = import.meta.env.VITE_WORKER_API || window.location.origin
 
 type ProgressCallback = (progress: number) => void
 type RetryCallback = (attempt: number, chunk: number, error: Error) => void

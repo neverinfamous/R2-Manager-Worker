@@ -6,6 +6,7 @@ build/
 .env.local
 .env.*.local
 .dev.vars
+wrangler.toml
 *.log
 npm-debug.log*
 yarn-debug.log*
