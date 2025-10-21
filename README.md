@@ -3,6 +3,8 @@
 **Last Updated:** October 21, 2025 | **Status:** ✅ Production Ready  
 **Tech Stack:** React 19.2.0 | Vite 7.1.11 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
+**Latest Update:** Added secure signed URL generation for easy file sharing
+
 A modern web application for managing Cloudflare R2 buckets with enterprise-grade authentication via Cloudflare Access (Zero Trust). Deploy to your own Cloudflare account in minutes.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -20,6 +22,7 @@ Cloudflare's dashboard lacks full-featured R2 file management capabilities. This
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets
 - 📤 **Smart Uploads** - Chunked uploads with automatic retry (10MB chunks, up to 500MB files)*
 - 📥 **Bulk Downloads** - Download multiple files as ZIP archives
+- 🔗 **Shareable Links** - Generate signed URLs to share files securely
 - 🔄 **File Operations** - Move and copy files between buckets
 - 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access Zero Trust
 - ⚡ **Edge Performance** - Deployed on Cloudflare's global network
@@ -355,11 +358,38 @@ All endpoints require valid Cloudflare Access JWT (automatically handled by Clou
 |--------|----------|-------------|
 | `GET` | `/files/:bucket` | List objects in bucket (Query: `?limit=20&skipCache=true`) |
 | `POST` | `/files/:bucket/upload` | Upload file (Headers: `X-Chunk-Index`, `X-Total-Chunks`, `X-File-Name`) |
+| `GET` | `/files/:bucket/signed-url/:file` | Generate signed URL for file sharing |
 | `DELETE` | `/files/:bucket/:file` | Delete single file |
 | `POST` | `/files/:bucket/:file/move` | Move file (Body: `{ "destinationBucket": "target" }`) |
 | `POST` | `/files/:bucket/:file/copy` | Copy file (Body: `{ "destinationBucket": "target" }`) |
 | `POST` | `/files/:bucket/delete-multiple` | Delete multiple files (Body: `{ "files": ["file1", "file2"] }`) |
 | `POST` | `/files/:bucket/download-zip` | Download files as ZIP (Requires `X-Signature` header) |
+
+### Signed URL Generation
+
+The signed URL endpoint allows you to generate secure, shareable links for individual files:
+
+**Endpoint:** `GET /api/files/:bucket/signed-url/:file`
+
+**Response:**
+```json
+{
+  "success": true,
+  "url": "https://your-domain.com/api/files/bucket-name/download/file.jpg?ts=1234567890&sig=abc123"
+}
+```
+
+**Security:**
+- URLs are signed with HMAC signatures to prevent tampering
+- Each URL includes a timestamp for uniqueness
+- Signatures are validated on download to ensure authenticity
+- Links remain valid indefinitely but can only download the specific file
+
+**UI Usage:**
+- **Grid View:** Hover over any file → Click the link icon (🔗) in the top-right corner
+- **List View:** Click the "Copy Link" button in the Actions column
+- The signed URL is automatically copied to your clipboard
+- Share the link with anyone who needs access to the file
 
 ---
 
