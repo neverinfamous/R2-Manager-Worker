@@ -460,8 +460,8 @@ custom_domain = true
 ### Planned Features
 
 **High Priority**
-- **Add Inter-Bucket navigation to Bucket list file pages** - Add Jump/Navigate to Bucket xx dropdown on Bucket list files display/page.
-- **File Filtering** - Filter bucket file lists by name, type, size, and date.
+- **Add Inter-Bucket navigation to Bucket file list pages** - Add Jump/Navigate to Bucket xx dropdown on Bucket list files display/page.
+- **Bucket File List Filtering** - Filter bucket file lists by name, type, size, and date.
 
 **Medium Priority**
 - **File Versioning** - Track and restore previous versions of files.

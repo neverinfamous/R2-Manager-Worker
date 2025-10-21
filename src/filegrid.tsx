@@ -1150,8 +1150,9 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             <p>From bucket: <strong>{bucketName}</strong></p>
             
             <div className="bucket-selector">
-              <label>Select destination bucket:</label>
+              <label htmlFor="destination-bucket-select">Select destination bucket:</label>
               <select
+                id="destination-bucket-select"
                 value={transferState.targetBucket || ''}
                 onChange={(e) => setTransferState(prev => prev ? { ...prev, targetBucket: e.target.value || null } : null)}
                 disabled={isTransferring}

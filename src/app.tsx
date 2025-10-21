@@ -441,6 +441,8 @@ export default function BucketManager() {
                   <div className="bucket-edit-mode">
                     <input
                       type="text"
+                      id="bucket-edit-name"
+                      name="bucket-edit-name"
                       value={editInputValue}
                       onChange={(e) => setEditInputValue(e.target.value)}
                       className="bucket-edit-input"
