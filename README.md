@@ -30,15 +30,22 @@ A web application for managing Cloudflare R2 buckets with GitHub SSO authenticat
 ```
 src/
 ├── app.tsx                 # Main UI (bucket list, file grid, upload area)
-├── filegrid.tsx            # File browser for selected bucket
+├── filegrid.tsx            # File browser for selected bucket (~1000 lines)
+│   ├── File selection (multi-select with checkboxes)
+│   ├── Transfer dropdown (move/copy operations)
+│   ├── Bulk operations (delete multiple, download as ZIP)
+│   └── Pagination & infinite scroll
 ├── services/
-│   ├── api.ts              # HTTP client (all requests go through Worker)
+│   ├── api.ts              # HTTP client (~649 lines)
+│   │   ├── All API calls (buckets, files, upload, download)
+│   │   ├── Signed URL generation (HMAC-SHA256)
+│   │   └── Chunked upload logic (50MB chunks)
 │   └── auth.ts             # Auth service (logout only)
 └── components/
     └── auth.tsx            # DELETED - auth handled by Cloudflare Access
 
 worker/
-├── index.ts                # Worker runtime (~1163 lines)
+├── index.ts                # Worker runtime (~1233 lines)
 │   ├── handleApiRequest()  # Main request router
 │   ├── validateAccessJWT() # JWT verification (lines ~130-165)
 │   └── Endpoints:          # Listed below
@@ -71,6 +78,7 @@ All endpoints require valid Cloudflare Access JWT. Base: `https://r2.adamic.tech
 | `POST` | `/files/:bucket/upload` | ✅ Required | Chunked upload. Headers: `X-Chunk-Index`, `X-Total-Chunks`, `X-File-Name` |
 | `DELETE` | `/files/:bucket/:file` | ✅ Required | Delete single file |
 | `POST` | `/files/:bucket/:file/move` | ✅ Required | Move file to another bucket. Body: `{ "destinationBucket": "target-bucket" }` |
+| `POST` | `/files/:bucket/:file/copy` | ✅ Required | Copy file to another bucket. Body: `{ "destinationBucket": "target-bucket" }` |
 | `POST` | `/files/:bucket/delete-multiple` | ✅ Required | Delete multiple files. Body: `{ "files": ["file1", "file2"] }` |
 | `GET` | `/files/:bucket/download-zip` | ✅ Required (Signed) | Download files as ZIP. Uses `X-Signature` header validation |
 
@@ -178,7 +186,7 @@ const userEmail = await validateAccessJWT(request, env);
 if (!userEmail) return new Response('Unauthorized', { status: 401 });
 ```
 
-### R2 API Call
+### R2 API Call (Management API)
 ```typescript
 const response = await fetch(
   CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets',
@@ -190,6 +198,33 @@ const response = await fetch(
   }
 );
 ```
+
+### R2 Object Keys - CRITICAL
+**DO NOT use `encodeURIComponent()` when building R2 Management API URLs!**
+- The R2 Management API expects decoded object keys in the URL path
+- Filenames with spaces, parentheses, etc. should be passed as-is (decoded)
+- Example: `/objects/Roxy 2019 (2).jpg` ✅ NOT `/objects/Roxy%202019%20(2).jpg` ❌
+- This matches how the upload endpoint works (see line 847: uses `decodedFileName`)
+- Copy and move operations follow the same pattern for consistency
+
+### Frontend State Management
+**File Transfer Operations (Move/Copy):**
+- Unified `transferState` object manages both move and copy operations
+- State: `{ isDialogOpen, mode: 'move'|'copy', targetBucket, isTransferring, progress }`
+- Transfer dropdown uses fixed positioning with dynamic calculation via `getBoundingClientRect()`
+- Click-outside handler closes dropdown (implemented with `useEffect` and refs)
+- Progress reporting: `onProgress` callback updates UI during multi-file operations
+
+**File Selection:**
+- `selectedFiles: Set<string>` tracks selected file keys
+- Checkbox interactions properly manage Set state (must create new Set for React re-render)
+- Selection persists across pagination but clears on bucket change
+
+**Success/Error Messages:**
+- Single `error` state handles both errors and success messages
+- Green background for messages containing "Successfully moved" or "Successfully copied"
+- Red background for actual errors
+- Messages auto-clear after operations
 
 ---
 
@@ -205,9 +240,8 @@ const response = await fetch(
 
 ## 🚧 Future Work
 
-1. **Enhancement:** Add feature to copy files between buckets.
-2. **Enhancement:** Add Cloudflare Web Assets to protect `/api/*` endpoints
-3. **Enhancement:** Detect and match users light/dark mode system setting.
-4. **Enhancement:** Configure repository for community standards with license, security policy, etc
-5. **Enhancement:** Set up dependabot, codeql, secrets scanning, etc.
-6. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
+1. **Enhancement:** Add Cloudflare Web Assets to protect `/api/*` endpoints
+2. **Enhancement:** Detect and match users light/dark mode system setting.
+3. **Enhancement:** Configure repository for community standards with license, security policy, etc
+4. **Enhancement:** Set up dependabot, codeql, secrets scanning, etc.
+5. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
