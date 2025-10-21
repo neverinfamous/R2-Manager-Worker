@@ -767,7 +767,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         </div>
       </div>
 
-      {error && <div className={`error-message ${error.includes('Successfully moved') ? 'success-message' : ''}`}>{error}</div>}
+      {error && <div className={`error-message ${error.includes('Successfully moved') || error.includes('Successfully copied') ? 'success-message' : ''}`}>{error}</div>}
 
       {paginationState.isInitialLoad ? (
         <div className="loading-state">Loading...</div>
