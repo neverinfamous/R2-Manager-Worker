@@ -460,7 +460,6 @@ custom_domain = true
 ### Planned Features
 
 **High Priority**
-- **UI Improvement** - Combine Preview/List Buttons into Toggle
 - **Performance Caching** - Intelligent caching layer for frequently accessed files
 - **Wiki** - Split current README.md into a shorter version for main repository and a GitHub Wiki for complete documentation.
 
