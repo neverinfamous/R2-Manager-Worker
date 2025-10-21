@@ -33,7 +33,7 @@ jobs:
         run: npm run build
 
       - name: Build worker
-        run: npx wrangler publish --dry-run
+        run: npx wrangler deploy --dry-run
 
   security-scan:
     runs-on: ubuntu-latest
