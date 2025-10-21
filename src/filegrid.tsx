@@ -190,14 +190,44 @@ const getFileTypeIcon = (filename: string): JSX.Element => {
     )
   }
   
-  // ZIP archive icon - compressed folder
-  if (ext === 'zip') {
+  // Archive icons - compressed folder
+  if (ext === 'zip' || ext === 'rar' || ext === '7z') {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
         <path d="M12 2v8l6 4v6a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-6l6-4V2z" />
         <line x1="12" y1="2" x2="12" y2="4" strokeWidth="2" />
         <line x1="12" y1="5" x2="12" y2="7" strokeWidth="2" />
         <line x1="12" y1="8" x2="12" y2="10" strokeWidth="2" />
+      </svg>
+    )
+  }
+  
+  // Text file icon - document with lines
+  if (ext === 'txt') {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="8" y1="12" x2="16" y2="12" opacity="0.5" />
+        <line x1="8" y1="14" x2="16" y2="14" opacity="0.5" />
+        <line x1="8" y1="16" x2="14" y2="16" opacity="0.5" />
+        <line x1="8" y1="18" x2="15" y2="18" opacity="0.5" />
+      </svg>
+    )
+  }
+  
+  // Code file icons - angle brackets with code symbol
+  if (ext === 'js' || ext === 'ts' || ext === 'jsx' || ext === 'tsx' || 
+      ext === 'py' || ext === 'java' || ext === 'cpp' || ext === 'c' || 
+      ext === 'cs' || ext === 'go' || ext === 'rs' || ext === 'php' || 
+      ext === 'rb' || ext === 'swift' || ext === 'kt') {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+        <polyline points="14 2 14 8 20 8" />
+        <polyline points="10 14 8 16 10 18" strokeWidth="1.8" />
+        <polyline points="14 14 16 16 14 18" strokeWidth="1.8" />
+        <line x1="12.5" y1="13" x2="11.5" y2="19" strokeWidth="1.2" opacity="0.7" />
       </svg>
     )
   }
