@@ -1093,9 +1093,11 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         console.log('[Files] Copying file:', sourceKey, 'from:', bucketName, 'to:', destBucket);
 
         // 1. Fetch file from source bucket
-        const getUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + sourceKey;
+        const getUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(sourceKey);
+        console.log('[Files] Fetching from source:', getUrl);
         const getResponse = await fetch(getUrl, { headers: cfHeaders });
 
+        console.log('[Files] Source fetch status:', getResponse.status);
         if (!getResponse.ok) {
           if (getResponse.status === 404) {
             return new Response(JSON.stringify({ error: 'Source file not found' }), {
@@ -1112,10 +1114,11 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         // 2. Preserve metadata from source
         const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
         const fileBuffer = await getResponse.arrayBuffer();
+        console.log('[Files] Fetched file, size:', fileBuffer.byteLength, 'contentType:', contentType);
 
         // 3. Check if file exists in destination and generate unique name if needed
         let destKey = sourceKey;
-        const checkUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + destKey;
+        const checkUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + encodeURIComponent(destKey);
         const checkResponse = await fetch(checkUrl, { method: 'HEAD', headers: cfHeaders });
 
         if (checkResponse.ok) {
@@ -1133,7 +1136,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         }
 
         // 4. Upload to destination bucket
-        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + destKey;
+        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + encodeURIComponent(destKey);
+        console.log('[Files] Uploading to destination:', putUrl);
         const putResponse = await fetch(putUrl, {
           method: 'PUT',
           headers: {
@@ -1143,11 +1147,14 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           body: fileBuffer
         });
 
+        console.log('[Files] Upload response status:', putResponse.status);
         if (!putResponse.ok) {
+          const errorText = await putResponse.text();
+          console.error('[Files] Upload error:', errorText);
           throw new Error('Failed to upload to destination: ' + putResponse.status);
         }
 
-        console.log('[Files] Copy completed successfully');
+        console.log('[Files] Copy completed successfully to key:', destKey);
 
         return new Response(JSON.stringify({ success: true, newKey: destKey }), {
           headers: {
