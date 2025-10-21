@@ -368,11 +368,14 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   } | null>(null)
   const [isTransferring, setIsTransferring] = useState(false)
   const [transferDropdownOpen, setTransferDropdownOpen] = useState(false)
+  const [sortDropdownOpen, setSortDropdownOpen] = useState(false)
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null)
+  const [sortDropdownPosition, setSortDropdownPosition] = useState<{ top: number; left: number } | null>(null)
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
 
   const gridRef = useRef<HTMLDivElement>(null)
   const transferButtonRef = useRef<HTMLButtonElement>(null)
+  const sortButtonRef = useRef<HTMLButtonElement>(null)
   const lastSelectedRef = useRef<string | null>(null)
   const loadingRef = useRef<LoadingState>({ isLoading: false })
   const mountedRef = useRef<boolean>(true)
@@ -404,13 +407,16 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       if (transferDropdownOpen && !target.closest('.transfer-dropdown-container')) {
         setTransferDropdownOpen(false)
       }
+      if (sortDropdownOpen && !target.closest('.sort-dropdown-container')) {
+        setSortDropdownOpen(false)
+      }
     }
 
-    if (transferDropdownOpen) {
+    if (transferDropdownOpen || sortDropdownOpen) {
       document.addEventListener('click', handleClickOutside)
       return () => document.removeEventListener('click', handleClickOutside)
     }
-  }, [transferDropdownOpen])
+  }, [transferDropdownOpen, sortDropdownOpen])
 
   const handleImageError = useCallback((fileName: string) => {
     setFailedImages(prev => new Set(prev).add(fileName))
@@ -796,7 +802,30 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       field,
       direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
     }))
+    setSortDropdownOpen(false)
   }, [])
+
+  const handleSortButtonClick = useCallback(() => {
+    if (!sortDropdownOpen && sortButtonRef.current) {
+      const rect = sortButtonRef.current.getBoundingClientRect()
+      setSortDropdownPosition({
+        top: rect.bottom + 4,
+        left: rect.left
+      })
+    }
+    setSortDropdownOpen(!sortDropdownOpen)
+  }, [sortDropdownOpen])
+
+  const getSortLabel = useCallback(() => {
+    const fieldLabels: Record<SortField, string> = {
+      name: 'Name',
+      size: 'Size',
+      type: 'Type',
+      uploaded: 'Uploaded'
+    }
+    const arrow = sortState.direction === 'asc' ? '▲' : '▼'
+    return `${fieldLabels[sortState.field]} ${arrow}`
+  }, [sortState])
 
   return (
     <div className="file-grid-container">
@@ -901,31 +930,37 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           )}
 
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
-            <div className="sort-controls">
+            <div className={`sort-dropdown-container ${sortDropdownOpen ? 'open' : ''}`}>
               <button 
-                onClick={() => updateSortState('name')}
-                className={`sort-button ${sortState.field === 'name' ? sortState.direction : ''}`}
+                ref={sortButtonRef}
+                className="action-button sort-button-combined"
+                onClick={handleSortButtonClick}
               >
-                Name {sortState.field === 'name' && (sortState.direction === 'asc' ? '▲' : '▼')}
+                Sort: {getSortLabel()}
+                <span className="dropdown-arrow">▼</span>
               </button>
-              <button
-                onClick={() => updateSortState('size')}
-                className={`sort-button ${sortState.field === 'size' ? sortState.direction : ''}`}
-              >
-                Size {sortState.field === 'size' && (sortState.direction === 'asc' ? '▲' : '▼')}
-              </button>
-              <button
-                onClick={() => updateSortState('type')}
-                className={`sort-button ${sortState.field === 'type' ? sortState.direction : ''}`}
-              >
-                Type {sortState.field === 'type' && (sortState.direction === 'asc' ? '▲' : '▼')}
-              </button>
-              <button
-                onClick={() => updateSortState('uploaded')}
-                className={`sort-button ${sortState.field === 'uploaded' ? sortState.direction : ''}`}
-              >
-                Uploaded {sortState.field === 'uploaded' && (sortState.direction === 'asc' ? '▲' : '▼')}
-              </button>
+              {sortDropdownOpen && sortDropdownPosition && (
+                <div 
+                  className="sort-dropdown-menu"
+                  style={{
+                    top: `${sortDropdownPosition.top}px`,
+                    left: `${sortDropdownPosition.left}px`
+                  }}
+                >
+                  <button onClick={() => updateSortState('name')}>
+                    Name {sortState.field === 'name' && (sortState.direction === 'asc' ? '▲' : '▼')}
+                  </button>
+                  <button onClick={() => updateSortState('size')}>
+                    Size {sortState.field === 'size' && (sortState.direction === 'asc' ? '▲' : '▼')}
+                  </button>
+                  <button onClick={() => updateSortState('type')}>
+                    Type {sortState.field === 'type' && (sortState.direction === 'asc' ? '▲' : '▼')}
+                  </button>
+                  <button onClick={() => updateSortState('uploaded')}>
+                    Uploaded {sortState.field === 'uploaded' && (sortState.direction === 'asc' ? '▲' : '▼')}
+                  </button>
+                </div>
+              )}
             </div>
             <button
               onClick={toggleViewMode}
