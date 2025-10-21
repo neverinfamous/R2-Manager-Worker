@@ -98,13 +98,15 @@ class APIService {
       ]
     },
     archive: {
-      maxSize: 1024 * 1024 * 1024, // 1GB
+      maxSize: 100 * 1024 * 1024, // 100MB
       description: 'Archives',
       accept: [
         'application/zip',
         'application/x-zip-compressed',
         'application/x-7z-compressed',
-        'application/x-rar-compressed'
+        'application/x-rar-compressed',
+        'application/x-tar',
+        'application/x-gtar'
       ]
     },
     code: {
@@ -113,20 +115,46 @@ class APIService {
       accept: [
         'text/javascript',
         'application/javascript',
+        'application/x-javascript',
         'text/typescript',
+        'application/typescript',
+        'application/x-typescript',
         'text/x-python',
+        'text/x-python-script',
+        'application/x-python',
+        'text/x-java-source',
         'text/x-java',
         'text/x-c',
+        'text/x-c++',
         'text/x-cpp',
+        'text/x-csrc',
+        'text/x-c++src',
+        'text/x-csharp',
         'text/x-ruby',
+        'application/x-ruby',
         'text/x-php',
+        'application/x-php',
         'text/x-go',
+        'application/x-go',
+        'text/x-rust',
+        'application/x-rust',
+        'text/x-swift',
+        'text/x-kotlin',
         'text/html',
+        'application/xhtml+xml',
         'text/css',
         'application/json',
+        'application/ld+json',
         'text/xml',
+        'application/xml',
         'application/x-yaml',
-        'text/x-markdown'
+        'text/yaml',
+        'text/x-yaml',
+        'text/x-markdown',
+        'text/markdown',
+        'application/x-tar',
+        'application/x-gtar',
+        'text/plain'
       ]
     }
   }
@@ -145,7 +173,16 @@ class APIService {
   }
 
   validateFile(file: File): ValidationResult {
-    const config = this.getFileTypeConfig(file.type)
+    let config = this.getFileTypeConfig(file.type)
+    
+    // If MIME type is not recognized or is text/plain, try to determine by extension
+    if (!config || file.type === 'text/plain' || file.type === '') {
+      const ext = file.name.split('.').pop()?.toLowerCase()
+      const configByExt = this.getConfigByExtension(ext)
+      if (configByExt) {
+        config = configByExt
+      }
+    }
     
     if (!config) {
       const allowedTypes = Object.values(this.FILE_TYPES)
@@ -165,6 +202,34 @@ class APIService {
     }
     
     return { valid: true }
+  }
+
+  private getConfigByExtension(ext: string | undefined): FileTypeConfig | null {
+    if (!ext) return null
+    
+    const extensionMap: Record<string, string> = {
+      // Images
+      'jpg': 'image', 'jpeg': 'image', 'png': 'image', 'gif': 'image', 
+      'webp': 'image', 'svg': 'image', 'bmp': 'image',
+      // Videos
+      'mp4': 'video',
+      // Documents
+      'pdf': 'document', 'doc': 'document', 'docx': 'document',
+      'xls': 'document', 'xlsx': 'document', 'ppt': 'document', 'pptx': 'document',
+      'txt': 'document', 'md': 'document', 'csv': 'document',
+      // Archives
+      'zip': 'archive', 'rar': 'archive', '7z': 'archive', 'tar': 'code',
+      // Code files
+      'js': 'code', 'jsx': 'code', 'ts': 'code', 'tsx': 'code',
+      'py': 'code', 'java': 'code', 'c': 'code', 'cpp': 'code', 'cc': 'code',
+      'cs': 'code', 'go': 'code', 'rs': 'code', 'php': 'code',
+      'rb': 'code', 'swift': 'code', 'kt': 'code', 'html': 'code',
+      'css': 'code', 'json': 'code', 'xml': 'code', 'yaml': 'code', 'yml': 'code',
+      'ipynb': 'code', 'parquet': 'document'
+    }
+    
+    const category = extensionMap[ext]
+    return category ? this.FILE_TYPES[category] : null
   }
 
   private formatSize(bytes: number): string {

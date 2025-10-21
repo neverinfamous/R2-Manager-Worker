@@ -220,7 +220,8 @@ const getFileTypeIcon = (filename: string): JSX.Element => {
   if (ext === 'js' || ext === 'ts' || ext === 'jsx' || ext === 'tsx' || 
       ext === 'py' || ext === 'java' || ext === 'cpp' || ext === 'c' || 
       ext === 'cs' || ext === 'go' || ext === 'rs' || ext === 'php' || 
-      ext === 'rb' || ext === 'swift' || ext === 'kt') {
+      ext === 'rb' || ext === 'swift' || ext === 'kt' || ext === 'html' || 
+      ext === 'css') {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
