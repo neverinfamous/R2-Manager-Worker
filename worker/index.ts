@@ -722,7 +722,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         
         let apiUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects'
           + '?include=customMetadata,httpMetadata'
-          + '&limit=' + limit
+          + '&per_page=' + limit
           + '&delimiter=/'
           + '&order=desc'
           + '&sort_by=last_modified';
