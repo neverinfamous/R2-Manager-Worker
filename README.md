@@ -18,12 +18,19 @@ Cloudflare's dashboard lacks full-featured R2 file management capabilities. This
 ## ✨ Features
 
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets
-- 📤 **Smart Uploads** - Chunked uploads with automatic retry (10MB chunks)
+- 📤 **Smart Uploads** - Chunked uploads with automatic retry (10MB chunks, up to 500MB files)*
 - 📥 **Bulk Downloads** - Download multiple files as ZIP archives
 - 🔄 **File Operations** - Move and copy files between buckets
 - 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access Zero Trust
 - ⚡ **Edge Performance** - Deployed on Cloudflare's global network
 - 🎨 **Modern UI** - Beautiful, responsive interface built with React 19
+
+**\*Upload Size Limits:** This application supports uploads up to 500MB per file for archives and videos. However, **Cloudflare enforces plan-based limits**:
+- **Free/Pro Plans:** 100MB maximum per file
+- **Business Plan:** 200MB maximum per file  
+- **Enterprise Plan:** 500MB maximum per file
+
+If you attempt to upload files larger than your plan allows, Cloudflare will reject the upload.
 
 ---
 
@@ -31,10 +38,12 @@ Cloudflare's dashboard lacks full-featured R2 file management capabilities. This
 
 ### Prerequisites
 
-- [Cloudflare account](https://dash.cloudflare.com/sign-up) (Free tier works!)
+- [Cloudflare account](https://dash.cloudflare.com/sign-up) (Free tier works! See upload limits above)
 - [Node.js](https://nodejs.org/) 18+ and npm
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) installed globally
 - Domain managed by Cloudflare (optional - can use Workers.dev subdomain)
+
+**Note:** For uploads larger than 100MB, you'll need a Cloudflare Business (up to 200MB) or Enterprise (up to 500MB) plan.
 
 ### Installation
 
@@ -501,6 +510,13 @@ custom_domain = true
 - Create a Bypass policy for static assets (`/favicon.ico`, `/logo.png`, etc.)
 - Check that API requests include credentials: `credentials: 'include'` in fetch calls
 - Ensure the Worker is deployed to the correct domain
+
+**❌ Upload fails with large files (>100MB)**
+- Check your Cloudflare plan: Free/Pro plans are limited to 100MB per file
+- Business plans support up to 200MB per file
+- Enterprise plans support up to 500MB per file
+- The application allows up to 500MB uploads, but Cloudflare will reject files exceeding your plan's limit
+- Upgrade your plan at [Cloudflare Dashboard](https://dash.cloudflare.com/) → **Plans** to increase limits
 
 ### Testing JWT Authentication
 
