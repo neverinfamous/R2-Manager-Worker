@@ -1236,6 +1236,14 @@
   margin-bottom: 1rem;
 }
 
+.info-message {
+  background: rgba(59, 130, 246, 0.2);
+  color: #93C5FD;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
 .empty-state {
   display: flex;
   flex-direction: column;

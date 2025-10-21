@@ -342,6 +342,7 @@ const VideoPlayer = ({ src, className, onClick }: VideoPlayerProps) => {
 export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0, availableBuckets }: FileGridProps) {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
   const [error, setError] = useState<string>('')
+  const [infoMessage, setInfoMessage] = useState<string>('')
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null)
   const [paginatedFiles, setPaginatedFiles] = useState<PaginatedFiles>({
     objects: [],
@@ -723,6 +724,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     
     setIsTransferring(true)
     setError('')
+    setInfoMessage('')
     
     try {
       const apiMethod = transferState.mode === 'move' ? api.moveFiles.bind(api) : api.copyFiles.bind(api)
@@ -733,7 +735,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         transferState.targetBucket, 
         (completed, total) => {
           const action = transferState.mode === 'move' ? 'Moving' : 'Copying'
-          setError(`${action} files: ${completed}/${total}...`)
+          setInfoMessage(`${action} files: ${completed}/${total}...`)
         }
       )
       
@@ -742,13 +744,14 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       setTransferState(null)
       
       const action = transferState.mode === 'move' ? 'moved' : 'copied'
-      setError(`Successfully ${action} ${selectedFiles.length} file(s)`)
-      setTimeout(() => setError(''), 3000)
+      setInfoMessage(`Successfully ${action} ${selectedFiles.length} file(s)`)
+      setTimeout(() => setInfoMessage(''), 3000)
       
       onFilesChange?.()
     } catch (err) {
       console.error('Transfer failed:', err)
       setError(`Failed to ${transferState.mode} one or more files`)
+      setInfoMessage('')
     } finally {
       setIsTransferring(false)
     }
@@ -994,7 +997,8 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         </div>
       </div>
 
-      {error && <div className={`error-message ${error.includes('Successfully moved') || error.includes('Successfully copied') ? 'success-message' : ''}`}>{error}</div>}
+      {error && <div className="error-message">{error}</div>}
+      {infoMessage && <div className="info-message">{infoMessage}</div>}
 
       {paginationState.isInitialLoad ? (
         <div className="loading-state">Loading...</div>
@@ -1211,7 +1215,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
             {isTransferring && (
               <div className="move-progress">
-                <p>{error}</p>
+                <p>{infoMessage}</p>
                 <div className="progress-bar">
                   <div className="progress-fill"></div>
                 </div>
