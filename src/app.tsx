@@ -645,9 +645,9 @@ export default function BucketManager() {
                       <p>Accepted file types and size limits:</p>
                       <ul>
                         <li>Images (JPG, PNG, GIF, WebP) - up to 15MB</li>
-                        <li>Videos (MP4) - up to 100MB</li>
+                        <li>Videos (MP4) - up to 100MB for Free/Pro Accounts, 200MB for Business, 500MB for Enterprise</li>
                         <li>Documents (PDF, Word, Excel, PowerPoint, text) - up to 50MB</li>
-                        <li>Archives (ZIP, RAR, 7Z, TAR) - up to 100MB</li>
+                        <li>Archives (ZIP, RAR, 7Z, TAR) - up to 100MB for Free/Pro Accounts, 200MB for Business, 500MB for Enterprise</li>
                         <li>Code files (JS, TS, Python, etc.) - up to 10MB</li>
                       </ul>
                     </div>
