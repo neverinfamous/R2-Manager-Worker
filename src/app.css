@@ -919,6 +919,35 @@
   color: white;
 }
 
+/* Combined view mode toggle */
+.view-mode-toggle-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  background-color: #2c3e50;
+  color: #ecf0f1;
+  border: 2px solid #34495e;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.view-mode-toggle-button:hover {
+  background-color: #34495e;
+  border-color: #4a5f7f;
+}
+
+.view-mode-toggle-button .view-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
 /* File List View Styles */
 .file-list {
   width: 100%;
@@ -1498,6 +1527,24 @@
   .sort-button {
     flex: 1;
     min-width: 0;
+  }
+}
+
+/* Responsive adjustments for view toggle */
+@media (max-width: 1200px) {
+  .file-actions-bar > div {
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  
+  .view-mode-toggle-button {
+    padding: 0.4rem 0.7rem;
+    font-size: 13px;
+  }
+  
+  .view-mode-toggle-button .view-icon {
+    width: 16px;
+    height: 16px;
   }
 }
 
