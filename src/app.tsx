@@ -68,9 +68,10 @@ export default function BucketManager() {
     }, {} as Record<string, string[]>)
   }, [])
 
-  const handleHardRefresh = () => {
-    window.location.reload()
-  }
+  const handleNavigateHome = useCallback(() => {
+    // Just clear selected bucket to return to bucket list (fast React state update)
+    setSelectedBucket(null)
+  }, [])
 
   const handleLogout = useCallback(async () => {
     await auth.logout()
@@ -387,7 +388,8 @@ export default function BucketManager() {
           src="/logo.png" 
           alt="R2 Manager" 
           className="app-logo" 
-          onClick={handleHardRefresh}
+          onClick={handleNavigateHome}
+          style={{ cursor: 'pointer' }}
         />
         <div className="header-content">
           {selectedBucket && (
@@ -398,7 +400,7 @@ export default function BucketManager() {
               ← Back to Buckets
             </button>
           )}
-          <h1 className="app-title" onClick={handleHardRefresh}>
+          <h1 className="app-title" onClick={handleNavigateHome} style={{ cursor: 'pointer' }}>
             R2 Bucket Manager
           </h1>
           <button 
