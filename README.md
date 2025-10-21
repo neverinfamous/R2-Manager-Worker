@@ -1,240 +1,412 @@
 # Cloudflare R2 Bucket Manager
 
-**Last Updated:** October 20, 2025 11:02 PM EST | **Status:** ✅ Stable 
+**Last Updated:** October 21, 2025 | **Status:** ✅ Production Ready  
 **Tech Stack:** React 19.2.0 | Vite 7.1.11 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
-A web application for managing Cloudflare R2 buckets with GitHub SSO authentication via Cloudflare Access (Zero Trust) and Worker.
+A modern web application for managing Cloudflare R2 buckets with enterprise-grade authentication via Cloudflare Access (Zero Trust). Deploy to your own Cloudflare account in minutes.
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
 
 ---
 
-## 🔐 Authentication
+## ✨ Features
 
-**System:** Cloudflare Access Zero Trust + GitHub SSO (ONE-CLICK setup)
-- No custom auth logic - all handled by Cloudflare Access
-- Frontend: Redirects unauthenticated users to `/cdn-cgi/access/login`
-- Backend: JWT validation via `cf-access-jwt-assertion` cookie
-- Authorization: All authenticated users can access all buckets (Cloudflare Access handles policy enforcement)
-- Files: `src/services/auth.ts` (minimal), `worker/index.ts` lines ~130-165 (validateAccessJWT function)
-
-**Key Details:**
-- JWT passed as **cookie** (`cf-access-jwt-assertion`), not header
-- Verify with `jose` library using Cloudflare's public keys
-- Policy ID (POLICY_AUD) + Team Domain (TEAM_DOMAIN) required as secrets
-- D1 database: Schema still exists but only stores file metadata (not user auth)
+- 🪣 **Bucket Management** - Create, rename, and delete R2 buckets
+- 📤 **Smart Uploads** - Chunked uploads with automatic retry (10MB chunks)
+- 📥 **Bulk Downloads** - Download multiple files as ZIP archives
+- 🔄 **File Operations** - Move and copy files between buckets
+- 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access Zero Trust
+- ⚡ **Edge Performance** - Deployed on Cloudflare's global network
+- 🎨 **Modern UI** - Beautiful, responsive interface built with React 19
 
 ---
 
-## 📋 Critical Architecture
+## 🚀 Quick Start
+
+### Prerequisites
+
+- [Cloudflare account](https://dash.cloudflare.com/sign-up) (Free tier works!)
+- [Node.js](https://nodejs.org/) 18+ and npm
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) installed globally
+- Domain managed by Cloudflare (optional - can use Workers.dev subdomain)
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/neverinfamous/R2-Manager-Worker.git
+   cd R2-Manager-Worker
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment**
+   ```bash
+   # Copy template and configure for development
+   cp .env.example .env
+   
+   # Edit .env - for local development, use:
+   # VITE_WORKER_API=http://localhost:8787
+   ```
+
+4. **Configure Wrangler**
+   ```bash
+   # Copy template and customize
+   cp wrangler.toml.example wrangler.toml
+   
+   # Edit wrangler.toml and update:
+   # - bucket_name (your R2 bucket name)
+   # - database_name and database_id (your D1 database details)
+   # - Optional: custom domain routing
+   ```
+
+5. **Create Cloudflare resources**
+   ```bash
+   # Login to Cloudflare
+   wrangler login
+   
+   # Create R2 bucket
+   wrangler r2 bucket create your-bucket-name
+   
+   # Create D1 database
+   wrangler d1 create your-database-name
+   # Copy the database_id from output to wrangler.toml
+   
+   # Initialize database schema
+   wrangler d1 execute your-database-name --file=worker/schema.sql
+   ```
+
+6. **Configure Cloudflare Access (Zero Trust)**
+   
+   Navigate to [Cloudflare Zero Trust](https://one.dash.cloudflare.com/):
+   
+   - **Add Identity Provider:**
+     - Go to Settings → Authentication → Login methods
+     - Click "Add new" → Select "GitHub"
+     - Follow GitHub OAuth setup instructions
+     - Save your Client ID and Client Secret
+   
+   - **Create Access Application:**
+     - Go to Access → Applications → Add an application
+     - Select "Self-hosted"
+     - Application name: "R2 Manager"
+     - Session Duration: 24 hours (or your preference)
+     - Application domain: Your worker domain (e.g., `r2.yourdomain.com` or `r2.yourname.workers.dev`)
+   
+   - **Configure Policies:**
+     - **Allow Policy:** Include → Everyone (or specific GitHub users/organizations)
+     - **Bypass Policy:** Include → Everyone on path `/site.webmanifest` (for static assets)
+   
+   - **Note Configuration:**
+     - Copy your **Policy AUD** (Application Audience tag)
+     - Copy your **Team Domain** (e.g., `yourteam.cloudflareaccess.com`)
+
+7. **Set Worker Secrets**
+   ```bash
+   # Set required secrets (you'll be prompted for values)
+   wrangler secret put ACCOUNT_ID       # From Cloudflare Dashboard
+   wrangler secret put CF_EMAIL         # Your Cloudflare account email
+   wrangler secret put API_KEY          # API token from Cloudflare Dashboard
+   wrangler secret put TEAM_DOMAIN      # From Zero Trust (e.g., yourteam.cloudflareaccess.com)
+   wrangler secret put POLICY_AUD       # From Access application
+   ```
+
+   **Where to find these values:**
+   - `ACCOUNT_ID`: Dashboard → Overview (right sidebar)
+   - `CF_EMAIL`: Your Cloudflare login email
+   - `API_KEY`: Dashboard → My Profile → API Tokens → Create Token
+     - Use "Edit Cloudflare Workers" template
+     - Add R2 permissions: Account → R2 → Edit
+   - `TEAM_DOMAIN`: Zero Trust → Settings → Custom Pages (shown at top)
+   - `POLICY_AUD`: Access → Applications → Your App → Overview → Application Audience (AUD) Tag
+
+8. **Deploy**
+   ```bash
+   # Build frontend
+   npm run build
+   
+   # Deploy to Cloudflare
+   wrangler deploy
+   
+   # Your app is now live! Access at:
+   # - Custom domain: https://your-subdomain.your-domain.com
+   # - Workers.dev: https://r2.yourname.workers.dev
+   ```
+
+---
+
+## 🛠️ Development
+
+### Local Development
+
+```bash
+# Terminal 1: Start Vite dev server
+npm run dev
+# Frontend available at http://localhost:5173
+
+# Terminal 2: Start Wrangler worker
+npx wrangler dev
+# Worker API available at http://localhost:8787
+```
+
+**Note:** Cloudflare Access won't intercept localhost requests. For testing JWT authentication locally:
+1. Add `127.0.0.1 r2.localhost` to your hosts file
+2. Set `VITE_WORKER_API=http://r2.localhost:8787` in `.env`
+3. Or test JWT validation via Postman using production tokens
+
+### Build Commands
+
+```bash
+npm run dev           # Start Vite dev server
+npm run build         # Build for production
+npm run lint          # Run ESLint
+npm run preview       # Preview production build
+npx wrangler dev      # Start local worker
+npx wrangler deploy   # Deploy to Cloudflare
+```
+
+---
+
+## 📋 Architecture
 
 ### File Organization
-```
-src/
-├── app.tsx                 # Main UI (bucket list, file grid, upload area)
-├── filegrid.tsx            # File browser for selected bucket (~1000 lines)
-│   ├── File selection (multi-select with checkboxes)
-│   ├── Transfer dropdown (move/copy operations)
-│   ├── Bulk operations (delete multiple, download as ZIP)
-│   └── Pagination & infinite scroll
-├── services/
-│   ├── api.ts              # HTTP client (~649 lines)
-│   │   ├── All API calls (buckets, files, upload, download)
-│   │   ├── Signed URL generation (HMAC-SHA256)
-│   │   └── Chunked upload logic (50MB chunks)
-│   └── auth.ts             # Auth service (logout only)
-└── components/
-    └── auth.tsx            # DELETED - auth handled by Cloudflare Access
 
-worker/
-├── index.ts                # Worker runtime (~1233 lines)
-│   ├── handleApiRequest()  # Main request router
-│   ├── validateAccessJWT() # JWT verification (lines ~130-165)
-│   └── Endpoints:          # Listed below
-└── schema.sql              # D1 schema (minimal - file metadata only)
+```
+├── src/
+│   ├── app.tsx                 # Main UI component
+│   ├── filegrid.tsx            # File browser with bulk operations
+│   └── services/
+│       ├── api.ts              # HTTP client & API calls
+│       └── auth.ts             # Auth utilities (logout)
+├── worker/
+│   ├── index.ts                # Worker runtime & API endpoints
+│   └── schema.sql              # D1 database schema
+├── wrangler.toml.example       # Wrangler configuration template
+├── .env.example                # Environment variables template
+└── README.md                   # This file
 ```
 
-### Current Stack Versions
-- **React:** 19.2.0 | **Vite:** 7.1.11 | **TypeScript:** 5.9.3 | **Wrangler:** 4.43.0 | **Node:** 25.x
+### Technology Stack
+
+| Component | Technology | Version |
+|-----------|-----------|---------|
+| Frontend | React | 19.2.0 |
+| Build Tool | Vite | 7.1.11 |
+| Language | TypeScript | 5.9.3 |
+| Backend | Cloudflare Workers | Runtime API |
+| Storage | Cloudflare R2 | S3-compatible |
+| Database | Cloudflare D1 | SQLite |
+| Auth | Cloudflare Access | Zero Trust |
+| Deployment | Wrangler | 4.43.0+ |
 
 ---
 
-## 🔌 Worker API Endpoints
+## 🔌 API Endpoints
 
-All endpoints require valid Cloudflare Access JWT. Base: `https://r2.adamic.tech/api`
+All endpoints require valid Cloudflare Access JWT (automatically handled by Cloudflare Access).
+
+**Base URL:** `https://YOUR_DOMAIN/api`
 
 ### Bucket Management
 
-| Method | Endpoint | Auth | Purpose |
-|--------|----------|------|---------|
-| `GET` | `/buckets` | ✅ Required | List all R2 buckets (filters: r2-bucket, sqlite-mcp-server-wiki) |
-| `POST` | `/buckets` | ✅ Required | Create bucket. Body: `{ "name": "bucket-name" }` |
-| `PUT` | `/buckets/:name` | ✅ Required | Rename bucket. Body: `{ "newName": "new-name" }` |
-| `DELETE` | `/buckets/:name` | ✅ Required | Delete bucket. Query: `?force=true` to delete all objects first |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/buckets` | List all R2 buckets |
+| `POST` | `/buckets` | Create bucket (Body: `{ "name": "bucket-name" }`) |
+| `PATCH` | `/buckets/:name` | Rename bucket (Body: `{ "newName": "new-name" }`) |
+| `DELETE` | `/buckets/:name` | Delete bucket (Query: `?force=true` to delete all objects first) |
 
 ### File Management
 
-| Method | Endpoint | Auth | Purpose |
-|--------|----------|------|---------|
-| `GET` | `/files/:bucket` | ✅ Required | List objects in bucket. Query: `?limit=20&skipCache=true` |
-| `POST` | `/files/:bucket/upload` | ✅ Required | Chunked upload. Headers: `X-Chunk-Index`, `X-Total-Chunks`, `X-File-Name` |
-| `DELETE` | `/files/:bucket/:file` | ✅ Required | Delete single file |
-| `POST` | `/files/:bucket/:file/move` | ✅ Required | Move file to another bucket. Body: `{ "destinationBucket": "target-bucket" }` |
-| `POST` | `/files/:bucket/:file/copy` | ✅ Required | Copy file to another bucket. Body: `{ "destinationBucket": "target-bucket" }` |
-| `POST` | `/files/:bucket/delete-multiple` | ✅ Required | Delete multiple files. Body: `{ "files": ["file1", "file2"] }` |
-| `GET` | `/files/:bucket/download-zip` | ✅ Required (Signed) | Download files as ZIP. Uses `X-Signature` header validation |
-
-### Static Assets (No Auth Required)
-
-| Path | Response | Cache |
-|------|----------|-------|
-| `/site.webmanifest` | JSON manifest | 86400s |
-| `/favicon.ico` | Static file | Via ASSETS |
-| `/manifest.json` | Static file | Via ASSETS |
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/files/:bucket` | List objects in bucket (Query: `?limit=20&skipCache=true`) |
+| `POST` | `/files/:bucket/upload` | Upload file (Headers: `X-Chunk-Index`, `X-Total-Chunks`, `X-File-Name`) |
+| `DELETE` | `/files/:bucket/:file` | Delete single file |
+| `POST` | `/files/:bucket/:file/move` | Move file (Body: `{ "destinationBucket": "target" }`) |
+| `POST` | `/files/:bucket/:file/copy` | Copy file (Body: `{ "destinationBucket": "target" }`) |
+| `POST` | `/files/:bucket/delete-multiple` | Delete multiple files (Body: `{ "files": ["file1", "file2"] }`) |
+| `POST` | `/files/:bucket/download-zip` | Download files as ZIP (Requires `X-Signature` header) |
 
 ---
 
-## ⚙️ Required Configuration
+## 🔐 Authentication & Security
 
-### Cloudflare Access Setup
-1. Create Access Application for `r2.adamic.tech`
-2. Add **GitHub** as identity provider
-3. Create **Allow** policy: Include → Everyone
-4. Add **Bypass** policy for static assets: Include → Everyone on path `/site.webmanifest`
-5. Note Policy ID (AUD tag) and Team Domain
+### How It Works
+
+1. **User visits your domain** → Cloudflare Access intercepts unauthenticated requests
+2. **GitHub SSO login** → User authenticates via GitHub OAuth
+3. **JWT cookie issued** → `cf-access-jwt-assertion` cookie set automatically
+4. **Worker validates JWT** → Every API request validates JWT against Cloudflare's public keys
+5. **Access granted** → User can manage R2 buckets
+
+### Security Features
+
+- ✅ **Zero Trust Architecture** - All requests authenticated by Cloudflare Access
+- ✅ **JWT Validation** - Tokens verified on every API call using `jose` library
+- ✅ **HTTPS Only** - All traffic encrypted via Cloudflare's edge network
+- ✅ **Signed URLs** - Download operations use HMAC-SHA256 signatures
+- ✅ **No Stored Credentials** - No user passwords stored anywhere
+- ✅ **Policy Enforcement** - Access policies managed in Cloudflare dashboard
+
+### Authorization
+
+By default, all authenticated users can access all buckets. To restrict access:
+
+1. Update Cloudflare Access policies to specific GitHub users/orgs
+2. Modify worker JWT validation to check user email against allowlist
+3. Implement per-bucket ownership in D1 database (requires code changes)
+
+---
+
+## ⚙️ Configuration Reference
+
+### Environment Variables (.env)
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `VITE_WORKER_API` | No* | Worker API endpoint | `http://localhost:8787` (dev)<br>`https://r2.yourdomain.com` (prod) |
+
+*If not set, uses `window.location.origin` (same domain as frontend)
 
 ### Worker Secrets (via `wrangler secret put`)
-```
-ACCOUNT_ID          # Cloudflare account ID
-CF_EMAIL            # Cloudflare account email
-API_KEY             # Cloudflare API token
-TEAM_DOMAIN         # Cloudflare Access team domain (from Zero Trust)
-POLICY_AUD          # Policy ID from Access policy
+
+| Secret | Required | Description | Where to Find |
+|--------|----------|-------------|---------------|
+| `ACCOUNT_ID` | Yes | Cloudflare account ID | Dashboard → Overview |
+| `CF_EMAIL` | Yes | Cloudflare account email | Your login email |
+| `API_KEY` | Yes | API token with R2 permissions | Dashboard → API Tokens |
+| `TEAM_DOMAIN` | Yes | Zero Trust team domain | Zero Trust → Settings |
+| `POLICY_AUD` | Yes | Access application AUD tag | Access → Applications |
+
+### Wrangler Configuration (wrangler.toml)
+
+Key settings to customize in `wrangler.toml`:
+
+```toml
+# R2 Bucket
+[[r2_buckets]]
+bucket_name = "your-bucket-name"  # Must match created bucket
+
+# D1 Database
+[[d1_databases]]
+database_name = "your-database-name"
+database_id = "your-database-id"  # From wrangler d1 create output
+
+# Custom Domain (optional)
+[[routes]]
+pattern = "your-subdomain.your-domain.com"
+custom_domain = true
+zone_name = "your-domain.com"
 ```
 
 ---
 
-## 🚀 Development Quick Reference
+## 🐛 Troubleshooting
 
-### Frontend
+### Common Issues
+
+**❌ "Failed to authenticate" error**
+- Verify `TEAM_DOMAIN` and `POLICY_AUD` secrets are set correctly
+- Check Cloudflare Access policies include your GitHub account
+- Clear browser cookies and re-authenticate
+
+**❌ "Bucket not found" error**
+- Ensure bucket name in `wrangler.toml` matches created bucket
+- Run `wrangler r2 bucket list` to verify bucket exists
+- Check `ACCOUNT_ID` secret is correct
+
+**❌ "Database error" messages**
+- Verify D1 database exists: `wrangler d1 list`
+- Check database schema initialized: `wrangler d1 execute <db-name> --file=worker/schema.sql`
+- Confirm `database_id` in `wrangler.toml` is correct
+
+**❌ Worker deployment fails**
+- Run `wrangler login` to re-authenticate
+- Check all required secrets are set: `wrangler secret list`
+- Verify `npm run build` completes without errors
+
+**❌ CORS errors in browser**
+- Ensure Cloudflare Access is configured correctly
+- Check that static assets have Bypass policy
+- Verify `credentials: 'include'` is set in API client
+
+### Testing JWT Authentication
+
+Use this curl command to test JWT validation:
+
 ```bash
-npm install
-npm run dev           # http://localhost:5173
-npm run build
-npm run lint
+# Get JWT cookie from browser DevTools → Application → Cookies
+curl -H "Cookie: cf-access-jwt-assertion=YOUR_JWT_TOKEN" \
+     https://YOUR_DOMAIN/api/buckets
 ```
 
-### Worker
+### Debug Mode
+
+Enable verbose logging in worker:
+
+```typescript
+// worker/index.ts - Add at top of fetch handler
+console.log('Request:', {
+  url: request.url,
+  method: request.method,
+  headers: Object.fromEntries(request.headers)
+})
+```
+
+View logs in real-time:
 ```bash
-npx wrangler dev     # http://localhost:8787 (requires .env: VITE_WORKER_API=http://localhost:8787)
-npx wrangler deploy
-```
-
-### Local Testing with Zero Trust
-1. Add `127.0.0.1 r2.localhost` to hosts file
-2. Set `VITE_WORKER_API=http://r2.localhost:8787` in `.env`
-3. Note: Cloudflare Access won't intercept localhost requests; test JWT via Postman
-
----
-
-## 🐛 Known Issues & Solutions
-
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| 403 on bucket ops | Ownership checks still in code | ✅ FIXED: Removed all ownership checks (Access handles auth) |
-| Buckets don't appear after creation | Page not refreshing list | ✅ FIXED: Proper state updates in React |
-| Vite dev server vulnerability (Windows) | server.fs.deny bypass via backslash | ✅ FIXED: Updated Vite to 7.1.11 (CVE-2025-30208) |
-
----
-
-## 📊 Request Flow Diagram
-
-```
-Browser
-   ↓
-Cloudflare Access (intercepts unauthenticated requests)
-   ├→ GitHub login flow (first time only)
-   ├→ JWT cookie set: cf-access-jwt-assertion
-   ↓
-Worker receives request
-   ├→ Check if static asset (/site.webmanifest) → serve directly
-   ├→ Check if signed download request → validate signature
-   ├→ Otherwise: validateAccessJWT() → extract userEmail from token
-   ├→ Route to appropriate handler (buckets, files, etc.)
-   ↓
-R2 API (via Cloudflare API)
-   ↓
-Response back to browser
+wrangler tail
 ```
 
 ---
 
-## 📝 Common Code Patterns
+## 📚 Additional Resources
 
-### Adding New Endpoint
-1. Add to `handleApiRequest()` in `worker/index.ts`
-2. All endpoints get JWT validation automatically (runs before routing)
-3. Use `userEmail` for user context (not user ID)
-4. Return `{ headers: corsHeaders }` for CORS
-
-### JWT Validation
-```typescript
-const userEmail = await validateAccessJWT(request, env);
-if (!userEmail) return new Response('Unauthorized', { status: 401 });
-```
-
-### R2 API Call (Management API)
-```typescript
-const response = await fetch(
-  CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets',
-  {
-    headers: {
-      'X-Auth-Email': env.CF_EMAIL,
-      'X-Auth-Key': env.API_KEY
-    }
-  }
-);
-```
-
-### R2 Object Keys - CRITICAL
-**DO NOT use `encodeURIComponent()` when building R2 Management API URLs!**
-- The R2 Management API expects decoded object keys in the URL path
-- Filenames with spaces, parentheses, etc. should be passed as-is (decoded)
-- Example: `/objects/Roxy 2019 (2).jpg` ✅ NOT `/objects/Roxy%202019%20(2).jpg` ❌
-- This matches how the upload endpoint works (see line 847: uses `decodedFileName`)
-- Copy and move operations follow the same pattern for consistency
-
-### Frontend State Management
-**File Transfer Operations (Move/Copy):**
-- Unified `transferState` object manages both move and copy operations
-- State: `{ isDialogOpen, mode: 'move'|'copy', targetBucket, isTransferring, progress }`
-- Transfer dropdown uses fixed positioning with dynamic calculation via `getBoundingClientRect()`
-- Click-outside handler closes dropdown (implemented with `useEffect` and refs)
-- Progress reporting: `onProgress` callback updates UI during multi-file operations
-
-**File Selection:**
-- `selectedFiles: Set<string>` tracks selected file keys
-- Checkbox interactions properly manage Set state (must create new Set for React re-render)
-- Selection persists across pagination but clears on bucket change
-
-**Success/Error Messages:**
-- Single `error` state handles both errors and success messages
-- Green background for messages containing "Successfully moved" or "Successfully copied"
-- Red background for actual errors
-- Messages auto-clear after operations
+- [Cloudflare Workers Docs](https://developers.cloudflare.com/workers/)
+- [Cloudflare R2 Docs](https://developers.cloudflare.com/r2/)
+- [Cloudflare Access Docs](https://developers.cloudflare.com/cloudflare-one/policies/access/)
+- [Wrangler CLI Reference](https://developers.cloudflare.com/workers/wrangler/)
+- [React 19 Documentation](https://react.dev/)
+- [Vite Documentation](https://vite.dev/)
 
 ---
 
-## 🔒 Security Notes
+## 🤝 Contributing
 
-- JWT validated on every API request (no session tokens needed)
-- No user data stored in D1 (except file metadata)
-- All file operations authenticated via Cloudflare Access
-- Signed URLs for downloads use HMAC-SHA256 (src/services/api.ts)
-- Static assets bypass Access to avoid CORS issues, but are public by design
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
-## 🚧 Future Work
+## 📄 License
 
-1. **Enhancement:** Configure application for new users on their own cloudflare account and remove r2.adamic.tech domain conifguration/information from readme
-2. **Enhancement:** Detect and match users light/dark mode system setting.
-3. **Long-term:** Add support for AWS S3 buckets and bidirectional migration between S3 and Cloudflare R2.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- Built on [Cloudflare's edge platform](https://www.cloudflare.com/)
+- Inspired by the need for better R2 management tools
+- Thanks to the open-source community
+
+---
+
+## 📞 Support
+
+- 🐛 **Bug Reports:** [GitHub Issues](https://github.com/neverinfamous/R2-Manager-Worker/issues)
+- 💡 **Feature Requests:** [GitHub Discussions](https://github.com/neverinfamous/R2-Manager-Worker/discussions)
+- 📖 **Documentation:** This README and inline code comments
+
+---
+
+**Made with ❤️ for the Cloudflare community**

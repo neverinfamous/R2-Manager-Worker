@@ -1,0 +1,76 @@
+# Cloudflare R2 Bucket Manager - Wrangler Configuration Template
+# Copy this file to wrangler.toml and customize for your Cloudflare account
+
+name = "r2"
+main = "worker/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Smart Placement disabled for SPA - UI responsiveness priority
+placement = { mode = "off" }
+
+[build]
+command = "npm run build"
+cwd = "."
+
+[assets]
+directory = "dist"
+binding = "ASSETS"
+
+# ============================================
+# R2 BUCKET CONFIGURATION
+# ============================================
+# Replace with your R2 bucket name
+# Create bucket: wrangler r2 bucket create <bucket-name>
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "your-bucket-name"  # CHANGE THIS
+
+# ============================================
+# D1 DATABASE CONFIGURATION
+# ============================================
+# Replace with your D1 database details
+# Create database: wrangler d1 create <database-name>
+# Then run: wrangler d1 execute <database-name> --file=worker/schema.sql
+[[d1_databases]]
+binding = "DB"
+database_name = "your-database-name"  # CHANGE THIS
+database_id = "your-database-id"      # CHANGE THIS (from wrangler d1 create output)
+
+[observability.logs]
+enabled = true
+
+# ============================================
+# CUSTOM DOMAIN ROUTING (OPTIONAL)
+# ============================================
+# Option 1: Use default Workers.dev subdomain (no configuration needed)
+#   Your worker will be available at: https://r2.<your-subdomain>.workers.dev
+#
+# Option 2: Use custom domain (uncomment and configure below)
+#   Requirements:
+#   - Domain must be added to your Cloudflare account
+#   - DNS must be managed by Cloudflare
+#
+# [[routes]]
+# pattern = "your-subdomain.your-domain.com"  # CHANGE THIS
+# custom_domain = true
+# zone_name = "your-domain.com"               # CHANGE THIS
+
+# ============================================
+# REQUIRED SECRETS (Set via CLI)
+# ============================================
+# Run these commands to set your secrets:
+#
+#   wrangler secret put ACCOUNT_ID
+#   wrangler secret put CF_EMAIL
+#   wrangler secret put API_KEY
+#   wrangler secret put TEAM_DOMAIN
+#   wrangler secret put POLICY_AUD
+#
+# Secret details:
+# - ACCOUNT_ID: Your Cloudflare account ID (Dashboard > Overview)
+# - CF_EMAIL: Your Cloudflare account email
+# - API_KEY: Cloudflare API token with R2 permissions
+# - TEAM_DOMAIN: Cloudflare Zero Trust team domain (e.g., yourteam.cloudflareaccess.com)
+# - POLICY_AUD: Access Policy AUD tag from your Access application
+
