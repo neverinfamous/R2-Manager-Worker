@@ -888,6 +888,15 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             </button>
           </div>
 
+          {paginatedFiles.objects.length > 0 && selectedFiles.length < paginatedFiles.objects.length && (
+            <button 
+              onClick={() => setSelectedFiles(paginatedFiles.objects.map(f => f.key))}
+              className="action-button select-all-button"
+            >
+              Select All
+            </button>
+          )}
+
           {selectedFiles.length > 0 && (
             <>
               <div className={`transfer-dropdown-container ${transferDropdownOpen ? 'open' : ''}`}>

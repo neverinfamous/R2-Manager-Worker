@@ -670,6 +670,15 @@
   background: #B91C1C;
 }
 
+.select-all-button {
+  background: #10B981;
+  color: white;
+}
+
+.select-all-button:hover {
+  background: #059669;
+}
+
 .deselect-button {
   background: #4B5563;
   color: white;
