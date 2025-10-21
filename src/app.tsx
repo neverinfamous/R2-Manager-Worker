@@ -60,12 +60,11 @@ export default function BucketManager() {
   const [editError, setEditError] = useState('')
   const [isRenamingBucket, setIsRenamingBucket] = useState(false)
 
+  // Don't use react-dropzone's built-in accept filter since it's too strict
+  // Many file types (especially code files) don't have reliable MIME types
+  // Instead, we use a custom validator that checks both MIME type and extension
   const acceptedFileTypes = useMemo(() => {
-    const mimeTypes = api.getAllowedMimeTypes()
-    return mimeTypes.reduce((acc, type) => {
-      acc[type] = []
-      return acc
-    }, {} as Record<string, string[]>)
+    return undefined // Accept all files, validate in custom validator
   }, [])
 
   const handleNavigateHome = useCallback(() => {
