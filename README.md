@@ -460,7 +460,7 @@ custom_domain = true
 ### Planned Work
 
 **High Priority**
-- **jump/navigate to bucket** - Add Jump/Navigate to Bucket xx dropdown on list files display/page.
+- **copy signed url** - Peovide user with copy button for signed url to get shareable link to file.
 - **Wiki** - Split current README.md into a shorter version for main repository and a GitHub Wiki for complete documentation.
 
 **Future Enhancements**
