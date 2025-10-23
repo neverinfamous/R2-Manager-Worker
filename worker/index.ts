@@ -1238,7 +1238,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         }
 
         // Validate folder name
-        const validFolderPattern = /^[a-zA-Z0-9-_\/]+$/;
+        const validFolderPattern = /^[a-zA-Z0-9-_/]+$/;
         if (!validFolderPattern.test(folderName)) {
           return new Response(JSON.stringify({ 
             error: 'Invalid folder name. Use only letters, numbers, hyphens, underscores, and forward slashes' 

@@ -753,7 +753,7 @@ class APIService {
       return { valid: false, error: 'Folder name cannot be empty' }
     }
     const trimmedName = name.trim()
-    const validPattern = /^[a-zA-Z0-9-_\/]+$/
+    const validPattern = /^[a-zA-Z0-9-_/]+$/
     if (!validPattern.test(trimmedName)) {
       return { valid: false, error: 'Folder name can only contain letters, numbers, hyphens, underscores, and forward slashes' }
     }
