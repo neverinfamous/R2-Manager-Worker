@@ -895,8 +895,14 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         const folderMethod = transferState.mode === 'move' ? api.moveFolder.bind(api) : api.copyFolder.bind(api)
         
         for (let i = 0; i < selectedFolders.length; i++) {
-          // If destination path is specified, use it; otherwise extract the folder name
-          const destPath = transferState.targetPath || (selectedFolders[i].split('/').filter(p => p).pop() || selectedFolders[i])
+          // Extract just the folder name (not the full path)
+          const folderName = selectedFolders[i].split('/').filter(p => p).pop() || selectedFolders[i]
+          
+          // If destination path is specified, append folder name to it; otherwise use just folder name
+          const destPath = transferState.targetPath 
+            ? `${transferState.targetPath}${transferState.targetPath.endsWith('/') ? '' : '/'}${folderName}`
+            : folderName
+          
           await folderMethod(bucketName, selectedFolders[i], transferState.targetBucket, destPath)
           completed++
           const action = transferState.mode === 'move' ? 'Moving' : 'Copying'
