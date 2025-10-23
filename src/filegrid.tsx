@@ -1374,7 +1374,6 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
                 <div className="file-info">
                   <p className="file-name" title={folder.name}>📁 {folder.name}</p>
-                  <p className="file-details">Folder</p>
                 </div>
               </div>
             )
@@ -1567,9 +1566,9 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                         <span>📁 {folder.name}</span>
                       </div>
                     </td>
-                    <td>—</td>
+                    <td style={{ color: '#888', fontStyle: 'italic' }}>—</td>
                     <td>Folder</td>
-                    <td>—</td>
+                    <td style={{ color: '#888', fontStyle: 'italic' }}>—</td>
                     <td></td>
                   </tr>
                 )
