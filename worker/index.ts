@@ -719,6 +719,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const cursor = url.searchParams.get('cursor');
         const limit = parseInt(url.searchParams.get('limit') || '20');
         const skipCache = url.searchParams.get('skipCache') === 'true';
+        const prefix = url.searchParams.get('prefix');
         
         let apiUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects'
           + '?include=customMetadata,httpMetadata'
@@ -729,6 +730,12 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         
         if (cursor) {
           apiUrl += '&cursor=' + cursor;
+        }
+        
+        // Add prefix parameter for folder navigation
+        if (prefix) {
+          apiUrl += '&prefix=' + encodeURIComponent(prefix);
+          console.log('[Files] Using prefix filter:', prefix);
         }
 
         // Add cache-busting parameter if requested
