@@ -38,6 +38,7 @@ Cloudflare's dashboard lacks full-featured R2 file management capabilities. This
 
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
+- 📄 **File Management** - Rename files via right-click context menu with validation
 - 📤 **Smart Uploads** - Chunked uploads with automatic retry (10MB chunks, up to 500MB files)*
 - 📥 **Bulk Downloads** - Download multiple files as ZIP archives
 - 🔗 **Shareable Links** - Generate signed URLs to share files securely
@@ -179,6 +180,7 @@ Worker API: `http://localhost:8787`
 - `DELETE /api/files/:bucketName/delete/:fileName` - Delete a file
 - `POST /api/files/:bucketName/:fileName/copy` - Copy a file to another bucket
 - `POST /api/files/:bucketName/:fileName/move` - Move a file to another bucket
+- `PATCH /api/files/:bucketName/:fileName/rename` - Rename a file within the same bucket
 
 #### Folder Operations
 - `POST /api/folders/:bucketName/create` - Create a new folder
@@ -206,11 +208,11 @@ Worker API: `http://localhost:8787`
 ### Recently Completed ✅
 
 - ✅ **Folder Management** - Create, rename, copy, move, and delete folders with breadcrumb navigation (v1.1.0)
+- ✅ **File & Folder Rename** - Right-click context menu to rename files and folders with validation (v1.1.0)
 
 ### Planned Features
 
-- **Copy and Move files to folders**- Copy and move files and folders to other folders and not just to other buckets as it is now
-- **Rename folder** - Add ability to rename folder
+- **Copy and Move files to folders** - Copy and move files and folders to other folders and not just to other buckets as it is now
 - **Support toml files** - Add .toml to allowed upload file types with the code icon
 - **Filter by filename** - Filter through file lists by filename input
 - **AWS S3 Migration** - Add support for migrating AWS S3 to R2

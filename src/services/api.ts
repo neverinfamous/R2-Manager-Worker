@@ -780,6 +780,7 @@ class APIService {
     const trimmedName = name.trim()
     
     // Check for invalid characters
+    // eslint-disable-next-line no-control-regex
     const invalidChars = /[<>:"|?*\x00-\x1F]/g
     if (invalidChars.test(trimmedName)) {
       return { valid: false, error: 'File name contains invalid characters' }
