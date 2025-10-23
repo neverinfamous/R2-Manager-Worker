@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { DATE_PRESETS, formatDateRange } from '../../utils/filterUtils'
+import { formatDateRange } from '../../utils/filterUtils'
 import type { DateFilter as DateFilterType } from '../../types/filters'
 
 interface DateFilterProps {
