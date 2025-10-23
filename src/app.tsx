@@ -56,6 +56,11 @@ export default function BucketManager() {
     fileCount: number | null
     isDeleting: boolean
   } | null>(null)
+  
+  // Debug: Log currentPath changes
+  useEffect(() => {
+    console.log('[App] currentPath changed to:', currentPath)
+  }, [currentPath])
   const [editingBucketName, setEditingBucketName] = useState<string | null>(null)
   const [editInputValue, setEditInputValue] = useState('')
   const [editError, setEditError] = useState('')

@@ -927,10 +927,12 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   const handleFolderNavigation = useCallback((folderPath: string) => {
     // Ensure the folder path ends with / for proper prefix filtering
     const pathWithSlash = folderPath.endsWith('/') ? folderPath : folderPath + '/'
+    console.log('[FileGrid] handleFolderNavigation - navigating to:', pathWithSlash)
     setCurrentPath(pathWithSlash)
     setSelectedFiles([])
     setSelectedFolders([])
     setShouldRefresh(true)
+    console.log('[FileGrid] Calling onPathChange with:', pathWithSlash)
     onPathChange?.(pathWithSlash)
   }, [onPathChange])
 
