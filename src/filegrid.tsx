@@ -997,7 +997,9 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     setError('')
 
     try {
-      const folderPath = currentPath ? `${currentPath}/${newFolderName}` : newFolderName
+      // Remove trailing slash from currentPath if present to avoid double slashes
+      const basePath = currentPath.endsWith('/') ? currentPath.slice(0, -1) : currentPath
+      const folderPath = basePath ? `${basePath}/${newFolderName}` : newFolderName
       await api.createFolder(bucketName, folderPath)
       setShowCreateFolderModal(false)
       setNewFolderName('')
