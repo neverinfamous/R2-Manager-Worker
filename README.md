@@ -212,6 +212,7 @@ Worker API: `http://localhost:8787`
 - **Filter by filename** - Filter through file lists by filename input
 - **Folder Selection** - Select folders for bulk operations (copy/move/delete)
 - **Folder Properties** - View folder size, file count, and metadata
+- **AWS S3 Migration** - Add support for migrating AWS S3 to R2.
 - **Audit Logging** - Track all user actions in D1 database
 - **Role-Based Access Control (RBAC)** - Fine-grained permissions
 - **File Versioning** - Track and restore previous versions
