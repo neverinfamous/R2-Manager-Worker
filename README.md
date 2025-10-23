@@ -209,6 +209,7 @@ Worker API: `http://localhost:8787`
 
 ### Planned Features
 
+- **Copy and Move files to folders**- Copy and move files and folders to other folders and not just to other buckets as it is now
 - **Rename folder** - Add ability to rename folder
 - **Support toml files** - Add .toml to allowed upload file types with the code icon
 - **Filter by filename** - Filter through file lists by filename input
