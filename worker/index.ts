@@ -785,24 +785,11 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         // Sort objects by upload date
         objects.sort((a, b) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime());
 
-        // Extract folders from delimitedPrefixes or common_prefixes
-        // The Cloudflare REST API may use different field names than the Workers API
-        console.log('[Files] Full data.result keys:', Object.keys(data.result || {}));
-        console.log('[Files] Checking for folder fields:', {
-          delimitedPrefixes: data.result?.delimitedPrefixes,
-          delimited_prefixes: data.result?.delimited_prefixes,
-          commonPrefixes: data.result?.commonPrefixes,
-          common_prefixes: data.result?.common_prefixes,
-          CommonPrefixes: data.result?.CommonPrefixes
-        });
+        // Extract folders from the API response
+        // The Cloudflare REST API returns folders in data.result_info.delimited
+        const rawPrefixes = data.result_info?.delimited || [];
+        console.log('[Files] Found folders in result_info.delimited:', rawPrefixes);
         
-        const rawPrefixes = data.result?.delimitedPrefixes || 
-                           data.result?.delimited_prefixes || 
-                           data.result?.commonPrefixes ||
-                           data.result?.common_prefixes ||
-                           data.result?.CommonPrefixes ||
-                           [];
-        console.log('[Files] Raw prefixes found:', rawPrefixes);
         const folders = rawPrefixes
           .filter((prefix: string) => !prefix.startsWith('assets/'))
           .map((prefix: string) => prefix.endsWith('/') ? prefix.slice(0, -1) : prefix);
