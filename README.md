@@ -267,7 +267,8 @@ Worker API: `http://localhost:8787`
 ## 📋 Roadmap
 
 ### Planned Features
-- **Advanced Filtering** - size/date/extension filters, Regex support, fuzzy matching
+- **Bucket file list Filtering** - size/date/extension filters
+- **Advanced Bucket file list Filtering** - Regex support, fuzzy matching
 - **AWS S3 Migration** - Add support for migrating AWS S3 to R2
 - **Audit Logging** - Track all user actions in D1 database
 - **File Versioning** - Track and restore previous versions
