@@ -560,16 +560,16 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       }
       
       // Prevent default browser context menu if clicking on file items, folder items, or the grid
+      // Only prevent default, don't stop propagation so React handlers can still fire
       if (fileItem || gridRef.current?.contains(target)) {
         event.preventDefault()
-        event.stopPropagation()
       }
     }
 
-    // Use capture phase to ensure we catch the event before it bubbles
-    document.addEventListener('contextmenu', handleContextMenu, { capture: true })
+    // Use normal bubbling phase so React's handlers fire first
+    document.addEventListener('contextmenu', handleContextMenu)
     return () => {
-      document.removeEventListener('contextmenu', handleContextMenu, { capture: true })
+      document.removeEventListener('contextmenu', handleContextMenu)
     }
   }, [])
 
