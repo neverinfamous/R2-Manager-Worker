@@ -1097,7 +1097,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                 color: 'white'
               }}
             >
-              📁 Create Folder
+               Create Folder
             </button>
             {selectedFiles.length > 0 && (
               <button 
