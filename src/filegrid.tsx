@@ -513,6 +513,10 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         let newFolders: FolderObject[]
         
         if (reset) {
+          console.log('[FileGrid] Reset load - currentPath:', currentPath);
+          console.log('[FileGrid] API returned objects:', response.objects.length);
+          console.log('[FileGrid] API returned folders:', response.folders);
+          
           newObjects = response.objects
           // Convert folder paths to FolderObject format
           // Only include folders that belong to the current path level
@@ -522,11 +526,14 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
               ? folderPath.substring(currentPath.length)
               : folderPath
             const folderName = relativePath.split('/').filter(Boolean)[0] || relativePath
+            console.log('[FileGrid] Processing folder:', { folderPath, currentPath, relativePath, folderName });
             return {
               name: folderName,
               path: folderPath
             }
           })
+          
+          console.log('[FileGrid] Processed folders:', newFolders);
         } else {
           const existingKeys = new Set(prev.objects.map(obj => obj.key))
           const uniqueNewObjects = response.objects.filter(obj => !existingKeys.has(obj.key))
