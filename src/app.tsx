@@ -61,6 +61,13 @@ export default function BucketManager() {
   useEffect(() => {
     console.log('[App] currentPath changed to:', currentPath)
   }, [currentPath])
+  
+  // Create a stable callback for path changes
+  const handlePathChange = useCallback((newPath: string) => {
+    console.log('[App] handlePathChange called with:', newPath)
+    setCurrentPath(newPath)
+  }, [])
+  
   const [editingBucketName, setEditingBucketName] = useState<string | null>(null)
   const [editInputValue, setEditInputValue] = useState('')
   const [editError, setEditError] = useState('')
@@ -675,7 +682,7 @@ export default function BucketManager() {
               refreshTrigger={refreshTrigger}
               availableBuckets={buckets.map(b => b.name)}
               onBucketNavigate={handleBucketNavigate}
-              onPathChange={setCurrentPath}
+              onPathChange={handlePathChange}
             />
           </div>
         </div>
