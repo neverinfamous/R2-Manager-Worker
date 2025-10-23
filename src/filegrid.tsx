@@ -709,21 +709,42 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   }, [handleSelection])
 
   const handleDelete = useCallback(async () => {
-    if (!window.confirm(`Delete ${selectedFiles.length} selected files?`)) return
+    const totalItems = selectedFiles.length + selectedFolders.length
+    if (totalItems === 0) return
+    
+    const itemText = selectedFiles.length > 0 && selectedFolders.length > 0
+      ? `${selectedFiles.length} file(s) and ${selectedFolders.length} folder(s)`
+      : selectedFiles.length > 0
+        ? `${selectedFiles.length} file(s)`
+        : `${selectedFolders.length} folder(s)`
+    
+    if (!window.confirm(`Delete ${itemText}?`)) return
 
     setError('')
     try {
-      await Promise.all(selectedFiles.map(file => 
-        api.deleteFile(bucketName, file)
-      ))
+      // Delete all selected files
+      if (selectedFiles.length > 0) {
+        await Promise.all(selectedFiles.map(file => 
+          api.deleteFile(bucketName, file)
+        ))
+      }
+      
+      // Delete all selected folders
+      if (selectedFolders.length > 0) {
+        await Promise.all(selectedFolders.map(folderPath => 
+          api.deleteFolder(bucketName, folderPath, true)
+        ))
+      }
+      
       setSelectedFiles([])
+      setSelectedFolders([])
       setShouldRefresh(true)
       onFilesChange?.()
     } catch (err) {
-      console.error('Failed to delete selected files:', err)
-      setError('Failed to delete one or more files')
+      console.error('Failed to delete selected items:', err)
+      setError('Failed to delete one or more items')
     }
-  }, [bucketName, selectedFiles, onFilesChange])
+  }, [bucketName, selectedFiles, selectedFolders, onFilesChange])
 
   const downloadSelected = useCallback(async () => {
     if (selectedFiles.length === 0) return
