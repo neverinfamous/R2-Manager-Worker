@@ -53,6 +53,7 @@ Cloudflare's dashboard lacks full-featured R2 file management capabilities. This
 - 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access Zero Trust
 - ⚡ **Edge Performance** - Deployed on Cloudflare's global network
 - 🎨 **Modern UI** - Beautiful, responsive interface built with React 19
+- 🌓 **Light/Dark Mode** - Auto-detects system preference with manual toggle (System → Light → Dark)
 
 **\*Upload Size Limits:** This application supports uploads up to 500MB per file. However, **Cloudflare enforces plan-based limits**:
 - **Free/Pro Plans:** 100MB maximum per file
@@ -116,6 +117,30 @@ Cloudflare's dashboard lacks full-featured R2 file management capabilities. This
    ```
 
 **📖 For detailed instructions, see the [Installation & Setup Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Installation-&-Setup).**
+
+---
+
+## 🌓 Theme Customization
+
+R2 Bucket Manager supports both light and dark themes with automatic system preference detection:
+
+### Theme Modes
+- **System** (default) - Automatically follows your OS/browser theme preference
+- **Light** - Force light mode regardless of system settings
+- **Dark** - Force dark mode regardless of system settings
+
+### How to Use
+1. Click the theme toggle button in the header (next to the Logout button)
+2. Cycle through: System → Light → Dark → System
+3. Your preference is saved automatically and persists across sessions
+4. In System mode, the theme updates automatically when you change your OS theme
+
+### Technical Details
+- Theme preference stored in `localStorage`
+- Smooth CSS transitions between themes
+- All colors managed via CSS custom properties
+- Mobile-friendly with responsive design
+- WCAG compliant color contrast ratios
 
 ---
 
@@ -211,14 +236,7 @@ Worker API: `http://localhost:8787`
 
 ## 📋 Roadmap
 
-### Recently Completed ✅
-
-- ✅ **Folder-to-Folder Transfers** - Copy and move files/folders to specific folders within the same or different buckets (v1.1.1)
-- ✅ **Folder Management** - Create, rename, copy, move, and delete folders with breadcrumb navigation (v1.1.0)
-- ✅ **File & Folder Rename** - Right-click context menu to rename files and folders with validation (v1.1.0)
-
 ### Planned Features
-- **Support toml files** - Add .toml to allowed upload file types with the code icon
 - **Filter by filename** - Filter through file lists by filename input
 - **AWS S3 Migration** - Add support for migrating AWS S3 to R2
 - **Audit Logging** - Track all user actions in D1 database

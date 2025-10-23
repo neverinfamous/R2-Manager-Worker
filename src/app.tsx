@@ -4,6 +4,7 @@ import './app.css'
 import { FileGrid } from './filegrid'
 import { api } from './services/api'
 import { auth } from './services/auth'
+import { ThemeToggle } from './components/ThemeToggle'
 import type { FileRejection, FileWithPath } from 'react-dropzone'
 
 const formatFileSize = (bytes: number): string => {
@@ -417,12 +418,15 @@ export default function BucketManager() {
           <h1 className="app-title" onClick={handleNavigateHome} style={{ cursor: 'pointer' }}>
             R2 Bucket Manager for Cloudflare
           </h1>
-          <button 
-            onClick={handleLogout}
-            className="logout-button"
-          >
-            Logout
-          </button>
+          <div className="header-actions">
+            <ThemeToggle />
+            <button 
+              onClick={handleLogout}
+              className="logout-button"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 
