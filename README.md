@@ -211,7 +211,6 @@ Worker API: `http://localhost:8787`
 
 - **Rename folder** - Add ability to rename folder
 - **Support toml files** - Add .toml to allowed upload file types with the code icon
-- **Folder Properties** - View folder size, file count, and metadata
 - **Filter by filename** - Filter through file lists by filename input
 - **AWS S3 Migration** - Add support for migrating AWS S3 to R2
 - **Audit Logging** - Track all user actions in D1 database

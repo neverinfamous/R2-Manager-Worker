@@ -980,11 +980,13 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   }, [onPathChange])
 
   const handleBreadcrumbClick = useCallback((path: string) => {
-    setCurrentPath(path)
+    // Ensure the path ends with / for consistent behavior with folder navigation
+    const pathWithSlash = path ? (path.endsWith('/') ? path : path + '/') : ''
+    setCurrentPath(pathWithSlash)
     setSelectedFiles([])
     setSelectedFolders([])
     setShouldRefresh(true)
-    onPathChange?.(path)
+    onPathChange?.(pathWithSlash)
   }, [onPathChange])
 
   const handleCreateFolder = useCallback(async () => {
