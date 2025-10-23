@@ -905,7 +905,9 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   }, [bucketName, onBucketNavigate])
 
   const handleFolderNavigation = useCallback((folderPath: string) => {
-    setCurrentPath(folderPath)
+    // Ensure the folder path ends with / for proper prefix filtering
+    const pathWithSlash = folderPath.endsWith('/') ? folderPath : folderPath + '/'
+    setCurrentPath(pathWithSlash)
     setSelectedFiles([])
     setSelectedFolders([])
     setShouldRefresh(true)
@@ -1261,25 +1263,50 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           title={paginatedFiles.objects.length > 0 || paginatedFiles.folders.length > 0 ? "Click empty space to deselect all files" : undefined}
         >
           {/* Render Folders First */}
-          {paginatedFiles.folders.map((folder) => (
-            <div
-              key={folder.path}
-              className={`file-item folder-item ${selectedFolders.includes(folder.path) ? 'selected' : ''}`}
-              onClick={() => handleFolderNavigation(folder.path)}
-              style={{ cursor: 'pointer' }}
-            >
-              <div className="file-preview">
-                <div className="file-icon">
-                  {getFolderIcon()}
+          {paginatedFiles.folders.map((folder) => {
+            const isSelected = selectedFolders.includes(folder.path)
+            const checkboxId = `folder-select-${folder.path}`
+            
+            return (
+              <div
+                key={folder.path}
+                className={`file-item folder-item ${isSelected ? 'selected' : ''}`}
+                onClick={() => handleFolderNavigation(folder.path)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div className="file-select">
+                  <input
+                    type="checkbox"
+                    id={checkboxId}
+                    name={checkboxId}
+                    checked={isSelected}
+                    onChange={(e) => {
+                      e.stopPropagation()
+                      setSelectedFolders(prev => 
+                        prev.includes(folder.path)
+                          ? prev.filter(p => p !== folder.path)
+                          : [...prev, folder.path]
+                      )
+                    }}
+                    className="file-checkbox"
+                    aria-label={`Select folder ${folder.name}`}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+                
+                <div className="file-preview">
+                  <div className="file-icon">
+                    {getFolderIcon()}
+                  </div>
+                </div>
+
+                <div className="file-info">
+                  <p className="file-name" title={folder.name}>📁 {folder.name}</p>
+                  <p className="file-details">Folder</p>
                 </div>
               </div>
-
-              <div className="file-info">
-                <p className="file-name" title={folder.name}>📁 {folder.name}</p>
-                <p className="file-details">Folder</p>
-              </div>
-            </div>
-          ))}
+            )
+          })}
           
           {/* Render Files */}
           {paginatedFiles.objects.map((file) => {
@@ -1431,28 +1458,50 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             </thead>
             <tbody>
               {/* Render Folders First */}
-              {paginatedFiles.folders.map((folder) => (
-                <tr 
-                  key={folder.path}
-                  onClick={() => handleFolderNavigation(folder.path)}
-                  className="folder-row"
-                  style={{ cursor: 'pointer' }}
-                >
-                  <td></td>
-                  <td>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <div style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {getFolderIcon()}
+              {paginatedFiles.folders.map((folder) => {
+                const isSelected = selectedFolders.includes(folder.path)
+                const checkboxId = `list-folder-select-${folder.path}`
+                
+                return (
+                  <tr 
+                    key={folder.path}
+                    onClick={() => handleFolderNavigation(folder.path)}
+                    className={`folder-row ${isSelected ? 'selected' : ''}`}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <td onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        id={checkboxId}
+                        name={checkboxId}
+                        checked={isSelected}
+                        onChange={(e) => {
+                          e.stopPropagation()
+                          setSelectedFolders(prev => 
+                            prev.includes(folder.path)
+                              ? prev.filter(p => p !== folder.path)
+                              : [...prev, folder.path]
+                          )
+                        }}
+                        className="file-checkbox"
+                        aria-label={`Select folder ${folder.name}`}
+                      />
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <div style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {getFolderIcon()}
+                        </div>
+                        <span>📁 {folder.name}</span>
                       </div>
-                      <span>📁 {folder.name}</span>
-                    </div>
-                  </td>
-                  <td>—</td>
-                  <td>Folder</td>
-                  <td>—</td>
-                  <td></td>
-                </tr>
-              ))}
+                    </td>
+                    <td>—</td>
+                    <td>Folder</td>
+                    <td>—</td>
+                    <td></td>
+                  </tr>
+                )
+              })}
               
               {/* Render Files */}
               {paginatedFiles.objects.map(file => {
