@@ -1,4 +1,4 @@
-# Cloudflare R2 Bucket Manager
+# R2 Bucket Manager for Cloudflare
 
 **Last Updated:** October 23, 2025 | **Status:** ✅ Production Ready | **Version:** 1.1.0  
 **Tech Stack:** React 19.2.0 | Vite 7.1.11 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
