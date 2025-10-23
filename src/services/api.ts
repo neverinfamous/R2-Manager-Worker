@@ -169,7 +169,43 @@ class APIService {
         'application/x-gtar',
         'text/plain',
         'application/sql',
-        'text/x-sql'
+        'text/x-sql',
+        'text/x-toml',
+        'application/toml'
+      ]
+    },
+    config: {
+      maxSize: 10 * 1024 * 1024, // 10MB
+      description: 'Config & Metadata files',
+      accept: [
+        'application/toml',
+        'text/x-toml',
+        'application/json',
+        'application/x-jsonc',
+        'text/plain'
+      ]
+    },
+    devenv: {
+      maxSize: 1 * 1024 * 1024, // 1MB
+      description: 'Dev Environment files',
+      accept: [
+        'text/plain',
+        'text/x-shellscript'
+      ]
+    },
+    dataformat: {
+      maxSize: 50 * 1024 * 1024, // 50MB
+      description: 'Data Format files',
+      accept: [
+        'application/octet-stream',
+        'text/plain'
+      ]
+    },
+    docs: {
+      maxSize: 10 * 1024 * 1024, // 10MB
+      description: 'Documentation & Text files',
+      accept: [
+        'text/plain'
       ]
     }
   }
@@ -231,7 +267,7 @@ class APIService {
       // Documents
       'pdf': 'document', 'doc': 'document', 'docx': 'document',
       'xls': 'document', 'xlsx': 'document', 'ppt': 'document', 'pptx': 'document',
-      'txt': 'document', 'md': 'document', 'csv': 'document', 'rtf': 'document',
+      'txt': 'document', 'md': 'document', 'markdown': 'document', 'csv': 'document', 'rtf': 'document',
       'db': 'document', 'sqlite': 'document', 'sqlite3': 'document',
       // Archives
       'zip': 'archive', 'rar': 'archive', '7z': 'archive', 'tar': 'code', 'gz': 'archive',
@@ -241,7 +277,13 @@ class APIService {
       'cs': 'code', 'go': 'code', 'rs': 'code', 'php': 'code',
       'rb': 'code', 'swift': 'code', 'kt': 'code', 'html': 'code',
       'css': 'code', 'json': 'code', 'xml': 'code', 'yaml': 'code', 'yml': 'code',
-      'sql': 'code', 'ipynb': 'code', 'parquet': 'document'
+      'sql': 'code', 'ipynb': 'code', 'parquet': 'document',
+      'toml': 'config', 'jsonc': 'config', 'env': 'config', 'lock': 'config',
+      'conf': 'config', 'ini': 'config',
+      'gitignore': 'devenv', 'gitattributes': 'devenv', 'editorconfig': 'devenv', 
+      'dockerfile': 'devenv', 'nvmrc': 'devenv', 'node-version': 'devenv', 'browserslistrc': 'devenv',
+      'feather': 'dataformat', 'avro': 'dataformat', 'ndjson': 'dataformat',
+      'nfo': 'docs'
     }
     
     const category = extensionMap[ext]

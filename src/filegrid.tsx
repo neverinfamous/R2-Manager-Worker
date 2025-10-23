@@ -262,10 +262,57 @@ const getFileTypeIcon = (filename: string): JSX.Element => {
   }
   
   // Markdown icon - M with down arrow
-  if (ext === 'md') {
+  if (ext === 'md' || ext === 'markdown') {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
         <text x="6" y="16" fontSize="12" fontFamily="monospace, sans-serif" fill="currentColor" stroke="none" fontWeight="bold">M↓</text>
+      </svg>
+    )
+  }
+  
+  // Configuration files - gear/settings icon
+  if (ext === 'conf' || ext === 'ini' || ext === 'toml' || ext === 'jsonc' || 
+      ext === 'env' || ext === 'lock') {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m5.08 5.08l4.24 4.24M1 12h6m6 0h6M4.22 19.78l4.24-4.24m5.08-5.08l4.24-4.24M19.78 19.78l-4.24-4.24m-5.08-5.08l-4.24-4.24" />
+      </svg>
+    )
+  }
+
+  // Dev environment files - terminal/console icon
+  if (ext === 'gitignore' || ext === 'gitattributes' || ext === 'editorconfig' || 
+      ext === 'dockerfile' || ext === 'nvmrc' || ext === 'node-version' || 
+      ext === 'browserslistrc') {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M4 5a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5z" />
+        <path d="M7 8h10M7 12h10M7 16h6" strokeLinecap="round" />
+      </svg>
+    )
+  }
+
+  // Data format files - database/table icon
+  if (ext === 'feather' || ext === 'avro' || ext === 'ndjson') {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="4" y="6" width="16" height="12" rx="1" />
+        <line x1="4" y1="10" x2="20" y2="10" />
+        <line x1="4" y1="14" x2="20" y2="14" />
+        <line x1="8" y1="6" x2="8" y2="18" />
+        <line x1="16" y1="6" x2="16" y2="18" />
+      </svg>
+    )
+  }
+
+  // Documentation/Info files - info icon
+  if (ext === 'nfo') {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <circle cx="12" cy="12" r="9" />
+        <line x1="12" y1="8" x2="12" y2="12" />
+        <circle cx="12" cy="16" r="0.5" fill="currentColor" />
       </svg>
     )
   }
