@@ -21,6 +21,7 @@ interface FileGridProps {
   availableBuckets?: string[]
   onBack?: () => void
   onBucketNavigate?: (bucketName: string) => void
+  onPathChange?: (path: string) => void
 }
 
 interface DownloadProgress {
@@ -354,7 +355,7 @@ const VideoPlayer = ({ src, className, onClick }: VideoPlayerProps) => {
   )
 }
 
-export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0, availableBuckets, onBucketNavigate }: FileGridProps) {
+export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0, availableBuckets, onBucketNavigate, onPathChange }: FileGridProps) {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
   const [selectedFolders, setSelectedFolders] = useState<string[]>([])
   const [currentPath, setCurrentPath] = useState<string>('')
@@ -927,14 +928,16 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     setSelectedFiles([])
     setSelectedFolders([])
     setShouldRefresh(true)
-  }, [])
+    onPathChange?.(pathWithSlash)
+  }, [onPathChange])
 
   const handleBreadcrumbClick = useCallback((path: string) => {
     setCurrentPath(path)
     setSelectedFiles([])
     setSelectedFolders([])
     setShouldRefresh(true)
-  }, [])
+    onPathChange?.(path)
+  }, [onPathChange])
 
   const handleCreateFolder = useCallback(async () => {
     if (!newFolderName.trim()) {

@@ -50,6 +50,7 @@ export default function BucketManager() {
   const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([])
   const [rejectedFiles, setRejectedFiles] = useState<RejectedFile[]>([])
   const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [currentPath, setCurrentPath] = useState<string>('')
   const [deleteConfirmState, setDeleteConfirmState] = useState<{
     bucketName: string | null
     fileCount: number | null
@@ -70,11 +71,13 @@ export default function BucketManager() {
   const handleNavigateHome = useCallback(() => {
     // Just clear selected bucket to return to bucket list (fast React state update)
     setSelectedBucket(null)
+    setCurrentPath('')
   }, [])
 
   const handleBucketNavigate = useCallback((bucketName: string) => {
     // Navigate to a different bucket
     setSelectedBucket(bucketName)
+    setCurrentPath('')
   }, [])
 
   const handleLogout = useCallback(async () => {
@@ -187,7 +190,8 @@ export default function BucketManager() {
                 },
                 maxRetries: 3,
                 retryDelay: 1000
-              }
+              },
+              currentPath || undefined
             )
             
             updateProgress(file.name, 100, 'completed')
@@ -664,6 +668,7 @@ export default function BucketManager() {
               refreshTrigger={refreshTrigger}
               availableBuckets={buckets.map(b => b.name)}
               onBucketNavigate={handleBucketNavigate}
+              onPathChange={setCurrentPath}
             />
           </div>
         </div>

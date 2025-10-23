@@ -764,7 +764,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           sorting: 'desc by last_modified'
         });
 
-        // Filter out assets folder and process objects
+        // Filter out assets folder, .keep files, and process objects
         interface R2ObjectInfo {
           key: string;
           size?: number;
@@ -773,7 +773,11 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         
         const fileList = Array.isArray(data.result) ? data.result : (data.result?.objects || []);
         const objects = fileList
-          .filter((obj: R2ObjectInfo) => !obj.key.startsWith('assets/'))
+          .filter((obj: R2ObjectInfo) => 
+            !obj.key.startsWith('assets/') && 
+            !obj.key.endsWith('/.keep') &&
+            obj.key !== '.keep'
+          )
           .map((obj: R2ObjectInfo) => {
             const downloadPath = '/api/files/' + bucketName + '/download/' + obj.key;
             const version = obj.last_modified ? new Date(obj.last_modified).getTime() : Date.now();

@@ -289,7 +289,8 @@ class APIService {
     chunk: Blob,
     chunkIndex: number,
     totalChunks: number,
-    options: UploadOptions = {}
+    options: UploadOptions = {},
+    fileName?: string
   ): Promise<void> {
     const {
       maxRetries = this.DEFAULT_MAX_RETRIES,
@@ -297,19 +298,20 @@ class APIService {
       onRetry
     } = options
     
+    const uploadFileName = fileName || file.name
     let lastError: Error | null = null
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const formData = new FormData()
-        formData.append('file', chunk, file.name)
+        formData.append('file', chunk, uploadFileName)
 
         const response = await fetch(`${WORKER_API}/api/files/${bucketName}/upload`, 
           this.getFetchOptions({
             method: 'POST',
             headers: {
               ...this.getHeaders(),
-              'X-File-Name': encodeURIComponent(file.name),
+              'X-File-Name': encodeURIComponent(uploadFileName),
               'X-Total-Chunks': totalChunks.toString(),
               'X-Chunk-Index': chunkIndex.toString()
             },
@@ -337,7 +339,8 @@ class APIService {
   async uploadFile(
     bucketName: string,
     file: File,
-    options: UploadOptions = {}
+    options: UploadOptions = {},
+    path?: string
   ): Promise<void> {
     const validation = this.validateFile(file)
     if (!validation.valid) {
@@ -345,6 +348,9 @@ class APIService {
     }
 
     const { onProgress, maxRetries, retryDelay, onRetry } = options
+
+    // Prepend path to filename if provided
+    const fileName = path ? `${path}${file.name}` : file.name
 
     const totalChunks = Math.ceil(file.size / this.CHUNK_SIZE)
     const uploadedChunks = new Set<number>()
@@ -357,7 +363,8 @@ class APIService {
           file,
           0,
           1,
-          { maxRetries, retryDelay, onRetry }
+          { maxRetries, retryDelay, onRetry },
+          fileName
         )
         onProgress?.(100)
         return
@@ -376,7 +383,8 @@ class APIService {
           chunk,
           chunkIndex,
           totalChunks,
-          { maxRetries, retryDelay, onRetry }
+          { maxRetries, retryDelay, onRetry },
+          fileName
         )
 
         uploadedChunks.add(chunkIndex)
