@@ -675,7 +675,7 @@ class APIService {
     }
   }
 
-  async moveFile(sourceBucket: string, sourceKey: string, destBucket: string): Promise<void> {
+  async moveFile(sourceBucket: string, sourceKey: string, destBucket: string, destPath?: string): Promise<void> {
     const response = await fetch(
       `${WORKER_API}/api/files/${sourceBucket}/${encodeURIComponent(sourceKey)}/move`,
       this.getFetchOptions({
@@ -684,7 +684,10 @@ class APIService {
           ...this.getHeaders(),
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ destinationBucket: destBucket })
+        body: JSON.stringify({ 
+          destinationBucket: destBucket,
+          destinationPath: destPath 
+        })
       })
     )
 
@@ -698,15 +701,16 @@ class APIService {
     sourceBucket: string,
     fileKeys: string[],
     destBucket: string,
+    destPath?: string,
     onProgress?: (completed: number, total: number) => void
   ): Promise<void> {
     for (let i = 0; i < fileKeys.length; i++) {
-      await this.moveFile(sourceBucket, fileKeys[i], destBucket)
+      await this.moveFile(sourceBucket, fileKeys[i], destBucket, destPath)
       onProgress?.(i + 1, fileKeys.length)
     }
   }
 
-  async copyFile(sourceBucket: string, sourceKey: string, destBucket: string): Promise<void> {
+  async copyFile(sourceBucket: string, sourceKey: string, destBucket: string, destPath?: string): Promise<void> {
     const response = await fetch(
       `${WORKER_API}/api/files/${sourceBucket}/${encodeURIComponent(sourceKey)}/copy`,
       this.getFetchOptions({
@@ -715,7 +719,10 @@ class APIService {
           ...this.getHeaders(),
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ destinationBucket: destBucket })
+        body: JSON.stringify({ 
+          destinationBucket: destBucket,
+          destinationPath: destPath 
+        })
       })
     )
 
@@ -729,10 +736,11 @@ class APIService {
     sourceBucket: string,
     fileKeys: string[],
     destBucket: string,
+    destPath?: string,
     onProgress?: (completed: number, total: number) => void
   ): Promise<void> {
     for (let i = 0; i < fileKeys.length; i++) {
-      await this.copyFile(sourceBucket, fileKeys[i], destBucket)
+      await this.copyFile(sourceBucket, fileKeys[i], destBucket, destPath)
       onProgress?.(i + 1, fileKeys.length)
     }
   }

@@ -386,6 +386,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     isDialogOpen: boolean
     mode: 'move' | 'copy' | null
     targetBucket: string | null
+    targetPath: string
     isTransferring: boolean
     progress: number
   } | null>(null)
@@ -879,7 +880,8 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         await fileMethod(
           bucketName, 
           selectedFiles, 
-          transferState.targetBucket, 
+          transferState.targetBucket,
+          transferState.targetPath || undefined,
           (fileCompleted) => {
             completed = fileCompleted
             const action = transferState.mode === 'move' ? 'Moving' : 'Copying'
@@ -893,9 +895,9 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         const folderMethod = transferState.mode === 'move' ? api.moveFolder.bind(api) : api.copyFolder.bind(api)
         
         for (let i = 0; i < selectedFolders.length; i++) {
-          // Extract just the folder name (not the full path) for destination
-          const folderName = selectedFolders[i].split('/').filter(p => p).pop() || selectedFolders[i]
-          await folderMethod(bucketName, selectedFolders[i], transferState.targetBucket, folderName)
+          // If destination path is specified, use it; otherwise extract the folder name
+          const destPath = transferState.targetPath || (selectedFolders[i].split('/').filter(p => p).pop() || selectedFolders[i])
+          await folderMethod(bucketName, selectedFolders[i], transferState.targetBucket, destPath)
           completed++
           const action = transferState.mode === 'move' ? 'Moving' : 'Copying'
           setInfoMessage(`${action} items: ${completed}/${totalItems}...`)
@@ -926,6 +928,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       isDialogOpen: true,
       mode,
       targetBucket: null,
+      targetPath: '',
       isTransferring: false,
       progress: 0
     })
@@ -1845,6 +1848,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <h2>{transferState.mode === 'move' ? 'Move' : 'Copy'} {selectedFiles.length + selectedFolders.length} Item(s)</h2>
             <p>From bucket: <strong>{bucketName}</strong></p>
+            {currentPath && <p>From folder: <strong>{currentPath}</strong></p>}
             
             <div className="bucket-selector">
               <label htmlFor="destination-bucket-select">Select destination bucket:</label>
@@ -1855,10 +1859,34 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                 disabled={isTransferring}
               >
                 <option value="">-- Choose a bucket --</option>
-                {availableBuckets?.filter(b => b !== bucketName).map(bucket => (
+                {availableBuckets?.map(bucket => (
                   <option key={bucket} value={bucket}>{bucket}</option>
                 ))}
               </select>
+            </div>
+
+            <div className="bucket-selector">
+              <label htmlFor="destination-path-input">Destination folder path (optional):</label>
+              <input
+                id="destination-path-input"
+                type="text"
+                value={transferState.targetPath}
+                onChange={(e) => setTransferState(prev => prev ? { ...prev, targetPath: e.target.value } : null)}
+                disabled={isTransferring}
+                placeholder="e.g., images/thumbnails or leave empty for root"
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  fontSize: '14px',
+                  border: '1px solid #444',
+                  borderRadius: '4px',
+                  backgroundColor: '#2a2a2a',
+                  color: '#fff'
+                }}
+              />
+              <p style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>
+                Leave empty to transfer to the root folder. End with / for folders.
+              </p>
             </div>
 
             {isTransferring && (

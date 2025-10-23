@@ -1037,6 +1037,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const sourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
         const body = await request.json();
         const destBucket = body.destinationBucket;
+        const destPath = body.destinationPath || '';
         
         if (!destBucket) {
           return new Response(JSON.stringify({ error: 'Missing destination bucket' }), {
@@ -1048,8 +1049,12 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           });
         }
 
-        if (bucketName === destBucket) {
-          return new Response(JSON.stringify({ error: 'Source and destination buckets must be different' }), {
+        // Allow same-bucket operations if destination path is different
+        const fileName = sourceKey.split('/').pop() || sourceKey;
+        const destKey = destPath ? `${destPath}${destPath.endsWith('/') ? '' : '/'}${fileName}` : fileName;
+        
+        if (bucketName === destBucket && sourceKey === destKey) {
+          return new Response(JSON.stringify({ error: 'Source and destination must be different' }), {
             status: 400,
             headers: {
               'Content-Type': 'application/json',
@@ -1058,7 +1063,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           });
         }
 
-        console.log('[Files] Moving file:', sourceKey, 'from:', bucketName, 'to:', destBucket);
+        console.log('[Files] Moving file:', sourceKey, 'from:', bucketName, 'to:', destBucket + '/' + destKey);
 
         // 1. Fetch file from source bucket
         const getUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + sourceKey;
@@ -1081,9 +1086,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
         const fileBuffer = await getResponse.arrayBuffer();
 
-        // 3. Upload to destination bucket (use only the filename, not the full path)
-        const fileName = sourceKey.split('/').pop() || sourceKey;
-        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + fileName;
+        // 3. Upload to destination bucket with destination path
+        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + encodeURIComponent(destKey);
         const putResponse = await fetch(putUrl, {
           method: 'PUT',
           headers: {
@@ -1138,6 +1142,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const sourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
         const body = await request.json();
         const destBucket = body.destinationBucket;
+        const destPath = body.destinationPath || '';
         
         if (!destBucket) {
           return new Response(JSON.stringify({ error: 'Missing destination bucket' }), {
@@ -1149,8 +1154,12 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           });
         }
 
-        if (bucketName === destBucket) {
-          return new Response(JSON.stringify({ error: 'Source and destination buckets must be different' }), {
+        // Allow same-bucket operations if destination path is different
+        const fileName = sourceKey.split('/').pop() || sourceKey;
+        const destKey = destPath ? `${destPath}${destPath.endsWith('/') ? '' : '/'}${fileName}` : fileName;
+        
+        if (bucketName === destBucket && sourceKey === destKey) {
+          return new Response(JSON.stringify({ error: 'Source and destination must be different' }), {
             status: 400,
             headers: {
               'Content-Type': 'application/json',
@@ -1159,7 +1168,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           });
         }
 
-        console.log('[Files] Copying file:', sourceKey, 'from:', bucketName, 'to:', destBucket);
+        console.log('[Files] Copying file:', sourceKey, 'from:', bucketName, 'to:', destBucket + '/' + destKey);
 
         // 1. Fetch file from source bucket (same as move)
         const getUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + sourceKey;
@@ -1182,9 +1191,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
         const fileBuffer = await getResponse.arrayBuffer();
 
-        // 3. Upload to destination bucket (use only the filename, not the full path)
-        const fileName = sourceKey.split('/').pop() || sourceKey;
-        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + fileName;
+        // 3. Upload to destination bucket with destination path
+        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + encodeURIComponent(destKey);
         const putResponse = await fetch(putUrl, {
           method: 'PUT',
           headers: {
