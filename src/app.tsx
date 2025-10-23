@@ -663,15 +663,15 @@ export default function BucketManager() {
                       <ul>
                         <li>Archives (7Z, GZ, RAR, TAR, ZIP) - up to 500MB</li>
                         <li>Code (CSS, GO, HTML, Java, JS, Rust, TS, Python, etc.) - up to 10MB</li>
-                        <li>Config & Metadata (TOML, JSONC, ENV, LOCK, CONF, INI) - up to 10MB</li>
+                        <li>Config & Metadata (CONF, ENV, INI, JSON, JSONC, LOCK, TOML, etc.) - up to 10MB</li>
                         <li>Data Formats (AVRO, FEATHER, NDJSON) - up to 50MB</li>
                         <li>Databases (DB, PARQUET, SQL) - up to 50MB</li>
-                        <li>Dev Environment (Dockerfile, .gitignore, .editorconfig, .nvmrc, etc.) - up to 1MB</li>
-                        <li>Documents (CSV, Excel, PDF, PowerPoint, TXT, Word, Markdown, etc.) - up to 50MB</li>
+                        <li>Dev Environment (Dockerfile, editorconfig, .gitignore, nvmrc, etc.) - up to 1MB</li>
+                        <li>Documents (CSV, Excel, Markdown, PDF, PowerPoint, TXT, Word, etc.) - up to 50MB</li>
                         <li>Documentation (NFO) - up to 10MB</li>
                         <li>Images (AVIF, BMP, GIF, HEIC, JPG, PNG, SVG, WebP) - up to 15MB</li>
                         <li>Jupyter Notebooks (.ipynb) - up to 10MB</li>
-                        <li>Videos (MP4, MOV, WebM) - up to 500MB</li>
+                        <li>Videos (MOV, MP4, WebM) - up to 500MB</li>
                       </ul>
                     </div>
                   </div>
