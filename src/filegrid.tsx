@@ -515,10 +515,18 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         if (reset) {
           newObjects = response.objects
           // Convert folder paths to FolderObject format
-          newFolders = (response.folders || []).map((folderPath: string) => ({
-            name: folderPath.split('/').filter(Boolean).pop() || folderPath,
-            path: folderPath
-          }))
+          // Only include folders that belong to the current path level
+          newFolders = (response.folders || []).map((folderPath: string) => {
+            // Remove the currentPath prefix if present to get the relative folder name
+            const relativePath = currentPath && folderPath.startsWith(currentPath) 
+              ? folderPath.substring(currentPath.length)
+              : folderPath
+            const folderName = relativePath.split('/').filter(Boolean)[0] || relativePath
+            return {
+              name: folderName,
+              path: folderPath
+            }
+          })
         } else {
           const existingKeys = new Set(prev.objects.map(obj => obj.key))
           const uniqueNewObjects = response.objects.filter(obj => !existingKeys.has(obj.key))
@@ -837,6 +845,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
   const deselectAll = useCallback(() => {
     setSelectedFiles([])
+    setSelectedFolders([])
     lastSelectedRef.current = null
   }, [])
 
@@ -1005,9 +1014,14 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       )}
       <div className="file-actions-bar">
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flex: 1 }}>
-          {selectedFiles.length > 0 && (
+          {(selectedFiles.length > 0 || selectedFolders.length > 0) && (
             <span className="selected-count">
-              {selectedFiles.length} selected ({formatFileSize(totalSelectedSize)})
+              {selectedFiles.length > 0 && selectedFolders.length > 0 
+                ? `${selectedFiles.length} files, ${selectedFolders.length} folders selected`
+                : selectedFiles.length > 0
+                ? `${selectedFiles.length} selected (${formatFileSize(totalSelectedSize)})`
+                : `${selectedFolders.length} ${selectedFolders.length === 1 ? 'folder' : 'folders'} selected`
+              }
               {isOverSizeLimit && (
                 <span className="size-warning"> - Exceeds 500MB limit</span>
               )}
@@ -1060,7 +1074,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             </button>
           )}
 
-          {selectedFiles.length > 0 && (
+          {(selectedFiles.length > 0 || selectedFolders.length > 0) && (
             <>
               <div className={`transfer-dropdown-container ${transferDropdownOpen ? 'open' : ''}`}>
                 <button 
