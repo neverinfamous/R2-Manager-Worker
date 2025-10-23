@@ -580,7 +580,7 @@ export default function BucketManager() {
         <div className="upload-overlay">
           <div className="upload-panel">
             <div className="upload-header">
-              <h2>{selectedBucket}</h2>
+              <h2>Bucket Name: {selectedBucket}</h2>
             </div>
 
             {error && <div className="error-message">{error}</div>}
