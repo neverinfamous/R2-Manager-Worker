@@ -415,7 +415,7 @@ export default function BucketManager() {
         />
         <div className="header-content">         
           <h1 className="app-title" onClick={handleNavigateHome} style={{ cursor: 'pointer' }}>
-            R2 Bucket Manager
+            CloudflareR2 Bucket Manager
           </h1>
           <button 
             onClick={handleLogout}
