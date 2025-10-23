@@ -554,9 +554,13 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       const fileItem = target.closest('.file-item') || target.closest('.folder-item')
       const customContextMenu = target.closest('.context-menu')
       
-      // Prevent default browser context menu if clicking on file items, folder items, 
-      // the grid itself, or our custom context menu
-      if (fileItem || customContextMenu || gridRef.current?.contains(target)) {
+      // Don't prevent default on our custom context menu - let it work normally
+      if (customContextMenu) {
+        return
+      }
+      
+      // Prevent default browser context menu if clicking on file items, folder items, or the grid
+      if (fileItem || gridRef.current?.contains(target)) {
         event.preventDefault()
         event.stopPropagation()
       }
