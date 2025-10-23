@@ -819,35 +819,57 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     setInfoMessage('')
     
     try {
-      const apiMethod = transferState.mode === 'move' ? api.moveFiles.bind(api) : api.copyFiles.bind(api)
+      const totalItems = selectedFiles.length + selectedFolders.length
+      let completed = 0
       
-      await apiMethod(
-        bucketName, 
-        selectedFiles, 
-        transferState.targetBucket, 
-        (completed, total) => {
+      // Transfer files
+      if (selectedFiles.length > 0) {
+        const fileMethod = transferState.mode === 'move' ? api.moveFiles.bind(api) : api.copyFiles.bind(api)
+        
+        await fileMethod(
+          bucketName, 
+          selectedFiles, 
+          transferState.targetBucket, 
+          (fileCompleted) => {
+            completed = fileCompleted
+            const action = transferState.mode === 'move' ? 'Moving' : 'Copying'
+            setInfoMessage(`${action} items: ${completed}/${totalItems}...`)
+          }
+        )
+      }
+      
+      // Transfer folders
+      if (selectedFolders.length > 0) {
+        const folderMethod = transferState.mode === 'move' ? api.moveFolder.bind(api) : api.copyFolder.bind(api)
+        
+        for (let i = 0; i < selectedFolders.length; i++) {
+          // Extract just the folder name (not the full path) for destination
+          const folderName = selectedFolders[i].split('/').filter(p => p).pop() || selectedFolders[i]
+          await folderMethod(bucketName, selectedFolders[i], transferState.targetBucket, folderName)
+          completed++
           const action = transferState.mode === 'move' ? 'Moving' : 'Copying'
-          setInfoMessage(`${action} files: ${completed}/${total}...`)
+          setInfoMessage(`${action} items: ${completed}/${totalItems}...`)
         }
-      )
+      }
       
       setSelectedFiles([])
+      setSelectedFolders([])
       setShouldRefresh(true)
       setTransferState(null)
       
       const action = transferState.mode === 'move' ? 'moved' : 'copied'
-      setInfoMessage(`Successfully ${action} ${selectedFiles.length} file(s)`)
+      setInfoMessage(`Successfully ${action} ${totalItems} item(s)`)
       setTimeout(() => setInfoMessage(''), 3000)
       
       onFilesChange?.()
     } catch (err) {
       console.error('Transfer failed:', err)
-      setError(`Failed to ${transferState.mode} one or more files`)
+      setError(`Failed to ${transferState.mode} one or more items`)
       setInfoMessage('')
     } finally {
       setIsTransferring(false)
     }
-  }, [transferState, selectedFiles, bucketName, onFilesChange])
+  }, [transferState, selectedFiles, selectedFolders, bucketName, onFilesChange])
 
   const openTransferDialog = useCallback((mode: 'move' | 'copy') => {
     setTransferState({
@@ -1693,7 +1715,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       {transferState?.isDialogOpen && (
         <div className="modal-overlay" onClick={() => !isTransferring && setTransferState(null)}>
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2>{transferState.mode === 'move' ? 'Move' : 'Copy'} {selectedFiles.length} File(s)</h2>
+            <h2>{transferState.mode === 'move' ? 'Move' : 'Copy'} {selectedFiles.length + selectedFolders.length} Item(s)</h2>
             <p>From bucket: <strong>{bucketName}</strong></p>
             
             <div className="bucket-selector">
