@@ -1,6 +1,6 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** October 23, 2025 | **Status:** ✅ Production Ready | **Version:** 1.1.1  
+**Last Updated:** October 23, 2025 | **Status:** ✅ Production Ready | **Version:** 1.0  
 **Tech Stack:** React 19.2.0 | Vite 7.1.11 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
