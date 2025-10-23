@@ -1930,11 +1930,13 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             <h2>Rename {renameState.itemType === 'file' ? 'File' : 'Folder'}</h2>
             
             <div className="rename-input-container">
-              <label>Current name:</label>
-              <p className="current-name">{renameState.itemKey.split('/').pop()}</p>
+              <label htmlFor="rename-current-name">Current name:</label>
+              <p id="rename-current-name" className="current-name">{renameState.itemKey.split('/').pop()}</p>
               
-              <label>New name:</label>
+              <label htmlFor="rename-new-name">New name:</label>
               <input
+                id="rename-new-name"
+                name="rename-new-name"
                 type="text"
                 value={renameState.newName}
                 onChange={(e) => setRenameState(prev => 
@@ -1946,10 +1948,12 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                 }}
                 autoFocus
                 placeholder="Enter new name"
+                aria-label="New name"
+                aria-describedby={renameState.error ? 'rename-error' : undefined}
               />
               
               {renameState.error && (
-                <p className="error-message">{renameState.error}</p>
+                <p id="rename-error" className="error-message" role="alert">{renameState.error}</p>
               )}
             </div>
 
