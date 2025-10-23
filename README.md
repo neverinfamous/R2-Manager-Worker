@@ -209,10 +209,11 @@ Worker API: `http://localhost:8787`
 
 ### Planned Features
 
-- **Rename folder** - Add ability to rename folder.
+- **Rename folder** - Add ability to rename folder
+- **Suppor toml files** - Add .toml to allowed uplodad file types with code file type icon
 - **Folder Properties** - View folder size, file count, and metadata
 - **Filter by filename** - Filter through file lists by filename input
-- **AWS S3 Migration** - Add support for migrating AWS S3 to R2.
+- **AWS S3 Migration** - Add support for migrating AWS S3 to R2
 - **Audit Logging** - Track all user actions in D1 database
 - **Role-Based Access Control (RBAC)** - Fine-grained permissions
 - **File Versioning** - Track and restore previous versions
