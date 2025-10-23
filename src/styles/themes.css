@@ -85,8 +85,8 @@
   /* Text Colors */
   --text-primary: rgba(255, 255, 255, 0.87);
   --text-secondary: #9ca3af;
-  --text-tertiary: #6b7280;
-  --text-inverse: #111827;
+  --text-tertiary: #76797e;
+  --text-inverse: #ebe8e8;
   
   /* Border Colors */
   --border-color: #374151;
