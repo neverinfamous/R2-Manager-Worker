@@ -1381,7 +1381,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                 className="action-button sort-button-combined"
                 onClick={handleSortButtonClick}
               >
-                <span>Sort: {getSortLabel()}</span>
+                <span>{getSortLabel()}</span>
                 <span className="sort-direction-indicator">{sortState.direction === 'asc' ? '▲' : '▼'}</span>
               </button>
               {sortDropdownOpen && sortDropdownPosition && (
