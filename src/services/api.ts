@@ -349,8 +349,8 @@ class APIService {
 
     const { onProgress, maxRetries, retryDelay, onRetry } = options
 
-    // Prepend path to filename if provided
-    const fileName = path ? `${path}${file.name}` : file.name
+    // Prepend path to filename if provided (but not if path is empty string)
+    const fileName = path && path.length > 0 ? `${path}${file.name}` : file.name
     console.log('[API] uploadFile - path:', path, 'file.name:', file.name, 'final fileName:', fileName)
 
     const totalChunks = Math.ceil(file.size / this.CHUNK_SIZE)

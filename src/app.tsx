@@ -170,7 +170,7 @@ export default function BucketManager() {
           try {
             updateProgress(file.name, 0)
             
-            console.log('[Upload] Uploading file:', file.name, 'to path:', currentPath || 'root')
+            console.log('[Upload] Uploading file:', file.name, 'to path:', currentPath || '(root)')
             
             await api.uploadFile(
               selectedBucket,
@@ -193,7 +193,7 @@ export default function BucketManager() {
                 maxRetries: 3,
                 retryDelay: 1000
               },
-              currentPath || undefined
+              currentPath // Pass the path as-is, even if empty string
             )
             
             updateProgress(file.name, 100, 'completed')
