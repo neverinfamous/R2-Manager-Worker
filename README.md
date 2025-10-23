@@ -46,6 +46,7 @@ Cloudflare's dashboard lacks full-featured R2 file management capabilities. This
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
 - 📄 **File Management** - Rename files via right-click context menu with validation
 - 🔍 **Smart Filtering** - Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)
+- 🎯 **Advanced Filtering** - Filter files by extension, size ranges, and upload dates with preset and custom options
 - 📤 **Smart Uploads** - Chunked uploads with automatic retry (10MB chunks, up to 500MB files)*
 - 📥 **Bulk Downloads** - Download multiple files as ZIP archives
 - 🔗 **Shareable Links** - Generate signed URLs to share files securely
@@ -147,30 +148,68 @@ R2 Bucket Manager supports both light and dark themes with automatic system pref
 
 ## 🔍 Filtering Files and Folders
 
-R2 Bucket Manager includes a powerful client-side filtering system to help you quickly find files and folders in large buckets:
+R2 Bucket Manager includes a comprehensive filtering system to help you quickly find files and folders in large buckets:
 
-### How to Use
-1. Use the search bar above the file list to filter by name
-2. Choose filter type from the dropdown:
-   - **All** - Shows both files and folders
-   - **Files Only** - Shows only files
-   - **Folders Only** - Shows only folders
+### Basic Filtering
+1. Use the search bar to filter by filename/folder name
+2. Choose filter type from the dropdown: **All** / **Files Only** / **Folders Only**
 3. View the match counter showing filtered results (e.g., "23 of 156")
 4. Click the **✕** button to clear the filter
 
+### Advanced Filtering (NEW!)
+
+#### Extension Filter
+- **Quick Filters** - One-click filters for common file types:
+  - 📷 Images (.jpg, .png, .gif, .webp, etc.)
+  - 📄 Documents (.pdf, .doc, .xlsx, .txt, etc.)
+  - 🎬 Videos (.mp4, .mov, .webm)
+  - 💻 Code (.js, .py, .html, .css, etc.)
+  - 📦 Archives (.zip, .rar, .tar, .gz)
+- **Custom Selection** - Select specific extensions from available files
+- **Multi-select** - Combine multiple extensions in a single filter
+- **Extension Counts** - See how many files of each type you have
+
+#### Size Filter
+- **Preset Ranges**:
+  - < 1 MB
+  - 1 - 10 MB
+  - 10 - 50 MB
+  - 50 - 100 MB
+  - \> 100 MB
+- **Custom Range** - Set your own min/max size in MB
+- **Real-time Display** - See active size range in the filter button
+
+#### Date Filter
+- **Preset Ranges**:
+  - Today
+  - Last 7 Days
+  - Last 30 Days
+  - Last 90 Days
+  - This Year
+- **Custom Range** - Select specific start and end dates
+- **Upload Date Based** - Filters by when files were uploaded to R2
+
+### Filter Management
+- **Active Filter Badges** - See all active filters at a glance with removable badges
+- **Filter Statistics** - View total size and date range of filtered results
+- **Clear All Filters** - One-click button to reset all filters
+- **Persistent During Operations** - Filters remain active during file selection and operations
+
 ### Features
-- **Real-time filtering** - Results update as you type
+- **Real-time filtering** - Results update instantly as you apply filters
 - **Case-insensitive search** - Searches match regardless of case
 - **Filename-only matching** - Searches file/folder names, not full paths
-- **Type filtering** - Filter by files, folders, or both
+- **Combine Filters** - Use multiple filter types simultaneously for precise results
 - **Works with all views** - Filter in both grid and list views
 - **Preserved selections** - Your selected files remain selected during filtering
+- **Mobile Responsive** - Optimized for all screen sizes
 
 ### Use Cases
-- Quickly locate specific files in buckets with hundreds of items
-- Find all folders matching a pattern
-- Filter by partial names (e.g., "report" finds "monthly-report.pdf", "Q4-Report.xlsx")
-- Narrow down large file lists before performing bulk operations
+- Find all PDF documents uploaded in the last week
+- Locate large video files (>100MB)
+- Filter images by extension (.png only)
+- Narrow down files by size and date range before bulk operations
+- Quickly locate specific file types in buckets with thousands of items
 
 ---
 
@@ -266,8 +305,10 @@ Worker API: `http://localhost:8787`
 
 ## 📋 Roadmap
 
+### Completed Features (v1.1)
+- ✅ **Advanced Filtering** - Extension, size, and date range filters with preset and custom options
+
 ### Planned Features
-- **Bucket file list Filtering** - size/date/extension filters
 - **AWS S3 Migration** - Add support for migrating AWS S3 to R2
 - **File Versioning** - Track and restore previous versions
 - **Audit Logging** - Track all user actions in D1 database

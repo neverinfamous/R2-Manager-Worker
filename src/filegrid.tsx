@@ -1,6 +1,13 @@
 import { useCallback, useState, useEffect, useRef, useMemo } from 'react'
 import type { JSX } from 'react'
 import { api } from './services/api'
+import { ExtensionFilter } from './components/filters/ExtensionFilter'
+import { SizeFilter } from './components/filters/SizeFilter'
+import { DateFilter } from './components/filters/DateFilter'
+import { ActiveFilterBadges } from './components/filters/ActiveFilterBadges'
+import { FilterStats } from './components/filters/FilterStats'
+import type { SizeFilter as SizeFilterType, DateFilter as DateFilterType } from './types/filters'
+import { detectExtensions, EXTENSION_GROUPS, SIZE_PRESETS, DATE_PRESETS, getFileExtension as getFileExt, calculateFilterStats } from './utils/filterUtils'
 
 interface FileObject {
   key: string
@@ -449,6 +456,23 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
   const [filterText, setFilterText] = useState<string>('')
   const [filterType, setFilterType] = useState<'all' | 'files' | 'folders'>('all')
+  
+  // Advanced filter state
+  const [selectedExtensions, setSelectedExtensions] = useState<string[]>([])
+  const [availableExtensions, setAvailableExtensions] = useState<Map<string, number>>(new Map())
+  const [extensionDropdownOpen, setExtensionDropdownOpen] = useState(false)
+  const [sizeFilter, setSizeFilter] = useState<SizeFilterType>({
+    min: null,
+    max: null,
+    preset: 'all'
+  })
+  const [sizeDropdownOpen, setSizeDropdownOpen] = useState(false)
+  const [dateFilter, setDateFilter] = useState<DateFilterType>({
+    start: null,
+    end: null,
+    preset: 'all'
+  })
+  const [dateDropdownOpen, setDateDropdownOpen] = useState(false)
 
   const [contextMenu, setContextMenu] = useState<{
     show: boolean
@@ -479,18 +503,46 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   const debounceTimerRef = useRef<number | undefined>(undefined)
   const refreshTimeoutRef = useRef<number | undefined>(undefined)
 
-  // Computed filtered results
+  // Update available extensions when files change
+  useEffect(() => {
+    const extensions = detectExtensions(paginatedFiles.objects)
+    setAvailableExtensions(extensions)
+  }, [paginatedFiles.objects])
+
+  // Computed filtered results with advanced filters
   const filteredFiles = useMemo(() => {
-    if (!filterText && filterType === 'all') return paginatedFiles.objects
+    const hasAdvancedFilters = selectedExtensions.length > 0 || sizeFilter.preset !== 'all' || dateFilter.preset !== 'all'
+    
+    if (!filterText && filterType === 'all' && !hasAdvancedFilters) {
+      return paginatedFiles.objects
+    }
     
     return paginatedFiles.objects.filter(file => {
-      // Extract filename from full path
+      // Text filter
       const fileName = file.key.split('/').pop() || file.key
-      const matchesText = fileName.toLowerCase().includes(filterText.toLowerCase())
+      const matchesText = !filterText || fileName.toLowerCase().includes(filterText.toLowerCase())
+      
+      // Type filter
       const matchesType = filterType === 'all' || filterType === 'files'
-      return matchesText && matchesType
+      
+      // Extension filter
+      const fileExt = getFileExt(file.key).toLowerCase()
+      const matchesExtension = selectedExtensions.length === 0 || selectedExtensions.includes(fileExt)
+      
+      // Size filter
+      const matchesSize = 
+        (sizeFilter.min === null || file.size >= sizeFilter.min) &&
+        (sizeFilter.max === null || file.size <= sizeFilter.max)
+      
+      // Date filter
+      const fileDate = new Date(file.uploaded)
+      const matchesDate = 
+        (dateFilter.start === null || fileDate >= dateFilter.start) &&
+        (dateFilter.end === null || fileDate <= dateFilter.end)
+      
+      return matchesText && matchesType && matchesExtension && matchesSize && matchesDate
     })
-  }, [paginatedFiles.objects, filterText, filterType])
+  }, [paginatedFiles.objects, filterText, filterType, selectedExtensions, sizeFilter, dateFilter])
 
   const filteredFolders = useMemo(() => {
     if (!filterText && filterType === 'all') return paginatedFiles.folders
@@ -504,6 +556,11 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
   const filteredCount = filteredFiles.length + filteredFolders.length
   const totalCount = paginatedFiles.objects.length + paginatedFiles.folders.length
+  
+  // Calculate filter statistics
+  const filterStats = useMemo(() => {
+    return calculateFilterStats(filteredFiles)
+  }, [filteredFiles])
 
   useEffect(() => {
     mountedRef.current = true
@@ -1225,6 +1282,96 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     setContextMenu(null)
   }, [])
 
+  // Advanced filter handlers
+  const handleExtensionToggle = useCallback((extension: string) => {
+    setSelectedExtensions(prev => 
+      prev.includes(extension)
+        ? prev.filter(e => e !== extension)
+        : [...prev, extension]
+    )
+  }, [])
+
+  const handleExtensionGroupSelect = useCallback((groupName: string) => {
+    const groupExtensions = EXTENSION_GROUPS[groupName as keyof typeof EXTENSION_GROUPS] || []
+    const availableInGroup = groupExtensions.filter(ext => availableExtensions.has(ext))
+    
+    // Toggle: if all are selected, deselect; otherwise select all
+    const allSelected = availableInGroup.every(ext => selectedExtensions.includes(ext))
+    
+    if (allSelected) {
+      setSelectedExtensions(prev => prev.filter(e => !availableInGroup.includes(e)))
+    } else {
+      setSelectedExtensions(prev => {
+        const newSet = new Set([...prev, ...availableInGroup])
+        return Array.from(newSet)
+      })
+    }
+  }, [availableExtensions, selectedExtensions])
+
+  const handleSizePresetChange = useCallback((preset: SizeFilterType['preset']) => {
+    if (preset === 'all') {
+      setSizeFilter({ min: null, max: null, preset: 'all' })
+    } else if (preset === 'custom') {
+      // Custom is handled by handleCustomSizeRange
+      return
+    } else {
+      const presetValues = SIZE_PRESETS[preset as keyof typeof SIZE_PRESETS]
+      if (presetValues) {
+        setSizeFilter({
+          min: presetValues.min,
+          max: presetValues.max,
+          preset
+        })
+      }
+    }
+    setSizeDropdownOpen(false)
+  }, [])
+
+  const handleCustomSizeRange = useCallback((minMB: number, maxMB: number | null) => {
+    setSizeFilter({
+      min: minMB * 1024 * 1024,
+      max: maxMB !== null ? maxMB * 1024 * 1024 : null,
+      preset: 'custom'
+    })
+    setSizeDropdownOpen(false)
+  }, [])
+
+  const handleDatePresetChange = useCallback((preset: DateFilterType['preset']) => {
+    if (preset === 'all') {
+      setDateFilter({ start: null, end: null, preset: 'all' })
+    } else if (preset === 'custom') {
+      // Custom is handled by handleCustomDateRange
+      return
+    } else {
+      const presetFn = DATE_PRESETS[preset as keyof typeof DATE_PRESETS]
+      if (presetFn) {
+        const range = typeof presetFn === 'function' ? presetFn() : presetFn
+        setDateFilter({
+          start: range.start,
+          end: range.end,
+          preset
+        })
+      }
+    }
+    setDateDropdownOpen(false)
+  }, [])
+
+  const handleCustomDateRange = useCallback((start: Date | null, end: Date | null) => {
+    setDateFilter({
+      start,
+      end,
+      preset: 'custom'
+    })
+    setDateDropdownOpen(false)
+  }, [])
+
+  const clearAllFilters = useCallback(() => {
+    setFilterText('')
+    setSelectedExtensions([])
+    setSizeFilter({ min: null, max: null, preset: 'all' })
+    setDateFilter({ start: null, end: null, preset: 'all' })
+  }, [])
+
   const handleRenameSubmit = useCallback(async () => {
     if (!renameState) return
     
@@ -1336,6 +1483,57 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           )}
         </div>
       </div>
+
+      {/* Advanced Filters */}
+      <div className="advanced-filter-bar">
+        <ExtensionFilter
+          selectedExtensions={selectedExtensions}
+          availableExtensions={availableExtensions}
+          isOpen={extensionDropdownOpen}
+          onToggle={() => setExtensionDropdownOpen(!extensionDropdownOpen)}
+          onExtensionToggle={handleExtensionToggle}
+          onGroupSelect={handleExtensionGroupSelect}
+          onClear={() => setSelectedExtensions([])}
+        />
+        
+        <SizeFilter
+          sizeFilter={sizeFilter}
+          isOpen={sizeDropdownOpen}
+          onToggle={() => setSizeDropdownOpen(!sizeDropdownOpen)}
+          onPresetChange={handleSizePresetChange}
+          onCustomRange={handleCustomSizeRange}
+          onClear={() => setSizeFilter({ min: null, max: null, preset: 'all' })}
+        />
+        
+        <DateFilter
+          dateFilter={dateFilter}
+          isOpen={dateDropdownOpen}
+          onToggle={() => setDateDropdownOpen(!dateDropdownOpen)}
+          onPresetChange={handleDatePresetChange}
+          onCustomRange={handleCustomDateRange}
+          onClear={() => setDateFilter({ start: null, end: null, preset: 'all' })}
+        />
+      </div>
+
+      {/* Active Filter Badges */}
+      <ActiveFilterBadges
+        filterText={filterText}
+        selectedExtensions={selectedExtensions}
+        sizeFilter={sizeFilter}
+        dateFilter={dateFilter}
+        onClearText={() => setFilterText('')}
+        onClearExtensions={() => setSelectedExtensions([])}
+        onClearSize={() => setSizeFilter({ min: null, max: null, preset: 'all' })}
+        onClearDate={() => setDateFilter({ start: null, end: null, preset: 'all' })}
+        onClearAll={clearAllFilters}
+      />
+
+      {/* Filter Statistics */}
+      <FilterStats
+        filteredCount={filteredCount}
+        totalCount={totalCount}
+        stats={filterStats}
+      />
 
       <div className="file-actions-bar">
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flex: 1 }}>
