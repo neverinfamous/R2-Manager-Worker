@@ -1951,6 +1951,18 @@
   margin: 20px 0;
 }
 
+.rename-current-name-section {
+  margin-bottom: 15px;
+}
+
+.rename-label {
+  display: block;
+  margin-bottom: 5px;
+  color: #D1D5DB;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
 .rename-input-container label {
   display: block;
   margin-bottom: 5px;
@@ -1962,7 +1974,7 @@
 .rename-input-container .current-name {
   color: #888;
   font-style: italic;
-  margin: 5px 0 15px 0;
+  margin: 5px 0 0 0;
   padding: 8px;
   background: #1a1a1a;
   border-radius: 4px;

@@ -1930,8 +1930,10 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             <h2>Rename {renameState.itemType === 'file' ? 'File' : 'Folder'}</h2>
             
             <div className="rename-input-container">
-              <label htmlFor="rename-current-name">Current name:</label>
-              <p id="rename-current-name" className="current-name">{renameState.itemKey.split('/').pop()}</p>
+              <div className="rename-current-name-section">
+                <span className="rename-label">Current name:</span>
+                <p className="current-name">{renameState.itemKey.split('/').pop()}</p>
+              </div>
               
               <label htmlFor="rename-new-name">New name:</label>
               <input
