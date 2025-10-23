@@ -1081,8 +1081,9 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
         const fileBuffer = await getResponse.arrayBuffer();
 
-        // 3. Upload to destination bucket
-        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + sourceKey;
+        // 3. Upload to destination bucket (use only the filename, not the full path)
+        const fileName = sourceKey.split('/').pop() || sourceKey;
+        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + fileName;
         const putResponse = await fetch(putUrl, {
           method: 'PUT',
           headers: {
@@ -1181,8 +1182,9 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
         const fileBuffer = await getResponse.arrayBuffer();
 
-        // 3. Upload to destination bucket (same as move, no renaming)
-        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + sourceKey;
+        // 3. Upload to destination bucket (use only the filename, not the full path)
+        const fileName = sourceKey.split('/').pop() || sourceKey;
+        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + fileName;
         const putResponse = await fetch(putUrl, {
           method: 'PUT',
           headers: {
