@@ -9,6 +9,11 @@ interface FileObject {
   url: string
 }
 
+interface FolderObject {
+  name: string
+  path: string
+}
+
 interface FileGridProps {
   bucketName: string
   onFilesChange?: () => void
@@ -26,6 +31,7 @@ interface DownloadProgress {
 
 interface PaginatedFiles {
   objects: FileObject[]
+  folders: FolderObject[]
   cursor?: string
   hasMore: boolean
 }
@@ -83,6 +89,14 @@ const isImageFile = (filename: string): boolean => {
 const isVideoFile = (filename: string): boolean => {
   const ext = getFileExtension(filename)
   return ext === 'mp4' || ext === 'mov' || ext === 'webm'
+}
+
+const getFolderIcon = (): JSX.Element => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="folder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-7l-2-2H5a2 2 0 0 0-2 2z" />
+    </svg>
+  )
 }
 
 const getFileTypeIcon = (filename: string): JSX.Element => {
@@ -342,14 +356,20 @@ const VideoPlayer = ({ src, className, onClick }: VideoPlayerProps) => {
 
 export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0, availableBuckets, onBucketNavigate }: FileGridProps) {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
+  const [selectedFolders, setSelectedFolders] = useState<string[]>([])
+  const [currentPath, setCurrentPath] = useState<string>('')
   const [error, setError] = useState<string>('')
   const [infoMessage, setInfoMessage] = useState<string>('')
   const [downloadProgress, setDownloadProgress] = useState<DownloadProgress | null>(null)
   const [paginatedFiles, setPaginatedFiles] = useState<PaginatedFiles>({
     objects: [],
+    folders: [],
     cursor: undefined,
     hasMore: true
   })
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
+  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false)
   const [paginationState, setPaginationState] = useState<PaginationState>({
     isLoading: false,
     hasError: false,
@@ -483,19 +503,27 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         bucketName,
         reset ? undefined : paginatedFiles.cursor,
         ITEMS_PER_PAGE,
-        { skipCache: reset }
+        { skipCache: reset, prefix: currentPath || undefined }
       )
 
       if (!mountedRef.current) return
 
       setPaginatedFiles(prev => {
         let newObjects: FileObject[]
+        let newFolders: FolderObject[]
+        
         if (reset) {
           newObjects = response.objects
+          // Convert folder paths to FolderObject format
+          newFolders = (response.folders || []).map((folderPath: string) => ({
+            name: folderPath.split('/').filter(Boolean).pop() || folderPath,
+            path: folderPath
+          }))
         } else {
           const existingKeys = new Set(prev.objects.map(obj => obj.key))
           const uniqueNewObjects = response.objects.filter(obj => !existingKeys.has(obj.key))
           newObjects = [...prev.objects, ...uniqueNewObjects]
+          newFolders = prev.folders
         }
         
         const sortedObjects = sortFiles(newObjects)
@@ -503,6 +531,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         
         return {
           objects: sortedObjects,
+          folders: newFolders,
           cursor: response.pagination.cursor,
           hasMore: response.pagination.hasMore
         }
@@ -530,7 +559,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     } finally {
       loadingRef.current = { isLoading: false, lastRequestTime: now }
     }
-  }, [bucketName, paginatedFiles.cursor, sortFiles, shouldRefresh])
+  }, [bucketName, paginatedFiles.cursor, sortFiles, shouldRefresh, currentPath])
 
   useEffect(() => {
     if (shouldRefresh) {
@@ -590,10 +619,13 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
   useEffect(() => {
     setSelectedFiles([])
+    setSelectedFolders([])
+    setCurrentPath('')
     setDownloadProgress(null)
     lastSelectedRef.current = null
     setPaginatedFiles({ 
-      objects: [], 
+      objects: [],
+      folders: [],
       cursor: undefined,
       hasMore: true 
     })
@@ -872,6 +904,56 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     }
   }, [bucketName, onBucketNavigate])
 
+  const handleFolderNavigation = useCallback((folderPath: string) => {
+    setCurrentPath(folderPath)
+    setSelectedFiles([])
+    setSelectedFolders([])
+    setShouldRefresh(true)
+  }, [])
+
+  const handleBreadcrumbClick = useCallback((path: string) => {
+    setCurrentPath(path)
+    setSelectedFiles([])
+    setSelectedFolders([])
+    setShouldRefresh(true)
+  }, [])
+
+  const handleCreateFolder = useCallback(async () => {
+    if (!newFolderName.trim()) {
+      setError('Folder name cannot be empty')
+      return
+    }
+
+    setIsCreatingFolder(true)
+    setError('')
+
+    try {
+      const folderPath = currentPath ? `${currentPath}/${newFolderName}` : newFolderName
+      await api.createFolder(bucketName, folderPath)
+      setShowCreateFolderModal(false)
+      setNewFolderName('')
+      setShouldRefresh(true)
+      setInfoMessage(`Folder "${newFolderName}" created successfully`)
+      setTimeout(() => setInfoMessage(''), 3000)
+      onFilesChange?.()
+    } catch (err) {
+      console.error('Failed to create folder:', err)
+      setError(err instanceof Error ? err.message : 'Failed to create folder')
+    } finally {
+      setIsCreatingFolder(false)
+    }
+  }, [bucketName, newFolderName, currentPath, onFilesChange])
+
+  const getBreadcrumbs = useCallback(() => {
+    if (!currentPath) return []
+    const parts = currentPath.split('/').filter(Boolean)
+    const breadcrumbs = parts.map((part, index) => ({
+      name: part,
+      path: parts.slice(0, index + 1).join('/')
+    }))
+    return breadcrumbs
+  }, [currentPath])
+
   const handleCopySignedUrl = useCallback(async (fileName: string, event: React.MouseEvent) => {
     event.stopPropagation()
     
@@ -931,6 +1013,16 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           )}
           
           <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button 
+              onClick={() => setShowCreateFolderModal(true)}
+              className="action-button create-folder-button"
+              style={{
+                backgroundColor: '#2a7d2e',
+                color: 'white'
+              }}
+            >
+              📁 Create Folder
+            </button>
             {selectedFiles.length > 0 && (
               <button 
                 onClick={downloadSelected}
@@ -1112,6 +1204,53 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       {error && <div className="error-message">{error}</div>}
       {infoMessage && <div className="info-message">{infoMessage}</div>}
 
+      {/* Breadcrumb Navigation */}
+      {currentPath && (
+        <div style={{ 
+          padding: '10px 0', 
+          marginBottom: '10px',
+          borderBottom: '1px solid #333',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px',
+          fontSize: '14px'
+        }}>
+          <button
+            onClick={() => handleBreadcrumbClick('')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#4a9eff',
+              cursor: 'pointer',
+              padding: '4px 8px',
+              fontSize: '14px'
+            }}
+          >
+            🏠 Root
+          </button>
+          {getBreadcrumbs().map((crumb, index) => (
+            <span key={crumb.path} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ color: '#666' }}>›</span>
+              <button
+                onClick={() => handleBreadcrumbClick(crumb.path)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: index === getBreadcrumbs().length - 1 ? '#fff' : '#4a9eff',
+                  cursor: index === getBreadcrumbs().length - 1 ? 'default' : 'pointer',
+                  padding: '4px 8px',
+                  fontSize: '14px',
+                  fontWeight: index === getBreadcrumbs().length - 1 ? 'bold' : 'normal'
+                }}
+                disabled={index === getBreadcrumbs().length - 1}
+              >
+                {crumb.name}
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+
       {paginationState.isInitialLoad ? (
         <div className="loading-state">Loading...</div>
       ) : viewMode === ViewMode.Preview ? (
@@ -1119,8 +1258,30 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           ref={gridRef}
           className="file-grid"
           onClick={handleGridClick}
-          title={paginatedFiles.objects.length > 0 ? "Click empty space to deselect all files" : undefined}
+          title={paginatedFiles.objects.length > 0 || paginatedFiles.folders.length > 0 ? "Click empty space to deselect all files" : undefined}
         >
+          {/* Render Folders First */}
+          {paginatedFiles.folders.map((folder) => (
+            <div
+              key={folder.path}
+              className={`file-item folder-item ${selectedFolders.includes(folder.path) ? 'selected' : ''}`}
+              onClick={() => handleFolderNavigation(folder.path)}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="file-preview">
+                <div className="file-icon">
+                  {getFolderIcon()}
+                </div>
+              </div>
+
+              <div className="file-info">
+                <p className="file-name" title={folder.name}>📁 {folder.name}</p>
+                <p className="file-details">Folder</p>
+              </div>
+            </div>
+          ))}
+          
+          {/* Render Files */}
           {paginatedFiles.objects.map((file) => {
             const isImage = isImageFile(file.key)
             const isVideo = isVideoFile(file.key)
@@ -1340,6 +1501,68 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           </svg>
           <p className="empty-text">No files in this bucket</p>
           <p className="empty-subtext">Upload files to get started</p>
+        </div>
+      )}
+
+      {/* Create Folder Modal */}
+      {showCreateFolderModal && (
+        <div className="modal-overlay" onClick={() => !isCreatingFolder && setShowCreateFolderModal(false)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2>Create New Folder</h2>
+            {currentPath && <p>In: <strong>{bucketName}/{currentPath}</strong></p>}
+            {!currentPath && <p>In: <strong>{bucketName}</strong></p>}
+            
+            <div className="bucket-selector">
+              <label htmlFor="new-folder-name">Folder name:</label>
+              <input
+                id="new-folder-name"
+                type="text"
+                value={newFolderName}
+                onChange={(e) => setNewFolderName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newFolderName.trim()) {
+                    handleCreateFolder()
+                  }
+                }}
+                disabled={isCreatingFolder}
+                placeholder="Enter folder name"
+                autoFocus
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  fontSize: '14px',
+                  border: '1px solid #444',
+                  borderRadius: '4px',
+                  backgroundColor: '#2a2a2a',
+                  color: '#fff'
+                }}
+              />
+              <p style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>
+                Use letters, numbers, hyphens, underscores, and forward slashes for nested folders
+              </p>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                className="modal-button cancel"
+                onClick={() => {
+                  setShowCreateFolderModal(false)
+                  setNewFolderName('')
+                }}
+                disabled={isCreatingFolder}
+              >
+                Cancel
+              </button>
+              <button
+                className="modal-button"
+                onClick={handleCreateFolder}
+                disabled={!newFolderName.trim() || isCreatingFolder}
+                style={{ backgroundColor: '#2a7d2e' }}
+              >
+                {isCreatingFolder ? 'Creating...' : 'Create Folder'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
