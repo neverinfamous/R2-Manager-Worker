@@ -415,7 +415,7 @@ export default function BucketManager() {
         />
         <div className="header-content">         
           <h1 className="app-title" onClick={handleNavigateHome} style={{ cursor: 'pointer' }}>
-            Adamic R2 Bucket Manager for Cloudflare
+            R2 Bucket Manager for Cloudflare
           </h1>
           <button 
             onClick={handleLogout}
