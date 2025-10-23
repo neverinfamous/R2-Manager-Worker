@@ -1316,12 +1316,12 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                       left: `${dropdownPosition.left}px`
                     }}
                   >
-                    <button onClick={() => openTransferDialog('move')}>
-                      Move to...
-                    </button>
-                    <button onClick={() => openTransferDialog('copy')}>
+                   <button onClick={() => openTransferDialog('copy')}>
                       Copy to...
                     </button>
+                    <button onClick={() => openTransferDialog('move')}>
+                      Move to...
+                    </button>                    
                   </div>
                 )}
               </div>
