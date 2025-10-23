@@ -1221,6 +1221,101 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
       }
     }
 
+    // Rename file (same bucket, different key)
+    if (request.method === 'PATCH' && parts[parts.length - 1] === 'rename') {
+      try {
+        const sourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
+        const body = await request.json();
+        const newKey = body.newKey?.trim();
+        
+        if (!newKey) {
+          return new Response(JSON.stringify({ error: 'New key is required' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
+        }
+
+        // Prevent overwriting existing files
+        const checkUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(newKey);
+        const checkResponse = await fetch(checkUrl, { method: 'HEAD', headers: cfHeaders });
+        
+        if (checkResponse.ok) {
+          return new Response(JSON.stringify({ error: 'File with that name already exists' }), {
+            status: 409,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
+        }
+
+        console.log('[Files] Renaming file:', sourceKey, 'to:', newKey);
+
+        // 1. Get source file
+        const getUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(sourceKey);
+        const getResponse = await fetch(getUrl, { headers: cfHeaders });
+
+        if (!getResponse.ok) {
+          if (getResponse.status === 404) {
+            return new Response(JSON.stringify({ error: 'Source file not found' }), {
+              status: 404,
+              headers: { 'Content-Type': 'application/json', ...corsHeaders }
+            });
+          }
+          throw new Error('Failed to fetch file: ' + getResponse.status);
+        }
+
+        // 2. Preserve metadata
+        const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
+        const fileBuffer = await getResponse.arrayBuffer();
+
+        // 3. Create file with new key
+        const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(newKey);
+        const putResponse = await fetch(putUrl, {
+          method: 'PUT',
+          headers: {
+            ...cfHeaders,
+            'Content-Type': contentType
+          },
+          body: fileBuffer
+        });
+
+        if (!putResponse.ok) {
+          throw new Error('Failed to create renamed file: ' + putResponse.status);
+        }
+
+        // 4. Delete original file
+        const deleteUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(sourceKey);
+        const deleteResponse = await fetch(deleteUrl, {
+          method: 'DELETE',
+          headers: cfHeaders
+        });
+
+        if (!deleteResponse.ok) {
+          console.warn('[Files] Warning: Failed to delete original file after rename:', deleteResponse.status);
+          // Don't fail the operation - the rename was successful
+        }
+
+        console.log('[Files] File renamed successfully');
+
+        return new Response(JSON.stringify({ success: true, newKey }), {
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+
+      } catch (err) {
+        console.error('[Files] Rename error:', err);
+        return new Response(JSON.stringify({
+          error: 'Failed to rename file'
+        }), {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            ...corsHeaders
+          }
+        });
+      }
+    }
+
     return new Response('Not Found', { 
       status: 404,
       headers: corsHeaders

@@ -400,6 +400,22 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   const [copyingUrl, setCopyingUrl] = useState<string | null>(null)
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
 
+  const [contextMenu, setContextMenu] = useState<{
+    show: boolean
+    x: number
+    y: number
+    itemType: 'file' | 'folder'
+    itemKey: string
+  } | null>(null)
+
+  const [renameState, setRenameState] = useState<{
+    isRenaming: boolean
+    itemType: 'file' | 'folder'
+    itemKey: string
+    newName: string
+    error: string
+  } | null>(null)
+
   const gridRef = useRef<HTMLDivElement>(null)
   const transferButtonRef = useRef<HTMLButtonElement>(null)
   const sortButtonRef = useRef<HTMLButtonElement>(null)
@@ -448,6 +464,40 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       return () => document.removeEventListener('click', handleClickOutside)
     }
   }, [transferDropdownOpen, sortDropdownOpen, bucketDropdownOpen])
+
+  // Close context menu when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (contextMenu) {
+        setContextMenu(null)
+      }
+    }
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (contextMenu) {
+          setContextMenu(null)
+        }
+        if (renameState) {
+          setRenameState(null)
+        }
+      }
+    }
+
+    if (contextMenu) {
+      document.addEventListener('click', handleClickOutside)
+      document.addEventListener('keydown', handleEscape)
+      return () => {
+        document.removeEventListener('click', handleClickOutside)
+        document.removeEventListener('keydown', handleEscape)
+      }
+    }
+    
+    if (renameState) {
+      document.addEventListener('keydown', handleEscape)
+      return () => document.removeEventListener('keydown', handleEscape)
+    }
+  }, [contextMenu, renameState])
 
   const handleImageError = useCallback((fileName: string) => {
     setFailedImages(prev => new Set(prev).add(fileName))
@@ -1053,6 +1103,61 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     }
   }, [bucketName])
 
+  const startRename = useCallback((itemType: 'file' | 'folder', itemKey: string) => {
+    const currentName = itemKey.split('/').pop() || itemKey
+    setRenameState({
+      isRenaming: false,
+      itemType,
+      itemKey,
+      newName: currentName,
+      error: ''
+    })
+    setContextMenu(null)
+  }, [])
+
+  const handleRenameSubmit = useCallback(async () => {
+    if (!renameState) return
+    
+    const newName = renameState.newName.trim()
+    
+    // Validate
+    const validation = renameState.itemType === 'file' 
+      ? api.validateFileName(newName)
+      : api.validateFolderName(newName)
+    
+    if (!validation.valid) {
+      setRenameState(prev => prev ? { ...prev, error: validation.error || '' } : null)
+      return
+    }
+    
+    setRenameState(prev => prev ? { ...prev, isRenaming: true, error: '' } : null)
+    
+    try {
+      if (renameState.itemType === 'file') {
+        await api.renameFile(bucketName, renameState.itemKey, newName)
+      } else {
+        // For folders, need to calculate new path
+        const pathParts = renameState.itemKey.split('/')
+        const newPath = [...pathParts.slice(0, -1), newName].join('/')
+        await api.renameFolder(bucketName, renameState.itemKey, newPath)
+      }
+      
+      setInfoMessage(`${renameState.itemType === 'file' ? 'File' : 'Folder'} renamed successfully`)
+      setTimeout(() => setInfoMessage(''), 3000)
+      
+      setRenameState(null)
+      setShouldRefresh(true)
+      onFilesChange?.()
+    } catch (err) {
+      console.error('Rename error:', err)
+      setRenameState(prev => prev ? {
+        ...prev,
+        isRenaming: false,
+        error: err instanceof Error ? err.message : 'Rename failed'
+      } : null)
+    }
+  }, [renameState, bucketName, onFilesChange])
+
   return (
     <div className="file-grid-container">
       {onBack && (
@@ -1348,6 +1453,16 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                 key={folder.path}
                 className={`file-item folder-item ${isSelected ? 'selected' : ''}`}
                 onClick={() => handleFolderNavigation(folder.path)}
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  setContextMenu({
+                    show: true,
+                    x: e.clientX,
+                    y: e.clientY,
+                    itemType: 'folder',
+                    itemKey: folder.path
+                  })
+                }}
                 style={{ cursor: 'pointer' }}
               >
                 <div className="file-select">
@@ -1396,6 +1511,16 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                 key={file.key}
                 className={`file-item ${isSelected ? 'selected' : ''}`}
                 onClick={(e) => handleSelection(file.key, e)}
+                onContextMenu={(e) => {
+                  e.preventDefault()
+                  setContextMenu({
+                    show: true,
+                    x: e.clientX,
+                    y: e.clientY,
+                    itemType: 'file',
+                    itemKey: file.key
+                  })
+                }}
                 style={{ cursor: 'pointer' }}
               >
                 <div className="file-select">
@@ -1762,6 +1887,86 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                   ? (transferState.mode === 'move' ? 'Moving...' : 'Copying...') 
                   : (transferState.mode === 'move' ? 'Move Files' : 'Copy Files')
                 }
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {contextMenu?.show && (
+        <>
+          <div 
+            className="context-menu-overlay" 
+            onClick={() => setContextMenu(null)}
+          />
+          <div 
+            className="context-menu"
+            style={{
+              position: 'fixed',
+              top: `${contextMenu.y}px`,
+              left: `${contextMenu.x}px`,
+              zIndex: 1000
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button onClick={() => startRename(contextMenu.itemType, contextMenu.itemKey)}>
+              ✏️ Rename
+            </button>
+            {contextMenu.itemType === 'file' && (
+              <button onClick={(e) => {
+                handleCopySignedUrl(contextMenu.itemKey, e)
+                setContextMenu(null)
+              }}>
+                🔗 Copy Link
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {renameState && (
+        <div className="modal-overlay" onClick={() => setRenameState(null)}>
+          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <h2>Rename {renameState.itemType === 'file' ? 'File' : 'Folder'}</h2>
+            
+            <div className="rename-input-container">
+              <label>Current name:</label>
+              <p className="current-name">{renameState.itemKey.split('/').pop()}</p>
+              
+              <label>New name:</label>
+              <input
+                type="text"
+                value={renameState.newName}
+                onChange={(e) => setRenameState(prev => 
+                  prev ? { ...prev, newName: e.target.value, error: '' } : null
+                )}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleRenameSubmit()
+                  if (e.key === 'Escape') setRenameState(null)
+                }}
+                autoFocus
+                placeholder="Enter new name"
+              />
+              
+              {renameState.error && (
+                <p className="error-message">{renameState.error}</p>
+              )}
+            </div>
+
+            <div className="modal-actions">
+              <button 
+                className="modal-button cancel"
+                onClick={() => setRenameState(null)}
+                disabled={renameState.isRenaming}
+              >
+                Cancel
+              </button>
+              <button
+                className="modal-button"
+                onClick={handleRenameSubmit}
+                disabled={!renameState.newName.trim() || renameState.isRenaming}
+              >
+                {renameState.isRenaming ? 'Renaming...' : 'Rename'}
               </button>
             </div>
           </div>

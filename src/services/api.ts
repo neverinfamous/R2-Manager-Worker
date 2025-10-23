@@ -737,6 +737,63 @@ class APIService {
     }
   }
 
+  async renameFile(
+    bucketName: string,
+    sourceKey: string,
+    newKey: string
+  ): Promise<void> {
+    // Extract directory path from source
+    const sourceParts = sourceKey.split('/')
+    const sourceDir = sourceParts.slice(0, -1).join('/')
+    
+    // If newKey doesn't include path, prepend source directory
+    let targetKey = newKey
+    if (!newKey.includes('/') && sourceDir) {
+      targetKey = `${sourceDir}/${newKey}`
+    }
+
+    const response = await fetch(
+      `${WORKER_API}/api/files/${bucketName}/${encodeURIComponent(sourceKey)}/rename`,
+      this.getFetchOptions({
+        method: 'PATCH',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ newKey: targetKey })
+      })
+    )
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ 
+        error: `Failed to rename file: ${response.status}` 
+      }))
+      throw new Error(error.error || 'Failed to rename file')
+    }
+  }
+
+  validateFileName(name: string): ValidationResult {
+    if (!name || name.trim().length === 0) {
+      return { valid: false, error: 'File name cannot be empty' }
+    }
+    
+    const trimmedName = name.trim()
+    
+    // Check for invalid characters
+    const invalidChars = /[<>:"|?*\x00-\x1F]/g
+    if (invalidChars.test(trimmedName)) {
+      return { valid: false, error: 'File name contains invalid characters' }
+    }
+    
+    // Check for reserved names (Windows compatibility)
+    const reservedNames = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i
+    if (reservedNames.test(trimmedName)) {
+      return { valid: false, error: 'File name is reserved' }
+    }
+    
+    return { valid: true }
+  }
+
   async getSignedUrl(bucketName: string, fileName: string): Promise<string> {
     const response = await fetch(
       `${WORKER_API}/api/files/${bucketName}/signed-url/${encodeURIComponent(fileName)}`,

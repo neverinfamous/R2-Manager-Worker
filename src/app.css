@@ -1903,3 +1903,94 @@
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* Context Menu Styles */
+.context-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999;
+}
+
+.context-menu {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 4px 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  min-width: 180px;
+}
+
+.context-menu button {
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: #fff;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: background 0.2s;
+}
+
+.context-menu button:hover {
+  background: #3a3a3a;
+}
+
+.context-menu button:active {
+  background: #4a4a4a;
+}
+
+/* Rename Modal Specific Styles */
+.rename-input-container {
+  margin: 20px 0;
+}
+
+.rename-input-container label {
+  display: block;
+  margin-bottom: 5px;
+  color: #D1D5DB;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.rename-input-container .current-name {
+  color: #888;
+  font-style: italic;
+  margin: 5px 0 15px 0;
+  padding: 8px;
+  background: #1a1a1a;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.rename-input-container input {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #2a2a2a;
+  color: #fff;
+  margin-top: 5px;
+  box-sizing: border-box;
+}
+
+.rename-input-container input:focus {
+  outline: none;
+  border-color: #4a9eff;
+}
+
+.rename-input-container .error-message {
+  color: #EF4444;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(220, 38, 38, 0.1);
+  border-radius: 0.375rem;
+}
