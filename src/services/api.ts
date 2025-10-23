@@ -17,11 +17,13 @@ interface PaginationInfo {
 
 interface FileListResponse {
   objects: FileObject[]
+  folders: string[]
   pagination: PaginationInfo
 }
 
 interface ListFilesOptions {
   skipCache?: boolean
+  prefix?: string
 }
 
 interface CloudflareBucket {
@@ -523,6 +525,10 @@ class APIService {
       url.searchParams.set('skipCache', 'true')
     }
 
+    if (options.prefix) {
+      url.searchParams.set('prefix', options.prefix)
+    }
+
     const response = await fetch(url, 
       this.getFetchOptions({
         headers: this.getHeaders()
@@ -738,6 +744,161 @@ class APIService {
 
     const data = await response.json()
     return data.url
+  }
+
+  // Folder Management Methods
+
+  validateFolderName(name: string): ValidationResult {
+    if (!name || name.trim().length === 0) {
+      return { valid: false, error: 'Folder name cannot be empty' }
+    }
+    const trimmedName = name.trim()
+    const validPattern = /^[a-zA-Z0-9-_\/]+$/
+    if (!validPattern.test(trimmedName)) {
+      return { valid: false, error: 'Folder name can only contain letters, numbers, hyphens, underscores, and forward slashes' }
+    }
+    if (trimmedName.includes('//')) {
+      return { valid: false, error: 'Folder name cannot contain consecutive slashes' }
+    }
+    if (trimmedName.startsWith('/') || trimmedName.endsWith('/')) {
+      return { valid: false, error: 'Folder name cannot start or end with a slash' }
+    }
+    return { valid: true }
+  }
+
+  async createFolder(bucketName: string, folderName: string): Promise<void> {
+    const validation = this.validateFolderName(folderName)
+    if (!validation.valid) {
+      throw new Error(validation.error)
+    }
+
+    const response = await fetch(
+      `${WORKER_API}/api/folders/${bucketName}/create`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ folderName: folderName.trim() })
+      })
+    )
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: `Failed to create folder: ${response.status}` }))
+      throw new Error(error.error || 'Failed to create folder')
+    }
+  }
+
+  async renameFolder(
+    bucketName: string,
+    oldPath: string,
+    newPath: string,
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<void> {
+    const response = await fetch(
+      `${WORKER_API}/api/folders/${bucketName}/rename`,
+      this.getFetchOptions({
+        method: 'PATCH',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ oldPath, newPath })
+      })
+    )
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: `Failed to rename folder: ${response.status}` }))
+      throw new Error(error.error || 'Failed to rename folder')
+    }
+
+    const data = await response.json()
+    if (onProgress && data.copied) {
+      onProgress(data.copied, data.copied + (data.failed || 0))
+    }
+  }
+
+  async copyFolder(
+    sourceBucket: string,
+    folderPath: string,
+    destBucket: string,
+    destPath?: string,
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<void> {
+    const response = await fetch(
+      `${WORKER_API}/api/folders/${sourceBucket}/${encodeURIComponent(folderPath)}/copy`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ destinationBucket: destBucket, destinationPath: destPath })
+      })
+    )
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: `Failed to copy folder: ${response.status}` }))
+      throw new Error(error.error || 'Failed to copy folder')
+    }
+
+    const data = await response.json()
+    if (onProgress && data.copied) {
+      onProgress(data.copied, data.copied + (data.failed || 0))
+    }
+  }
+
+  async moveFolder(
+    sourceBucket: string,
+    folderPath: string,
+    destBucket: string,
+    destPath?: string,
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<void> {
+    const response = await fetch(
+      `${WORKER_API}/api/folders/${sourceBucket}/${encodeURIComponent(folderPath)}/move`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ destinationBucket: destBucket, destinationPath: destPath })
+      })
+    )
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: `Failed to move folder: ${response.status}` }))
+      throw new Error(error.error || 'Failed to move folder')
+    }
+
+    const data = await response.json()
+    if (onProgress && data.moved) {
+      onProgress(data.moved, data.moved + (data.failed || 0))
+    }
+  }
+
+  async deleteFolder(bucketName: string, folderPath: string, force: boolean = false): Promise<{ success: boolean, fileCount?: number, message?: string }> {
+    const url = new URL(`${WORKER_API}/api/folders/${bucketName}/${encodeURIComponent(folderPath)}`)
+    if (force) {
+      url.searchParams.set('force', 'true')
+    }
+
+    const response = await fetch(
+      url.toString(),
+      this.getFetchOptions({
+        method: 'DELETE',
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: `Failed to delete folder: ${response.status}` }))
+      throw new Error(error.error || 'Failed to delete folder')
+    }
+
+    return response.json()
   }
 
 }
