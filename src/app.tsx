@@ -663,8 +663,8 @@ export default function BucketManager() {
                       <ul>
                         <li>Archives (7Z, GZ, RAR, TAR, ZIP) - up to 500MB</li>
                         <li>Code (CSS, GO, HTML, Java, JS, Rust, TS, Python, etc.) - up to 10MB</li>
-                        <li>Databases (DB, SQL) - up to 50MB</li>
-                        <li>Documents (PDF, Word, Excel, PowerPoint, RTF, CSV, text) - up to 50MB</li>
+                        <li>Databases (DB, PARQUET, SQL) - up to 50MB</li>
+                        <li>Documents (CSV, Excel, PDF, PowerPoint, TXT, Word, etc.) - up to 50MB</li>
                         <li>Images (AVIF, BMP, GIF, HEIC, JPG, PNG, SVG, WebP) - up to 15MB</li>
                         <li>Jupyter Notebooks (.ipynb) - up to 10MB</li>
                         <li>Videos (MP4, MOV, WebM) - up to 500MB</li>
