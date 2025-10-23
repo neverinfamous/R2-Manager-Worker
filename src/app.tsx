@@ -235,7 +235,7 @@ export default function BucketManager() {
         setIsUploading(false)
       }
     }
-  }, [selectedBucket, isUploading, updateProgress, handleLogout])
+  }, [selectedBucket, isUploading, updateProgress, handleLogout, currentPath])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
