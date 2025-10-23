@@ -1,6 +1,6 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** October 23, 2025 | **Status:** ✅ Production Ready | **Version:** 1.1.0  
+**Last Updated:** October 23, 2025 | **Status:** ✅ Production Ready | **Version:** 1.1.1  
 **Tech Stack:** React 19.2.0 | Vite 7.1.11 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -42,7 +42,7 @@ Cloudflare's dashboard lacks full-featured R2 file management capabilities. This
 - 📤 **Smart Uploads** - Chunked uploads with automatic retry (10MB chunks, up to 500MB files)*
 - 📥 **Bulk Downloads** - Download multiple files as ZIP archives
 - 🔗 **Shareable Links** - Generate signed URLs to share files securely
-- 🔄 **File Operations** - Move and copy files between buckets
+- 🔄 **Advanced File Operations** - Move and copy files/folders between buckets and to specific folders within buckets
 - 🧭 **Breadcrumb Navigation** - Navigate through folder hierarchies with ease
 - 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access Zero Trust
 - ⚡ **Edge Performance** - Deployed on Cloudflare's global network
@@ -178,15 +178,15 @@ Worker API: `http://localhost:8787`
 - `GET /api/files/:bucketName/signed-url/:fileName` - Generate a signed download URL
 - `POST /api/files/:bucketName/download-zip` - Download multiple files as ZIP
 - `DELETE /api/files/:bucketName/delete/:fileName` - Delete a file
-- `POST /api/files/:bucketName/:fileName/copy` - Copy a file to another bucket
-- `POST /api/files/:bucketName/:fileName/move` - Move a file to another bucket
+- `POST /api/files/:bucketName/:fileName/copy` - Copy a file to another bucket or folder (supports `destinationPath`)
+- `POST /api/files/:bucketName/:fileName/move` - Move a file to another bucket or folder (supports `destinationPath`)
 - `PATCH /api/files/:bucketName/:fileName/rename` - Rename a file within the same bucket
 
 #### Folder Operations
 - `POST /api/folders/:bucketName/create` - Create a new folder
 - `PATCH /api/folders/:bucketName/rename` - Rename a folder (batch operation)
-- `POST /api/folders/:bucketName/:folderPath/copy` - Copy a folder to another bucket
-- `POST /api/folders/:bucketName/:folderPath/move` - Move a folder to another bucket
+- `POST /api/folders/:bucketName/:folderPath/copy` - Copy a folder to another bucket or folder (supports `destinationPath`)
+- `POST /api/folders/:bucketName/:folderPath/move` - Move a folder to another bucket or folder (supports `destinationPath`)
 - `DELETE /api/folders/:bucketName/:folderPath` - Delete a folder and its contents (with optional `?force=true`)
 
 ---
@@ -207,12 +207,11 @@ Worker API: `http://localhost:8787`
 
 ### Recently Completed ✅
 
+- ✅ **Folder-to-Folder Transfers** - Copy and move files/folders to specific folders within the same or different buckets (v1.1.1)
 - ✅ **Folder Management** - Create, rename, copy, move, and delete folders with breadcrumb navigation (v1.1.0)
 - ✅ **File & Folder Rename** - Right-click context menu to rename files and folders with validation (v1.1.0)
 
 ### Planned Features
-
-- **Copy and Move files to folders** - Copy and move files and folders to other folders and not just to other buckets as it is now
 - **Support toml files** - Add .toml to allowed upload file types with the code icon
 - **Filter by filename** - Filter through file lists by filename input
 - **AWS S3 Migration** - Add support for migrating AWS S3 to R2
