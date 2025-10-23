@@ -305,9 +305,6 @@ Worker API: `http://localhost:8787`
 
 ## 📋 Roadmap
 
-### Completed Features (v1.1)
-- ✅ **Advanced Filtering** - Extension, size, and date range filters with preset and custom options
-
 ### Planned Features
 - **AWS S3 Migration** - Add support for migrating AWS S3 to R2
 - **File Versioning** - Track and restore previous versions
