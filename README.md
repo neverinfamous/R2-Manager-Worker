@@ -266,18 +266,15 @@ Worker API: `http://localhost:8787`
 
 ## 📋 Roadmap
 
-### Completed Features ✅
-- **Filter by filename** - Real-time client-side filtering with type filters (All/Files/Folders)
-
 ### Planned Features
+- **Advanced Filtering** - size/date/extension filters, Regex support, fuzzy matching
 - **AWS S3 Migration** - Add support for migrating AWS S3 to R2
 - **Audit Logging** - Track all user actions in D1 database
-- **Role-Based Access Control (RBAC)** - Fine-grained permissions
 - **File Versioning** - Track and restore previous versions
+- **Role-Based Access Control (RBAC)** - Fine-grained permissions
 - **Offline Upload Queue** - Resumable uploads with service workers
 - **Custom Branding** - Configurable logo and colors
 - **Custom Metadata** - User-defined tags and labels
-- **Advanced Filtering** - Regex support, extension filters, size/date filters
 
 **📖 See the full [Roadmap](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Roadmap) for details.**
 
