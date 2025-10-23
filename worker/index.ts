@@ -787,9 +787,12 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
 
         // Extract folders from delimitedPrefixes
         const rawPrefixes = data.result?.delimitedPrefixes || [];
+        console.log('[Files] Raw delimitedPrefixes from R2:', rawPrefixes);
+        console.log('[Files] Full R2 response data.result:', JSON.stringify(data.result, null, 2));
         const folders = rawPrefixes
           .filter((prefix: string) => !prefix.startsWith('assets/'))
           .map((prefix: string) => prefix.endsWith('/') ? prefix.slice(0, -1) : prefix);
+        console.log('[Files] Processed folders array:', folders);
 
         // Determine if there are more results
         // hasMore should be true only if the API indicates truncation AND we have a cursor for the next page
