@@ -1476,43 +1476,40 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             <option value="folders">Folders Only</option>
           </select>
           
+          <ExtensionFilter
+            selectedExtensions={selectedExtensions}
+            availableExtensions={availableExtensions}
+            isOpen={extensionDropdownOpen}
+            onToggle={() => setExtensionDropdownOpen(!extensionDropdownOpen)}
+            onExtensionToggle={handleExtensionToggle}
+            onGroupSelect={handleExtensionGroupSelect}
+            onClear={() => setSelectedExtensions([])}
+          />
+          
+          <SizeFilter
+            sizeFilter={sizeFilter}
+            isOpen={sizeDropdownOpen}
+            onToggle={() => setSizeDropdownOpen(!sizeDropdownOpen)}
+            onPresetChange={handleSizePresetChange}
+            onCustomRange={handleCustomSizeRange}
+            onClear={() => setSizeFilter({ min: null, max: null, preset: 'all' })}
+          />
+          
+          <DateFilter
+            dateFilter={dateFilter}
+            isOpen={dateDropdownOpen}
+            onToggle={() => setDateDropdownOpen(!dateDropdownOpen)}
+            onPresetChange={handleDatePresetChange}
+            onCustomRange={handleCustomDateRange}
+            onClear={() => setDateFilter({ start: null, end: null, preset: 'all' })}
+          />
+          
           {filteredCount !== totalCount && (
             <span className="filter-match-count">
               {filteredCount} of {totalCount}
             </span>
           )}
         </div>
-      </div>
-
-      {/* Advanced Filters */}
-      <div className="advanced-filter-bar">
-        <ExtensionFilter
-          selectedExtensions={selectedExtensions}
-          availableExtensions={availableExtensions}
-          isOpen={extensionDropdownOpen}
-          onToggle={() => setExtensionDropdownOpen(!extensionDropdownOpen)}
-          onExtensionToggle={handleExtensionToggle}
-          onGroupSelect={handleExtensionGroupSelect}
-          onClear={() => setSelectedExtensions([])}
-        />
-        
-        <SizeFilter
-          sizeFilter={sizeFilter}
-          isOpen={sizeDropdownOpen}
-          onToggle={() => setSizeDropdownOpen(!sizeDropdownOpen)}
-          onPresetChange={handleSizePresetChange}
-          onCustomRange={handleCustomSizeRange}
-          onClear={() => setSizeFilter({ min: null, max: null, preset: 'all' })}
-        />
-        
-        <DateFilter
-          dateFilter={dateFilter}
-          isOpen={dateDropdownOpen}
-          onToggle={() => setDateDropdownOpen(!dateDropdownOpen)}
-          onPresetChange={handleDatePresetChange}
-          onCustomRange={handleCustomDateRange}
-          onClear={() => setDateFilter({ start: null, end: null, preset: 'all' })}
-        />
       </div>
 
       {/* Active Filter Badges */}
