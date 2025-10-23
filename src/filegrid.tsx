@@ -1430,6 +1430,31 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
               </tr>
             </thead>
             <tbody>
+              {/* Render Folders First */}
+              {paginatedFiles.folders.map((folder) => (
+                <tr 
+                  key={folder.path}
+                  onClick={() => handleFolderNavigation(folder.path)}
+                  className="folder-row"
+                  style={{ cursor: 'pointer' }}
+                >
+                  <td></td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div style={{ width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {getFolderIcon()}
+                      </div>
+                      <span>📁 {folder.name}</span>
+                    </div>
+                  </td>
+                  <td>—</td>
+                  <td>Folder</td>
+                  <td>—</td>
+                  <td></td>
+                </tr>
+              ))}
+              
+              {/* Render Files */}
               {paginatedFiles.objects.map(file => {
                 const checkboxId = `list-file-select-${file.key}`
                 return (
@@ -1493,14 +1518,14 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         </div>
       )}
 
-      {paginatedFiles.objects.length === 0 && !paginationState.isLoading && (
+      {paginatedFiles.objects.length === 0 && paginatedFiles.folders.length === 0 && !paginationState.isLoading && (
         <div className="empty-state">
           <svg xmlns="http://www.w3.org/2000/svg" className="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
             <polyline points="13 2 13 9 20 9" />
           </svg>
-          <p className="empty-text">No files in this bucket</p>
-          <p className="empty-subtext">Upload files to get started</p>
+          <p className="empty-text">No files or folders {currentPath ? 'in this folder' : 'in this bucket'}</p>
+          <p className="empty-subtext">Upload files or create folders to get started</p>
         </div>
       )}
 

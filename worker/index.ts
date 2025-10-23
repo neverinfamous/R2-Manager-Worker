@@ -786,7 +786,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         objects.sort((a, b) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime());
 
         // Extract folders from delimitedPrefixes
-        const rawPrefixes = data.result?.delimited_prefixes || [];
+        const rawPrefixes = data.result?.delimitedPrefixes || [];
         const folders = rawPrefixes
           .filter((prefix: string) => !prefix.startsWith('assets/'))
           .map((prefix: string) => prefix.endsWith('/') ? prefix.slice(0, -1) : prefix);
