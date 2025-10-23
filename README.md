@@ -1,6 +1,6 @@
 # Cloudflare R2 Bucket Manager
 
-**Last Updated:** October 21, 2025 | **Status:** ✅ Production Ready  
+**Last Updated:** October 23, 2025 | **Status:** ✅ Production Ready | **Version:** 1.1.0  
 **Tech Stack:** React 19.2.0 | Vite 7.1.11 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -37,10 +37,12 @@ Cloudflare's dashboard lacks full-featured R2 file management capabilities. This
 ## ✨ Features
 
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets
+- 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
 - 📤 **Smart Uploads** - Chunked uploads with automatic retry (10MB chunks, up to 500MB files)*
 - 📥 **Bulk Downloads** - Download multiple files as ZIP archives
 - 🔗 **Shareable Links** - Generate signed URLs to share files securely
 - 🔄 **File Operations** - Move and copy files between buckets
+- 🧭 **Breadcrumb Navigation** - Navigate through folder hierarchies with ease
 - 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access Zero Trust
 - ⚡ **Edge Performance** - Deployed on Cloudflare's global network
 - 🎨 **Modern UI** - Beautiful, responsive interface built with React 19
@@ -161,6 +163,30 @@ Worker API: `http://localhost:8787`
 
 **📖 For complete API documentation, see the [API Reference](https://github.com/neverinfamous/R2-Manager-Worker/wiki/API-Reference).**
 
+### API Endpoints
+
+#### Bucket Operations
+- `GET /api/buckets` - List all buckets
+- `POST /api/buckets` - Create a new bucket
+- `DELETE /api/buckets/:bucketName` - Delete a bucket (with optional `?force=true`)
+- `PATCH /api/buckets/:bucketName` - Rename a bucket
+
+#### File Operations
+- `GET /api/files/:bucketName` - List files in a bucket (supports `?cursor`, `?limit`, `?prefix`, `?skipCache`)
+- `POST /api/files/:bucketName/upload` - Upload a file (supports chunked uploads)
+- `GET /api/files/:bucketName/signed-url/:fileName` - Generate a signed download URL
+- `POST /api/files/:bucketName/download-zip` - Download multiple files as ZIP
+- `DELETE /api/files/:bucketName/delete/:fileName` - Delete a file
+- `POST /api/files/:bucketName/:fileName/copy` - Copy a file to another bucket
+- `POST /api/files/:bucketName/:fileName/move` - Move a file to another bucket
+
+#### Folder Operations
+- `POST /api/folders/:bucketName/create` - Create a new folder
+- `PATCH /api/folders/:bucketName/rename` - Rename a folder (batch operation)
+- `POST /api/folders/:bucketName/:folderPath/copy` - Copy a folder to another bucket
+- `POST /api/folders/:bucketName/:folderPath/move` - Move a folder to another bucket
+- `DELETE /api/folders/:bucketName/:folderPath` - Delete a folder and its contents (with optional `?force=true`)
+
 ---
 
 ## 🔐 Security
@@ -177,10 +203,15 @@ Worker API: `http://localhost:8787`
 
 ## 📋 Roadmap
 
+### Recently Completed ✅
+
+- ✅ **Folder Management** - Create, rename, copy, move, and delete folders with breadcrumb navigation (v1.1.0)
+
 ### Planned Features
 
-- **Manage folders in R2 Buckets** - Create folder in bucket, edit folder (name), copy folders to another bucket, move folders to another bucket, delete folders.
-- **Filter by filename** - Filter through file lists by filename input.
+- **Filter by filename** - Filter through file lists by filename input
+- **Folder Selection** - Select folders for bulk operations (copy/move/delete)
+- **Folder Properties** - View folder size, file count, and metadata
 - **Audit Logging** - Track all user actions in D1 database
 - **Role-Based Access Control (RBAC)** - Fine-grained permissions
 - **File Versioning** - Track and restore previous versions
