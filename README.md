@@ -209,7 +209,6 @@ Worker API: `http://localhost:8787`
 
 ### Planned Features
 
-- **Folder Selection** - Select folders for bulk operations (copy/move/delete)
 - **Rename folder** - Add ability to rename folder.
 - **Folder Properties** - View folder size, file count, and metadata
 - **Filter by filename** - Filter through file lists by filename input
