@@ -547,6 +547,23 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     }
   }, [contextMenu, renameState])
 
+  // Prevent browser context menu on file grid items
+  useEffect(() => {
+    const handleContextMenu = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      const fileItem = target.closest('.file-item') || target.closest('.folder-item')
+      
+      if (fileItem || gridRef.current?.contains(target)) {
+        event.preventDefault()
+      }
+    }
+
+    document.addEventListener('contextmenu', handleContextMenu, true)
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu, true)
+    }
+  }, [])
+
   const handleImageError = useCallback((fileName: string) => {
     setFailedImages(prev => new Set(prev).add(fileName))
   }, [])
