@@ -45,6 +45,7 @@ Cloudflare's dashboard lacks full-featured R2 file management capabilities. This
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
 - 📄 **File Management** - Rename files via right-click context menu with validation
+- 🔍 **Smart Filtering** - Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)
 - 📤 **Smart Uploads** - Chunked uploads with automatic retry (10MB chunks, up to 500MB files)*
 - 📥 **Bulk Downloads** - Download multiple files as ZIP archives
 - 🔗 **Shareable Links** - Generate signed URLs to share files securely
@@ -144,6 +145,35 @@ R2 Bucket Manager supports both light and dark themes with automatic system pref
 
 ---
 
+## 🔍 Filtering Files and Folders
+
+R2 Bucket Manager includes a powerful client-side filtering system to help you quickly find files and folders in large buckets:
+
+### How to Use
+1. Use the search bar above the file list to filter by name
+2. Choose filter type from the dropdown:
+   - **All** - Shows both files and folders
+   - **Files Only** - Shows only files
+   - **Folders Only** - Shows only folders
+3. View the match counter showing filtered results (e.g., "23 of 156")
+4. Click the **✕** button to clear the filter
+
+### Features
+- **Real-time filtering** - Results update as you type
+- **Case-insensitive search** - Searches match regardless of case
+- **Filename-only matching** - Searches file/folder names, not full paths
+- **Type filtering** - Filter by files, folders, or both
+- **Works with all views** - Filter in both grid and list views
+- **Preserved selections** - Your selected files remain selected during filtering
+
+### Use Cases
+- Quickly locate specific files in buckets with hundreds of items
+- Find all folders matching a pattern
+- Filter by partial names (e.g., "report" finds "monthly-report.pdf", "Q4-Report.xlsx")
+- Narrow down large file lists before performing bulk operations
+
+---
+
 ## 🛠️ Local Development
 
 **Terminal 1: Frontend dev server**
@@ -236,8 +266,10 @@ Worker API: `http://localhost:8787`
 
 ## 📋 Roadmap
 
+### Completed Features ✅
+- **Filter by filename** - Real-time client-side filtering with type filters (All/Files/Folders)
+
 ### Planned Features
-- **Filter by filename** - Filter through file lists by filename input
 - **AWS S3 Migration** - Add support for migrating AWS S3 to R2
 - **Audit Logging** - Track all user actions in D1 database
 - **Role-Based Access Control (RBAC)** - Fine-grained permissions
@@ -245,6 +277,7 @@ Worker API: `http://localhost:8787`
 - **Offline Upload Queue** - Resumable uploads with service workers
 - **Custom Branding** - Configurable logo and colors
 - **Custom Metadata** - User-defined tags and labels
+- **Advanced Filtering** - Regex support, extension filters, size/date filters
 
 **📖 See the full [Roadmap](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Roadmap) for details.**
 

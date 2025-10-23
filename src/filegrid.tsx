@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef } from 'react'
+import { useCallback, useState, useEffect, useRef, useMemo } from 'react'
 import type { JSX } from 'react'
 import { api } from './services/api'
 
@@ -447,6 +447,8 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   const [bucketDropdownPosition, setBucketDropdownPosition] = useState<{ top: number; left: number } | null>(null)
   const [copyingUrl, setCopyingUrl] = useState<string | null>(null)
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
+  const [filterText, setFilterText] = useState<string>('')
+  const [filterType, setFilterType] = useState<'all' | 'files' | 'folders'>('all')
 
   const [contextMenu, setContextMenu] = useState<{
     show: boolean
@@ -476,6 +478,32 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   const sortedFilesRef = useRef<FileObject[]>([])
   const debounceTimerRef = useRef<number | undefined>(undefined)
   const refreshTimeoutRef = useRef<number | undefined>(undefined)
+
+  // Computed filtered results
+  const filteredFiles = useMemo(() => {
+    if (!filterText && filterType === 'all') return paginatedFiles.objects
+    
+    return paginatedFiles.objects.filter(file => {
+      // Extract filename from full path
+      const fileName = file.key.split('/').pop() || file.key
+      const matchesText = fileName.toLowerCase().includes(filterText.toLowerCase())
+      const matchesType = filterType === 'all' || filterType === 'files'
+      return matchesText && matchesType
+    })
+  }, [paginatedFiles.objects, filterText, filterType])
+
+  const filteredFolders = useMemo(() => {
+    if (!filterText && filterType === 'all') return paginatedFiles.folders
+    
+    return paginatedFiles.folders.filter(folder => {
+      const matchesText = folder.name.toLowerCase().includes(filterText.toLowerCase())
+      const matchesType = filterType === 'all' || filterType === 'folders'
+      return matchesText && matchesType
+    })
+  }, [paginatedFiles.folders, filterText, filterType])
+
+  const filteredCount = filteredFiles.length + filteredFolders.length
+  const totalCount = paginatedFiles.objects.length + paginatedFiles.folders.length
 
   useEffect(() => {
     mountedRef.current = true
@@ -1261,6 +1289,54 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           </button>
         </div>
       )}
+
+      {/* Filter Bar */}
+      <div className="filter-bar">
+        <div className="filter-input-container">
+          <svg className="filter-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Filter files and folders..."
+            value={filterText}
+            onChange={(e) => setFilterText(e.target.value)}
+            className="filter-input"
+            aria-label="Filter files and folders"
+          />
+          {filterText && (
+            <button 
+              className="filter-clear-button"
+              onClick={() => setFilterText('')}
+              title="Clear filter"
+              aria-label="Clear filter"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        
+        <div className="filter-controls">
+          <select 
+            className="filter-type-select"
+            value={filterType}
+            onChange={(e) => setFilterType(e.target.value as 'all' | 'files' | 'folders')}
+            aria-label="Filter by type"
+          >
+            <option value="all">All</option>
+            <option value="files">Files Only</option>
+            <option value="folders">Folders Only</option>
+          </select>
+          
+          {filteredCount !== totalCount && (
+            <span className="filter-match-count">
+              {filteredCount} of {totalCount}
+            </span>
+          )}
+        </div>
+      </div>
+
       <div className="file-actions-bar">
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flex: 1 }}>
           {(selectedFiles.length > 0 || selectedFolders.length > 0) && (
@@ -1314,12 +1390,12 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             </button>
           </div>
 
-          {paginatedFiles.objects.length > 0 && selectedFiles.length < paginatedFiles.objects.length && (
+          {filteredFiles.length > 0 && selectedFiles.length < filteredFiles.length && (
             <button 
-              onClick={() => setSelectedFiles(paginatedFiles.objects.map(f => f.key))}
+              onClick={() => setSelectedFiles(filteredFiles.map(f => f.key))}
               className="action-button select-all-button"
             >
-              Select All
+              Select All {filterText || filterType !== 'all' ? 'Filtered' : ''}
             </button>
           )}
 
@@ -1523,10 +1599,10 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           ref={gridRef}
           className="file-grid"
           onClick={handleGridClick}
-          title={paginatedFiles.objects.length > 0 || paginatedFiles.folders.length > 0 ? "Click empty space to deselect all files" : undefined}
+          title={filteredFiles.length > 0 || filteredFolders.length > 0 ? "Click empty space to deselect all files" : undefined}
         >
           {/* Render Folders First */}
-          {paginatedFiles.folders.map((folder) => {
+          {filteredFolders.map((folder) => {
             const isSelected = selectedFolders.includes(folder.path)
             const checkboxId = `folder-select-${folder.path}`
             
@@ -1581,7 +1657,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           })}
           
           {/* Render Files */}
-          {paginatedFiles.objects.map((file) => {
+          {filteredFiles.map((file) => {
             const isImage = isImageFile(file.key)
             const isVideo = isVideoFile(file.key)
             const isSelected = selectedFiles.includes(file.key)
@@ -1691,10 +1767,10 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                     type="checkbox"
                     id="select-all-files"
                     name="select-all-files"
-                    checked={selectedFiles.length === paginatedFiles.objects.length && paginatedFiles.objects.length > 0}
+                    checked={selectedFiles.length === filteredFiles.length && filteredFiles.length > 0}
                     onChange={(e) => {
                       if (e.target.checked) {
-                        setSelectedFiles(paginatedFiles.objects.map(f => f.key))
+                        setSelectedFiles(filteredFiles.map(f => f.key))
                       } else {
                         setSelectedFiles([])
                       }
@@ -1740,7 +1816,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             </thead>
             <tbody>
               {/* Render Folders First */}
-              {paginatedFiles.folders.map((folder) => {
+              {filteredFolders.map((folder) => {
                 const isSelected = selectedFolders.includes(folder.path)
                 const checkboxId = `list-folder-select-${folder.path}`
                 
@@ -1786,7 +1862,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
               })}
               
               {/* Render Files */}
-              {paginatedFiles.objects.map(file => {
+              {filteredFiles.map(file => {
                 const checkboxId = `list-file-select-${file.key}`
                 return (
                   <tr 
@@ -1849,14 +1925,23 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         </div>
       )}
 
-      {paginatedFiles.objects.length === 0 && paginatedFiles.folders.length === 0 && !paginationState.isLoading && (
+      {filteredFiles.length === 0 && filteredFolders.length === 0 && !paginationState.isLoading && (
         <div className="empty-state">
           <svg xmlns="http://www.w3.org/2000/svg" className="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
             <polyline points="13 2 13 9 20 9" />
           </svg>
-          <p className="empty-text">No files or folders {currentPath ? 'in this folder' : 'in this bucket'}</p>
-          <p className="empty-subtext">Upload files or create folders to get started</p>
+          {(filterText || filterType !== 'all') ? (
+            <>
+              <p className="empty-text">No matches found for &quot;{filterText}&quot;</p>
+              <p className="empty-subtext">Try a different search term or clear the filter</p>
+            </>
+          ) : (
+            <>
+              <p className="empty-text">No files or folders {currentPath ? 'in this folder' : 'in this bucket'}</p>
+              <p className="empty-subtext">Upload files or create folders to get started</p>
+            </>
+          )}
         </div>
       )}
 
