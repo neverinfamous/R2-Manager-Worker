@@ -552,15 +552,20 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     const handleContextMenu = (event: MouseEvent) => {
       const target = event.target as HTMLElement
       const fileItem = target.closest('.file-item') || target.closest('.folder-item')
+      const customContextMenu = target.closest('.context-menu')
       
-      if (fileItem || gridRef.current?.contains(target)) {
+      // Prevent default browser context menu if clicking on file items, folder items, 
+      // the grid itself, or our custom context menu
+      if (fileItem || customContextMenu || gridRef.current?.contains(target)) {
         event.preventDefault()
+        event.stopPropagation()
       }
     }
 
-    document.addEventListener('contextmenu', handleContextMenu, true)
+    // Use capture phase to ensure we catch the event before it bubbles
+    document.addEventListener('contextmenu', handleContextMenu, { capture: true })
     return () => {
-      document.removeEventListener('contextmenu', handleContextMenu, true)
+      document.removeEventListener('contextmenu', handleContextMenu, { capture: true })
     }
   }, [])
 
