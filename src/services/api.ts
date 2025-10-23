@@ -281,7 +281,7 @@ class APIService {
       'toml': 'config', 'jsonc': 'config', 'env': 'config', 'lock': 'config',
       'conf': 'config', 'ini': 'config',
       'gitignore': 'devenv', 'gitattributes': 'devenv', 'editorconfig': 'devenv', 
-      'dockerfile': 'devenv', 'nvmrc': 'devenv', 'node-version': 'devenv', 'browserslistrc': 'devenv',
+      'dockerfile': 'devenv', 'nvmrc': 'devenv', 'browserslistrc': 'devenv',
       'feather': 'dataformat', 'avro': 'dataformat', 'ndjson': 'dataformat',
       'nfo': 'docs'
     }

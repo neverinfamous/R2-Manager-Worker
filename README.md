@@ -226,6 +226,24 @@ Worker API: `http://localhost:8787`
 
 ---
 
+## 📝 Extending File Type Support
+
+To add support for new file extensions:
+
+1. **Update `src/services/api.ts`:**
+   - Add file type category to `FILE_TYPES` object
+   - Map extensions in `getConfigByExtension()`
+
+2. **Update `src/filegrid.tsx`:**
+   - Add custom icon rendering for new extensions
+
+3. **Update `src/app.tsx`:**
+   - Add file type to upload instructions
+
+**📖 See the [Development Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Development-Guide#adding-file-type-support) for complete instructions.**
+
+---
+
 ## 🐛 Troubleshooting
 
 Common issues and solutions:
