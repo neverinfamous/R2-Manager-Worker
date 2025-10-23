@@ -657,7 +657,7 @@ export default function BucketManager() {
                   <p>Drop the files here...</p>
                 ) : (
                   <div className="upload-instructions">
-                    <p>Drag & drop files here, or click to select files</p>
+                    <p>Drag & drop files here or click to select files.</p>
                     <div className="file-type-limits">
                       <p>Accepted file types and size limits:</p>
                       <ul>
