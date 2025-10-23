@@ -656,10 +656,13 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       direction: 'desc'
     })
     
+    // Reset path to root when bucket changes
+    onPathChange?.('')
+    
     if (bucketName) {
       setShouldRefresh(true)
     }
-  }, [bucketName])
+  }, [bucketName, onPathChange])
 
   const handleSelection = useCallback((key: string, event: React.MouseEvent | React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation()

@@ -170,6 +170,8 @@ export default function BucketManager() {
           try {
             updateProgress(file.name, 0)
             
+            console.log('[Upload] Uploading file:', file.name, 'to path:', currentPath || 'root')
+            
             await api.uploadFile(
               selectedBucket,
               file,

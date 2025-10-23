@@ -351,6 +351,7 @@ class APIService {
 
     // Prepend path to filename if provided
     const fileName = path ? `${path}${file.name}` : file.name
+    console.log('[API] uploadFile - path:', path, 'file.name:', file.name, 'final fileName:', fileName)
 
     const totalChunks = Math.ceil(file.size / this.CHUNK_SIZE)
     const uploadedChunks = new Set<number>()
