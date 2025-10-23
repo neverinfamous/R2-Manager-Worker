@@ -592,6 +592,8 @@
   flex-direction: column;
   gap: 1rem;
   width: 100%;
+  margin: 0 auto;
+  max-width: 1400px;
 }
 
 .file-actions-bar {
@@ -1081,6 +1083,7 @@
   border-radius: 0.5rem;
   cursor: default;
   position: relative;
+  margin: 0 auto;
 }
 
 .file-grid:not(:has(.file-item)):hover {
@@ -1189,6 +1192,7 @@
 .file-list {
   width: 100%;
   overflow-x: auto;
+  margin: 0 auto;
 }
 
 .file-list table {
