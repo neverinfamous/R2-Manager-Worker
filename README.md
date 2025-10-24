@@ -14,6 +14,8 @@
 
 A modern web application for managing Cloudflare R2 buckets with enterprise-grade authentication via Cloudflare Access (Zero Trust). Deploy to your own Cloudflare account in minutes.
 
+**🎯 [Try the Live Demo](https://r2.adamic.tech/)** - See R2 Bucket Manager in action
+
 **🚀 Deployment Options:**
 - **[Docker Hub](https://hub.docker.com/r/writenotenow/r2-bucket-manager)** - Containerized development environment (~372MB)
 - **[Cloudflare Workers](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Installation-&-Setup)** - Production deployment on the edge
