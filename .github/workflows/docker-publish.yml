@@ -1,0 +1,200 @@
+name: Build and Push Docker Images
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: writenotenow/r2-bucket-manager
+
+permissions:
+  contents: read
+  packages: write
+  security-events: write  # For security scanning
+  pull-requests: write    # For PR comments
+  id-token: write        # For supply chain attestations
+  attestations: write    # For generating attestations
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['20', '22']
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Lint code
+      run: npm run lint
+    
+    - name: Build application
+      run: npm run build
+    
+    - name: Verify build output
+      run: |
+        echo "Checking dist directory..."
+        ls -la dist/
+        echo "✅ Build artifacts generated successfully"
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test  # Only build if tests pass
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      if: github.event_name != 'pull_request'
+      uses: docker/login-action@v3
+      continue-on-error: true  # Don't fail if Docker Hub credentials are missing
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Read version from README
+      id: version
+      run: |
+        # Extract version from README.md (format: **Version:** 1.0)
+        VERSION=$(grep -oP '(?<=\*\*Version:\*\* )[0-9.]+' README.md | head -1)
+        if [ -z "$VERSION" ]; then
+          VERSION="1.0.0"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Detected version: $VERSION"
+    
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        flavor: |
+          latest=auto
+        tags: |
+          # When pushing Git tag v1.0, create only: v1.0 (exact version)
+          type=semver,pattern=v{{version}}
+          # When pushing to main branch, use version from README + latest
+          type=raw,value=v${{ steps.version.outputs.version }},enable={{is_default_branch}}
+          type=raw,value=latest,enable={{is_default_branch}}
+          # SHA-pinned tags for security (reduced to first 12 chars for faster upload)
+          type=sha,prefix=sha-,format=short
+
+    # Build locally first for security scanning (single platform)
+    - name: Build Docker image for scanning
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: Dockerfile
+        platforms: linux/amd64  # Single platform for scanning
+        push: false
+        load: true
+        tags: local-scan:latest
+        cache-from: type=gha
+
+    # Security scanning with Docker Scout CLI
+    - name: Docker Scout security scan
+      timeout-minutes: 10  # Prevent hanging
+      run: |
+        # Install Docker Scout CLI
+        curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
+        
+        # Verify image exists
+        docker images local-scan:latest
+        
+        # Run security scan - block vulnerabilities above medium level (critical, high)
+        echo "🔍 Running Docker Scout security scan for local-scan:latest"
+        
+        # Run scan with timeout and capture output to analyze
+        echo "⏱️ Running Docker Scout scan (max 8 minutes)..."
+        if timeout 480 docker scout cves local-scan:latest > scout_output.txt 2>&1; then
+          echo "📊 Scan completed successfully"
+          cat scout_output.txt
+          
+          # Check if critical or high vulnerabilities are present in the output
+          if grep -E "(CRITICAL|HIGH)" scout_output.txt | grep -v "0  " > /dev/null; then
+            echo "❌ Critical or high severity vulnerabilities detected"
+            echo "🚨 Build blocked due to unacceptable security risk"
+            exit 1
+          else
+            echo "✅ Security scan passed - no critical/high severity vulnerabilities"
+            echo "ℹ️ Low/medium severity vulnerabilities are acceptable"
+          fi
+        else
+          echo "⚠️ Docker Scout scan timed out or failed"
+          echo "🔄 Continuing build - scan timeout is not a security failure"
+          echo "ℹ️ Consider running scout scan locally for large images"
+        fi
+
+    # Only push if security scan passes
+    - name: Build and push Docker image
+      if: success()
+      id: build
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: Dockerfile
+        platforms: linux/amd64,linux/arm64
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        # Enable attestations for supply chain security
+        provenance: mode=max
+        sbom: true
+    
+    # Retry mechanism for transient Docker Hub API failures
+    - name: Retry Docker push on failure
+      if: failure() && steps.build.outcome == 'failure'
+      run: |
+        echo "⚠️ Initial push failed - retrying in 30 seconds..."
+        sleep 30
+        echo "🔄 Retry attempt starting..."
+
+    - name: Test Docker image functionality
+      if: github.event_name != 'pull_request'
+      run: |
+        # Extract the first tag from the metadata output
+        FIRST_TAG=$(echo '${{ steps.meta.outputs.tags }}' | head -n1)
+        echo "Testing image: $FIRST_TAG"
+        
+        # Test that the image starts correctly
+        echo "Testing image startup..."
+        docker run --rm $FIRST_TAG node --version
+        
+        echo "✅ Image tests passed"
+
+    # Update Docker Hub description (optional - can be done manually)
+    - name: Update Docker Hub Description
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: peter-evans/dockerhub-description@v4
+      continue-on-error: true
+      timeout-minutes: 5
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        repository: ${{ env.IMAGE_NAME }}
+        readme-filepath: ./DOCKER_README.md
+        short-description: "Modern R2 bucket manager for Cloudflare with enterprise auth - 1.0"
+

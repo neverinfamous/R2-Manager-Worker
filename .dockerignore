@@ -1,0 +1,52 @@
+# Development files
+.git
+.github
+.vscode
+.cursor
+.idea
+
+# Dependencies
+node_modules
+npm-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+# Build artifacts
+dist
+*.log
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.development
+*.key
+*.pem
+
+# Testing
+coverage
+.nyc_output
+test-results
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Documentation
+README.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+SECURITY.md
+SECURITY-FIXES.md
+LICENSE
+*.md
+
+# CI/CD
+.github
+
+# Misc
+*.swp
+*.swo
+*~
+
