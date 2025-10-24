@@ -171,16 +171,33 @@ async function validateAccessJWT(request: Request, env: Env): Promise<string | n
   }
 }
 
-// URL signing functions
-function generateSignature(path: string, env: Env): string {
+// URL signing functions using HMAC-SHA256
+async function generateSignature(path: string, env: Env): Promise<string> {
   const encoder = new TextEncoder();
-  const data = encoder.encode(path + env.URL_SIGNING_KEY);
-  const hashArray = new Uint8Array(data);
-  const reducedHash = Array.from(hashArray).reduce((a, b) => a ^ b, 0);
-  return reducedHash.toString(16).padStart(2, '0');
+  
+  // Import the signing key for HMAC
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(env.URL_SIGNING_KEY),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  
+  // Generate HMAC-SHA256 signature
+  const signature = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    encoder.encode(path)
+  );
+  
+  // Convert to hex string
+  return Array.from(new Uint8Array(signature))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 }
 
-function validateSignature(request: Request, env: Env): boolean {
+async function validateSignature(request: Request, env: Env): Promise<boolean> {
   const url = new URL(request.url);
   const signature = url.searchParams.get('sig');
   if (!signature) {
@@ -195,7 +212,7 @@ function validateSignature(request: Request, env: Env): boolean {
   const queryString = searchParams.toString();
   const pathWithQuery = queryString ? decodedPath + '?' + queryString : decodedPath;
   
-  const expectedSignature = generateSignature(pathWithQuery, env);
+  const expectedSignature = await generateSignature(pathWithQuery, env);
   
   console.log('[Signature] Validation:', {
     path: url.pathname,
@@ -257,7 +274,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   if (url.pathname.includes('/download/')) {
     console.log('[Download] Request:', url.pathname, 'query:', url.search);
     
-    if (validateSignature(request, env)) {
+    if (await validateSignature(request, env)) {
       const pathParts = url.pathname.split('/');
       const bucketName = pathParts[3];
       const fileName = decodeURIComponent(pathParts[5]);
@@ -772,17 +789,17 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         }
         
         const fileList = Array.isArray(data.result) ? data.result : (data.result?.objects || []);
-        const objects = fileList
+        const objectPromises = fileList
           .filter((obj: R2ObjectInfo) => 
             !obj.key.startsWith('assets/') && 
             !obj.key.endsWith('/.keep') &&
             obj.key !== '.keep'
           )
-          .map((obj: R2ObjectInfo) => {
+          .map(async (obj: R2ObjectInfo) => {
             const downloadPath = '/api/files/' + bucketName + '/download/' + obj.key;
             const version = obj.last_modified ? new Date(obj.last_modified).getTime() : Date.now();
             const versionedPath = downloadPath + '?ts=' + version;
-            const signature = generateSignature(versionedPath, env);
+            const signature = await generateSignature(versionedPath, env);
             const signedUrl = versionedPath + '&sig=' + signature;
 
             return {
@@ -792,6 +809,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
               url: signedUrl
             };
           });
+
+        const objects = await Promise.all(objectPromises);
 
         // Sort objects by upload date
         objects.sort((a, b) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime());
@@ -962,7 +981,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const downloadPath = '/api/files/' + bucketName + '/download/' + key;
         const version = Date.now();
         const versionedPath = downloadPath + '?ts=' + version;
-        const signature = generateSignature(versionedPath, env);
+        const signature = await generateSignature(versionedPath, env);
         const signedUrl = versionedPath + '&sig=' + signature;
         
         // Return the full URL

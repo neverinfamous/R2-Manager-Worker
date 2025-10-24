@@ -306,6 +306,8 @@ Worker API: `http://localhost:8787`
 ## 📋 Roadmap
 
 ### Planned Features
+- **Add rate limiting for API endpoints** (Cloudflare KV)
+- **Refactor worker/index.ts and filegrid.tsx** - Large monolithic files
 - **AWS S3 Migration** - Add support for migrating AWS S3 to R2
 - **File Versioning** - Track and restore previous versions
 - **Audit Logging** - Track all user actions in D1 database
