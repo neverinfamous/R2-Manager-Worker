@@ -75,7 +75,8 @@ class APIService {
         'image/avif',
         'image/heic',
         'image/svg+xml',
-        'image/bmp'
+        'image/bmp',
+        'image/vnd.adobe.photoshop'
       ]
     },
     video: {
@@ -84,7 +85,10 @@ class APIService {
       accept: [
         'video/mp4',
         'video/quicktime',
-        'video/webm'
+        'video/webm',
+        'video/x-msvideo',
+        'video/x-ms-wmv',
+        'video/x-matroska'
       ]
     },
     document: {
@@ -261,9 +265,9 @@ class APIService {
     const extensionMap: Record<string, string> = {
       // Images
       'jpg': 'image', 'jpeg': 'image', 'png': 'image', 'gif': 'image', 
-      'webp': 'image', 'avif': 'image', 'heic': 'image', 'svg': 'image', 'bmp': 'image',
+      'webp': 'image', 'avif': 'image', 'heic': 'image', 'svg': 'image', 'bmp': 'image', 'psd': 'image',
       // Videos
-      'mp4': 'video', 'mov': 'video', 'webm': 'video',
+      'mp4': 'video', 'mov': 'video', 'webm': 'video', 'avi': 'video', 'wmv': 'video', 'mkv': 'video',
       // Documents
       'pdf': 'document', 'doc': 'document', 'docx': 'document',
       'xls': 'document', 'xlsx': 'document', 'ppt': 'document', 'pptx': 'document',

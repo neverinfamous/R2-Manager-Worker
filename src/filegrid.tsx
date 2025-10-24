@@ -90,12 +90,14 @@ const getFileExtension = (filename: string): string => {
 }
 
 const isImageFile = (filename: string): boolean => {
-  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.heic', '.svg', '.bmp']
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.heic', '.svg', '.bmp', '.psd']
   return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext))
 }
 
 const isVideoFile = (filename: string): boolean => {
   const ext = getFileExtension(filename)
+  // Only return true for formats that reliably play in HTML5 video element
+  // AVI, WMV, and MKV often use codecs not supported by browsers
   return ext === 'mp4' || ext === 'mov' || ext === 'webm'
 }
 
@@ -320,6 +322,28 @@ const getFileTypeIcon = (filename: string): JSX.Element => {
         <circle cx="12" cy="12" r="9" />
         <line x1="12" y1="8" x2="12" y2="12" />
         <circle cx="12" cy="16" r="0.5" fill="currentColor" />
+      </svg>
+    )
+  }
+
+  // PSD (Photoshop) file icon - layers icon
+  if (ext === 'psd') {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="3" y="3" width="18" height="18" rx="2" />
+        <rect x="7" y="7" width="10" height="3" rx="0.5" opacity="0.3" />
+        <rect x="7" y="11" width="10" height="3" rx="0.5" opacity="0.6" />
+        <rect x="7" y="15" width="10" height="3" rx="0.5" />
+      </svg>
+    )
+  }
+
+  // Video file icons - for formats that don't play reliably in browsers
+  if (ext === 'avi' || ext === 'wmv' || ext === 'mkv') {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="2" y="6" width="20" height="12" rx="2" />
+        <polygon points="10 9 10 15 15 12" fill="currentColor" />
       </svg>
     )
   }

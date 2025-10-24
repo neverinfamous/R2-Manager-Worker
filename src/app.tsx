@@ -673,9 +673,9 @@ export default function BucketManager() {
                         <li>Dev Environment (Dockerfile, editorconfig, .gitignore, nvmrc, etc.) - up to 1MB</li>
                         <li>Documents (CSV, Excel, Markdown, PDF, PowerPoint, TXT, Word, etc.) - up to 50MB</li>
                         <li>Documentation (NFO) - up to 10MB</li>
-                        <li>Images (AVIF, BMP, GIF, HEIC, JPG, PNG, SVG, WebP) - up to 15MB</li>
+                        <li>Images (AVIF, BMP, GIF, HEIC, JPG, PNG, PSD, SVG, WebP) - up to 15MB</li>
                         <li>Jupyter Notebooks (.ipynb) - up to 10MB</li>
-                        <li>Videos (MOV, MP4, WebM) - up to 500MB</li>
+                        <li>Videos (AVI, MKV, MOV, MP4, WebM, WMV) - up to 500MB</li>
                       </ul>
                     </div>
                   </div>
