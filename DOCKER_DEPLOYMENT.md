@@ -233,6 +233,3 @@ docker run -p 8787:8787 r2-manager-local
 ---
 
 **Deployment completed successfully! 🎉**
-
-The R2 Bucket Manager is now available on Docker Hub with automated CI/CD workflows.
-
