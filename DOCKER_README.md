@@ -14,6 +14,8 @@
  
 **🚀 Docker Deployment:** Run the development server in a containerized environment for testing and local development.
 
+**📰 [Read the v1.0 Release Article](https://adamic.tech/articles/2025-10-24-r2-bucket-manager-v1-0)** - Learn more about features, architecture, and deployment
+
 ---
 
 ## 🚀 Quick Start with Docker
