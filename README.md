@@ -31,7 +31,7 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
 
 ## 🎯 Why It Exists
 
-Cloudflare's dashboard lacks full-featured R2 file management capabilities. This tool provides a self-hosted alternative for developers and enterprises wanting:
+Cloudflare's dashboard lacks the full-featured R2 file management capabilities. This tool provides a self-hosted alternative for developers and enterprises wanting:
 
 - Complete control over R2 buckets with advanced file operations
 - Seamless SSO integration via GitHub (or other identity providers)
