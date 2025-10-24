@@ -10,8 +10,8 @@
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 
-A modern web application for managing Cloudflare R2 buckets with enterprise-grade authentication via Cloudflare Access (Zero Trust). 
-
+ R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to manage Cloudflare R2 buckets and objects. Supports drag-and-drop uploads, batch copy/move/delete, multi-file ZIP downloads, signed share links, folder hierarchies, advanced search + filters (extension, size, date), and GitHub SSO via Cloudflare Zero Trust.
+ 
 **🚀 Docker Deployment:** Run the development server in a containerized environment for testing and local development.
 
 ---
@@ -31,12 +31,24 @@ docker pull writenotenow/r2-bucket-manager:latest
 
 ### Run Development Server
 
+**Basic usage (no configuration):**
+```bash
+docker run -p 8787:8787 writenotenow/r2-bucket-manager:latest
+```
+
+**With Cloudflare credentials:**
 ```bash
 docker run -p 8787:8787 \
-  -v $(pwd)/wrangler.toml:/app/wrangler.toml \
   -e ACCOUNT_ID=your_account_id \
   -e CF_EMAIL=your_email \
   -e API_KEY=your_api_key \
+  writenotenow/r2-bucket-manager:latest
+```
+
+**With wrangler.toml configuration:**
+```bash
+docker run -p 8787:8787 \
+  -v "$(pwd)/wrangler.toml:/app/wrangler.toml" \
   writenotenow/r2-bucket-manager:latest
 ```
 
@@ -58,10 +70,14 @@ The development server will be available at `http://localhost:8787`
 
 ### Volume Mounts
 
-Mount your `wrangler.toml` configuration:
-
+**Mount wrangler.toml from current directory:**
 ```bash
--v /path/to/your/wrangler.toml:/app/wrangler.toml
+docker run -p 8787:8787 -v "$(pwd)/wrangler.toml:/app/wrangler.toml" writenotenow/r2-bucket-manager:latest
+```
+
+**Mount wrangler.toml from specific path:**
+```bash
+docker run -p 8787:8787 -v "/path/to/wrangler.toml:/app/wrangler.toml" writenotenow/r2-bucket-manager:latest
 ```
 
 ---
@@ -107,8 +123,8 @@ docker pull writenotenow/r2-bucket-manager:v1.0
 
 - **Base Image:** Node.js 22 Alpine
 - **Platforms:** AMD64, ARM64 (multi-arch)
-- **Size:** ~150MB compressed
-- **User:** Non-root (`app:1000`)
+- **Size:** ~372MB compressed
+- **User:** Non-root (`app:1001`)
 - **Working Directory:** `/app`
 
 ### Security Features
@@ -142,17 +158,35 @@ docker pull writenotenow/r2-bucket-manager:v1.0
 
 ### Option 1: Use Pre-built Image
 
+**Step 1: Pull the image**
 ```bash
 docker pull writenotenow/r2-bucket-manager:latest
-docker run -p 8787:8787 -v $(pwd):/app writenotenow/r2-bucket-manager:latest
+```
+
+**Step 2: Run the container**
+```bash
+docker run -p 8787:8787 writenotenow/r2-bucket-manager:latest
 ```
 
 ### Option 2: Build from Source
 
+**Step 1: Clone the repository**
 ```bash
 git clone https://github.com/neverinfamous/R2-Manager-Worker.git
+```
+
+**Step 2: Navigate to directory**
+```bash
 cd R2-Manager-Worker
+```
+
+**Step 3: Build the image**
+```bash
 docker build -t r2-manager-local .
+```
+
+**Step 4: Run the container**
+```bash
 docker run -p 8787:8787 r2-manager-local
 ```
 

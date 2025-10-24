@@ -4,6 +4,7 @@
 **Tech Stack:** React 19.2.0 | Vite 7.1.11 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
+[![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 ![Version](https://img.shields.io/badge/version-v1.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
@@ -12,6 +13,10 @@
 [![Type Safety](https://img.shields.io/badge/Pyright-Strict-blue.svg)](https://github.com/neverinfamous/R2-Manager-Worker)
 
 A modern web application for managing Cloudflare R2 buckets with enterprise-grade authentication via Cloudflare Access (Zero Trust). Deploy to your own Cloudflare account in minutes.
+
+**🚀 Deployment Options:**
+- **[Docker Hub](https://hub.docker.com/r/writenotenow/r2-bucket-manager)** - Containerized development environment (~372MB)
+- **[Cloudflare Workers](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Installation-&-Setup)** - Production deployment on the edge
 
 ---
 
@@ -119,6 +124,26 @@ Cloudflare's dashboard lacks the full-featured R2 file management capabilities. 
    ```
 
 **📖 For detailed instructions, see the [Installation & Setup Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Installation-&-Setup).**
+
+---
+
+## 🐳 Docker Development Environment
+
+For local development and testing, use the Docker image:
+
+```bash
+docker pull writenotenow/r2-bucket-manager:latest
+```
+
+```bash
+docker run -p 8787:8787 writenotenow/r2-bucket-manager:latest
+```
+
+Access the development server at `http://localhost:8787`
+
+**Note:** Docker deployment is for development/testing only. For production, deploy to Cloudflare Workers using the instructions above.
+
+**📖 See the [Docker Hub page](https://hub.docker.com/r/writenotenow/r2-bucket-manager) for complete Docker documentation.**
 
 ---
 
