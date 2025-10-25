@@ -370,7 +370,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         
         // With Zero Trust auth, show all R2 buckets to authenticated users
         // Exclude system/internal buckets
-        const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki'];
+        const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki'];
         const filteredBuckets = (data.result.buckets || []).filter((b: { name: string }) =>
           !systemBuckets.includes(b.name)
         );

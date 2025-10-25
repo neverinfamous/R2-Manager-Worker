@@ -174,6 +174,39 @@ docker pull writenotenow/r2-bucket-manager:v1.0
 
 ---
 
+## 🙈 Hiding Buckets from the UI
+
+You can configure R2 Bucket Manager to hide specific buckets from the UI (e.g., system buckets, internal buckets, or buckets managed by other applications).
+
+### How to Hide Buckets
+
+1. **Edit `worker/index.ts`:**
+   - Locate the `systemBuckets` array (around line 373)
+   - Add your bucket name(s) to the array
+
+```typescript
+const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'your-bucket-name'];
+```
+
+2. **Deploy the changes:**
+   ```bash
+   npx wrangler deploy
+   ```
+
+### Example
+
+To hide buckets named `blog-wiki` and `internal-data`:
+
+```typescript
+const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki', 'internal-data'];
+```
+
+**Note:** Hidden buckets are completely filtered from the API response and won't appear in the bucket list or be accessible through the UI. This configuration must be done in the source code before deploying.
+
+**📖 See the [Configuration Reference](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Configuration-Reference#hiding-buckets) for more details.**
+
+---
+
 ## 🏗️ Local Development with Docker
 
 ### Option 1: Use Pre-built Image
