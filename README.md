@@ -71,6 +71,22 @@ Cloudflare's dashboard lacks the full-featured R2 file management capabilities. 
 - **Business Plan:** 200MB maximum per file  
 - **Enterprise Plan:** 500MB maximum per file
 
+### Supported File Types
+
+**Accepted file types and size limits:**
+
+- **Archives** (7Z, GZ, RAR, TAR, ZIP) - up to 500MB
+- **Code** (CSS, GO, HTML, Java, JS, Rust, TS, Python, etc.) - up to 10MB
+- **Config & Metadata** (CONF, ENV, INI, JSON, JSONC, LOCK, TOML, etc.) - up to 10MB
+- **Data Formats** (AVRO, FEATHER, NDJSON) - up to 50MB
+- **Databases** (DB, PARQUET, SQL) - up to 50MB
+- **Dev Environment** (Dockerfile, editorconfig, .gitignore, nvmrc, etc.) - up to 1MB
+- **Documents** (CSV, Excel, Markdown, PDF, PowerPoint, TXT, Word, etc.) - up to 50MB
+- **Documentation** (NFO) - up to 10MB
+- **Images** (AVIF, BMP, GIF, HEIC, JPG, PNG, PSD, SVG, WebP) - up to 15MB
+- **Jupyter Notebooks** (.ipynb) - up to 10MB
+- **Videos** (AVI, MKV, MOV, MP4, WebM, WMV) - up to 500MB
+
 ---
 
 ## 🚀 Quick Start
