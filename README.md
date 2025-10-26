@@ -1,12 +1,12 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** October 24, 2025 | **Status:** ✅ Production Ready | **Version:** 1.0  
+**Last Updated:** October 24, 2025 | **Status:** ✅ Production Ready | **Version:** 1.0.1  
 **Tech Stack:** React 19.2.0 | Vite 7.1.11 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v1.0-green)
+![Version](https://img.shields.io/badge/version-v1.0.1-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
@@ -260,20 +260,43 @@ R2 Bucket Manager includes a comprehensive filtering system to help you quickly 
 
 ## 🛠️ Local Development
 
-**Terminal 1: Frontend dev server**
+### Quick Start (Two Terminal Windows Required)
+
+**Terminal 1: Frontend dev server (Vite)**
 ```bash
 npm run dev
 ```
+- Runs on: `http://localhost:5173`
+- Hot Module Replacement (HMR) enabled
+- Watches for file changes automatically
 
-**Terminal 2: Worker dev server**
+**Terminal 2: Worker dev server (Wrangler)**
 ```bash
-npx wrangler dev
+npx wrangler dev --config wrangler.dev.toml --local
 ```
+- Runs on: `http://localhost:8787`
+- Uses local bindings with mock data (no secrets required)
+- Automatically reloads on code changes
+- **Note:** Returns mock bucket data for testing UI without Cloudflare API access
 
-Frontend: `http://localhost:5173`  
-Worker API: `http://localhost:8787`
+### Access the Application
 
-**Note:** Authentication is disabled on localhost for easier development.
+Open your browser to `http://localhost:5173` - the frontend will automatically communicate with the Worker API on port 8787.
+
+**Note:** Authentication is disabled on localhost for easier development. No Cloudflare Access configuration needed for local dev.
+
+### Development Configuration Files
+
+- `.env` - Frontend environment variables (points to `http://localhost:8787`)
+- `wrangler.dev.toml` - Development-specific Worker config (skips frontend build, adds mock data support)
+- `wrangler.toml` - Production Worker config (includes build step)
+
+### What's Different in Local Development
+
+- **Authentication:** Automatically disabled for localhost requests
+- **CORS:** Configured to allow `http://localhost:5173` with credentials
+- **Data:** Returns mock bucket data (no real Cloudflare API calls)
+- **No Secrets Required:** Works without `ACCOUNT_ID`, `CF_EMAIL`, or `API_KEY`
 
 **📖 For more details, see the [Development Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Development-Guide).**
 

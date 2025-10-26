@@ -1,5 +1,8 @@
 # Cloudflare R2 Bucket Manager - Wrangler Configuration Template
 # Copy this file to wrangler.toml and customize for your Cloudflare account
+#
+# NOTE: This is the PRODUCTION configuration.
+# For local development, use wrangler.dev.toml instead.
 
 name = "r2"
 main = "worker/index.ts"
@@ -73,4 +76,14 @@ enabled = true
 # - API_KEY: Cloudflare API token with R2 permissions
 # - TEAM_DOMAIN: Cloudflare Zero Trust team domain (e.g., yourteam.cloudflareaccess.com)
 # - POLICY_AUD: Access Policy AUD tag from your Access application
+#
+# ============================================
+# LOCAL DEVELOPMENT
+# ============================================
+# For local development, use wrangler.dev.toml instead of this file.
+# See README.md "Local Development" section for instructions.
+#
+# Quick start:
+#   Terminal 1: npm run dev
+#   Terminal 2: npx wrangler dev --config wrangler.dev.toml --local
 

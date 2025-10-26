@@ -230,10 +230,17 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
   console.log('[Request]', request.method, url.pathname);
   
+  // Detect localhost for development
+  const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+  const origin = request.headers.get('Origin') || '';
+  const isLocalhostOrigin = origin.includes('localhost') || origin.includes('127.0.0.1');
+  
+  // Use specific origin for localhost to allow credentials, wildcard for production
   const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': (isLocalhost || isLocalhostOrigin) ? origin : '*',
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS, PATCH',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Name, X-Chunk-Index, X-Total-Chunks'
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Name, X-Chunk-Index, X-Total-Chunks',
+    'Access-Control-Allow-Credentials': (isLocalhost || isLocalhostOrigin) ? 'true' : 'false'
   };
 
   if (request.method === 'OPTIONS') {
@@ -260,14 +267,18 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     });
   }
 
-  // Serve other static assets first
+  // Serve other static assets first (only in production with ASSETS binding)
   if (url.pathname.startsWith('/manifest.json') || url.pathname.startsWith('/favicon.ico')) {
-    try {
-      return await env.ASSETS.fetch(request);
-    } catch (e) {
-      console.error('[Assets] Failed to serve static asset:', e);
-      return new Response('Not Found', { status: 404 });
+    if (env.ASSETS) {
+      try {
+        return await env.ASSETS.fetch(request);
+      } catch (e) {
+        console.error('[Assets] Failed to serve static asset:', e);
+        return new Response('Not Found', { status: 404 });
+      }
     }
+    // In development, return 404 - these are handled by Vite
+    return new Response('Not Found', { status: 404 });
   }
 
   // Check for signed file downloads
@@ -340,18 +351,29 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     }
   }
 
-  // Require auth for all other API endpoints
-  const userEmail = await validateAccessJWT(request, env);
-  if (!userEmail) {
-    return new Response('Unauthorized', { 
-      status: 401,
-      headers: corsHeaders
-    });
+  // Skip auth for localhost development
+  let userEmail: string | null = null;
+  if (isLocalhost || isLocalhostOrigin) {
+    console.log('[Auth] Localhost detected, skipping JWT validation');
+    userEmail = 'dev@localhost';
+  } else {
+    // Require auth for production API endpoints
+    userEmail = await validateAccessJWT(request, env);
+    if (!userEmail) {
+      return new Response('Unauthorized', { 
+        status: 401,
+        headers: corsHeaders
+      });
+    }
   }
 
   // Bucket Management Routes
   if (url.pathname.startsWith('/api/buckets')) {
     console.log('[Buckets] Handling bucket operation');
+    
+    // In local development without credentials, return mock data
+    const isLocalDev = (isLocalhost || isLocalhostOrigin) && (!env.ACCOUNT_ID || !env.CF_EMAIL || !env.API_KEY);
+    
     const cfHeaders = {
       'X-Auth-Email': env.CF_EMAIL,
       'X-Auth-Key': env.API_KEY,
@@ -362,6 +384,28 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
       // List buckets
       if (request.method === 'GET' && url.pathname === '/api/buckets') {
         console.log('[Buckets] Listing buckets');
+        
+        // Mock response for local development
+        if (isLocalDev) {
+          console.log('[Buckets] Using mock data for local development');
+          return new Response(JSON.stringify({
+            result: { 
+              buckets: [
+                {
+                  name: 'dev-bucket',
+                  creation_date: new Date().toISOString(),
+                  size: 0
+                }
+              ]
+            }
+          }), {
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+        
         const response = await fetch(
           CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets',
           { headers: cfHeaders }
@@ -1991,11 +2035,23 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     });
   }
 
-  // Serve frontend assets
-  try {
-    console.log('[Assets] Serving frontend asset');
-    return await env.ASSETS.fetch(request);
-  } catch {
+  // Serve frontend assets (only in production)
+  // In development, frontend is served by Vite on port 5173
+  if (env.ASSETS) {
+    try {
+      console.log('[Assets] Serving frontend asset');
+      return await env.ASSETS.fetch(request);
+    } catch {
+      return new Response('Not Found', { status: 404 });
+    }
+  } else {
+    // Development mode: redirect to Vite server
+    if (isLocalhost || isLocalhostOrigin) {
+      return new Response('Development mode: Frontend is served by Vite on http://localhost:5173', { 
+        status: 200,
+        headers: { 'Content-Type': 'text/plain' }
+      });
+    }
     return new Response('Not Found', { status: 404 });
   }
 }

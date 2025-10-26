@@ -1,0 +1,35 @@
+# Development-only Wrangler Configuration
+# This config skips the frontend build for faster development
+
+name = "r2"
+main = "worker/index.ts"
+compatibility_date = "2025-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Smart Placement disabled for SPA - UI responsiveness priority
+placement = { mode = "off" }
+
+# No build command for development - frontend runs separately on Vite
+# [build]
+# command = "npm run build"
+# cwd = "."
+
+# Assets served by Vite dev server (localhost:5173) during development
+# [assets]
+# directory = "dist"
+# binding = "ASSETS"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "r2-bucket"
+preview_bucket_name = "r2-bucket"  # Using same bucket for dev (will be prompted to create preview if needed)
+
+[[d1_databases]]
+binding = "DB"
+database_name = "r2manager"
+database_id = "7c4e1036-b1ee-4aaa-b0b2-20ca3fe6e3d9"
+preview_database_id = "7c4e1036-b1ee-4aaa-b0b2-20ca3fe6e3d9"  # Using same DB for dev
+
+[observability.logs]
+enabled = true
+

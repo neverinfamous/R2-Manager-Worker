@@ -46,3 +46,4 @@ export const auth = new AuthService()
 
 // Initialize auth service
 auth.initialize()
+
