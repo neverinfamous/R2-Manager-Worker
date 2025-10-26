@@ -196,5 +196,5 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: ${{ env.IMAGE_NAME }}
         readme-filepath: ./DOCKER_README.md
-        short-description: "Modern R2 bucket manager for Cloudflare with enterprise auth - 1.0"
+        short-description: "Manage Cloudflare R2 buckets — drag-drop uploads, batch copy/move/delete, share links, GitHub SSO"
 
