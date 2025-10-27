@@ -10,12 +10,14 @@ import { detectExtensions, EXTENSION_GROUPS, SIZE_PRESETS, DATE_PRESETS, getFile
 import { formatFileSize, getFileExtension, isImageFile, isVideoFile } from './utils/fileUtils'
 import { getFileTypeIcon, getFolderIcon } from './components/filegrid/FileTypeIcon'
 import { VideoPlayer } from './components/filegrid/VideoPlayer'
-// TODO: Integrate these components into the main FileGrid component:
-// import { CreateFolderModal } from './components/filegrid/CreateFolderModal'
-// import { TransferModal } from './components/filegrid/TransferModal'
-// import { RenameModal } from './components/filegrid/RenameModal'
-// import { Breadcrumb } from './components/filegrid/Breadcrumb'
-// import { ContextMenu } from './components/filegrid/ContextMenu'
+import { CreateFolderModal } from './components/filegrid/CreateFolderModal'
+import { TransferModal } from './components/filegrid/TransferModal'
+import { RenameModal } from './components/filegrid/RenameModal'
+import { Breadcrumb } from './components/filegrid/Breadcrumb'
+import { ContextMenu } from './components/filegrid/ContextMenu'
+import { SortDropdown } from './components/filegrid/SortDropdown'
+import { TransferDropdown } from './components/filegrid/TransferDropdown'
+import { BucketDropdown } from './components/filegrid/BucketDropdown'
 
 interface FileObject {
   key: string
@@ -905,16 +907,6 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     }
   }, [bucketName, newFolderName, currentPath, onFilesChange])
 
-  const getBreadcrumbs = useCallback(() => {
-    if (!currentPath) return []
-    const parts = currentPath.split('/').filter(Boolean)
-    const breadcrumbs = parts.map((part, index) => ({
-      name: part,
-      path: parts.slice(0, index + 1).join('/')
-    }))
-    return breadcrumbs
-  }, [currentPath])
-
   const handleCopySignedUrl = useCallback(async (fileName: string, event: React.MouseEvent) => {
     event.stopPropagation()
     
@@ -1267,32 +1259,13 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
           {(selectedFiles.length > 0 || selectedFolders.length > 0) && (
             <>
-              <div className={`transfer-dropdown-container ${transferDropdownOpen ? 'open' : ''}`}>
-                <button 
-                  ref={transferButtonRef}
-                  className="action-button transfer-button"
-                  onClick={handleTransferButtonClick}
-                >
-                  Transfer
-                  <span className="dropdown-arrow">▼</span>
-                </button>
-                {transferDropdownOpen && dropdownPosition && (
-                  <div 
-                    className="transfer-dropdown-menu"
-                    style={{
-                      top: `${dropdownPosition.top}px`,
-                      left: `${dropdownPosition.left}px`
-                    }}
-                  >
-                   <button onClick={() => openTransferDialog('copy')}>
-                      Copy to...
-                    </button>
-                    <button onClick={() => openTransferDialog('move')}>
-                      Move to...
-                    </button>                    
-                  </div>
-                )}
-              </div>
+              <TransferDropdown 
+                isOpen={transferDropdownOpen}
+                position={dropdownPosition}
+                onToggle={handleTransferButtonClick}
+                onCopy={() => openTransferDialog('copy')}
+                onMove={() => openTransferDialog('move')}
+              />
               <button 
                 onClick={handleDelete}
                 className="action-button delete-button"
@@ -1310,71 +1283,24 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
             {availableBuckets && availableBuckets.length > 1 && (
-              <div className={`bucket-nav-dropdown-container ${bucketDropdownOpen ? 'open' : ''}`}>
-                <button 
-                  ref={bucketButtonRef}
-                  className="action-button bucket-nav-button"
-                  onClick={handleBucketButtonClick}
-                  title="Navigate to another bucket"
-                >
-                  <span>Jump to Bucket</span>
-                  <span className="dropdown-arrow">▼</span>
-                </button>
-                {bucketDropdownOpen && bucketDropdownPosition && (
-                  <div 
-                    className="bucket-nav-dropdown-menu"
-                    style={{
-                      top: `${bucketDropdownPosition.top}px`,
-                      left: `${bucketDropdownPosition.left}px`
-                    }}
-                  >
-                    {availableBuckets.map(bucket => (
-                      <button 
-                        key={bucket}
-                        onClick={() => handleBucketSelect(bucket)}
-                        className={bucket === bucketName ? 'current-bucket' : ''}
-                        disabled={bucket === bucketName}
-                      >
-                        {bucket}
-                        {bucket === bucketName && <span className="current-indicator"> (current)</span>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <BucketDropdown 
+                isOpen={bucketDropdownOpen}
+                position={bucketDropdownPosition}
+                currentBucket={bucketName}
+                availableBuckets={availableBuckets}
+                onToggle={handleBucketButtonClick}
+                onSelect={handleBucketSelect}
+              />
             )}
-            <div className={`sort-dropdown-container ${sortDropdownOpen ? 'open' : ''}`}>
-              <button 
-                ref={sortButtonRef}
-                className="action-button sort-button-combined"
-                onClick={handleSortButtonClick}
-              >
-                <span>{getSortLabel()}</span>
-                <span className="sort-direction-indicator">{sortState.direction === 'asc' ? '▲' : '▼'}</span>
-              </button>
-              {sortDropdownOpen && sortDropdownPosition && (
-                <div 
-                  className="sort-dropdown-menu"
-                  style={{
-                    top: `${sortDropdownPosition.top}px`,
-                    left: `${sortDropdownPosition.left}px`
-                  }}
-                >
-                  <button onClick={() => updateSortState('name')}>
-                    Name {sortState.field === 'name' && (sortState.direction === 'asc' ? '▲' : '▼')}
-                  </button>
-                  <button onClick={() => updateSortState('size')}>
-                    Size {sortState.field === 'size' && (sortState.direction === 'asc' ? '▲' : '▼')}
-                  </button>
-                  <button onClick={() => updateSortState('type')}>
-                    Type {sortState.field === 'type' && (sortState.direction === 'asc' ? '▲' : '▼')}
-                  </button>
-                  <button onClick={() => updateSortState('uploaded')}>
-                    Uploaded {sortState.field === 'uploaded' && (sortState.direction === 'asc' ? '▲' : '▼')}
-                  </button>
-                </div>
-              )}
-            </div>
+            <SortDropdown 
+              isOpen={sortDropdownOpen}
+              position={sortDropdownPosition}
+              currentField={sortState.field}
+              currentDirection={sortState.direction}
+              onToggle={handleSortButtonClick}
+              onSortChange={updateSortState}
+              getSortLabel={getSortLabel}
+            />
             <button
               onClick={toggleViewMode}
               className="view-mode-toggle-button"
@@ -1412,51 +1338,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       {infoMessage && <div className="info-message">{infoMessage}</div>}
 
       {/* Breadcrumb Navigation */}
-      {currentPath && (
-        <div style={{ 
-          padding: '10px 0', 
-          marginBottom: '10px',
-          borderBottom: '1px solid #333',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '5px',
-          fontSize: '14px'
-        }}>
-          <button
-            onClick={() => handleBreadcrumbClick('')}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#4a9eff',
-              cursor: 'pointer',
-              padding: '4px 8px',
-              fontSize: '14px'
-            }}
-          >
-            🏠 Root
-          </button>
-          {getBreadcrumbs().map((crumb, index) => (
-            <span key={crumb.path} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-              <span style={{ color: '#666' }}>›</span>
-              <button
-                onClick={() => handleBreadcrumbClick(crumb.path)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: index === getBreadcrumbs().length - 1 ? '#fff' : '#4a9eff',
-                  cursor: index === getBreadcrumbs().length - 1 ? 'default' : 'pointer',
-                  padding: '4px 8px',
-                  fontSize: '14px',
-                  fontWeight: index === getBreadcrumbs().length - 1 ? 'bold' : 'normal'
-                }}
-                disabled={index === getBreadcrumbs().length - 1}
-              >
-                {crumb.name}
-              </button>
-            </span>
-          ))}
-        </div>
-      )}
+      <Breadcrumb currentPath={currentPath} onNavigate={handleBreadcrumbClick} />
 
       {paginationState.isInitialLoad ? (
         <div className="loading-state">Loading...</div>
@@ -1813,228 +1695,67 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
       {/* Create Folder Modal */}
       {showCreateFolderModal && (
-        <div className="modal-overlay" onClick={() => !isCreatingFolder && setShowCreateFolderModal(false)}>
-          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2>Create New Folder</h2>
-            {currentPath && <p>In: <strong>{bucketName}/{currentPath}</strong></p>}
-            {!currentPath && <p>In: <strong>{bucketName}</strong></p>}
-            
-            <div className="bucket-selector">
-              <label htmlFor="new-folder-name">Folder name:</label>
-              <input
-                id="new-folder-name"
-                type="text"
-                value={newFolderName}
-                onChange={(e) => setNewFolderName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newFolderName.trim()) {
-                    handleCreateFolder()
-                  }
-                }}
-                disabled={isCreatingFolder}
-                placeholder="Enter folder name"
-                autoFocus
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  fontSize: '14px',
-                  border: '1px solid #444',
-                  borderRadius: '4px',
-                  backgroundColor: '#2a2a2a',
-                  color: '#fff'
-                }}
-              />
-              <p style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>
-                Use letters, numbers, hyphens, underscores, and forward slashes for nested folders
-              </p>
-            </div>
-
-            <div className="modal-actions">
-              <button
-                className="modal-button cancel"
-                onClick={() => {
-                  setShowCreateFolderModal(false)
-                  setNewFolderName('')
-                }}
-                disabled={isCreatingFolder}
-              >
-                Cancel
-              </button>
-              <button
-                className="modal-button"
-                onClick={handleCreateFolder}
-                disabled={!newFolderName.trim() || isCreatingFolder}
-                style={{ backgroundColor: '#2a7d2e' }}
-              >
-                {isCreatingFolder ? 'Creating...' : 'Create Folder'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <CreateFolderModal
+          show={true}
+          bucketName={bucketName}
+          currentPath={currentPath}
+          newFolderName={newFolderName}
+          isCreating={isCreatingFolder}
+          onClose={() => {
+            setShowCreateFolderModal(false)
+            setNewFolderName('')
+          }}
+          onFolderNameChange={setNewFolderName}
+          onSubmit={handleCreateFolder}
+        />
       )}
 
-      {transferState?.isDialogOpen && (
-        <div className="modal-overlay" onClick={() => !isTransferring && setTransferState(null)}>
-          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2>{transferState.mode === 'move' ? 'Move' : 'Copy'} {selectedFiles.length + selectedFolders.length} Item(s)</h2>
-            <p>From bucket: <strong>{bucketName}</strong></p>
-            {currentPath && <p>From folder: <strong>{currentPath}</strong></p>}
-            
-            <div className="bucket-selector">
-              <label htmlFor="destination-bucket-select">Select destination bucket:</label>
-              <select
-                id="destination-bucket-select"
-                value={transferState.targetBucket || ''}
-                onChange={(e) => setTransferState(prev => prev ? { ...prev, targetBucket: e.target.value || null } : null)}
-                disabled={isTransferring}
-              >
-                <option value="">-- Choose a bucket --</option>
-                {availableBuckets?.map(bucket => (
-                  <option key={bucket} value={bucket}>{bucket}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className="bucket-selector">
-              <label htmlFor="destination-path-input">Destination folder path (optional):</label>
-              <input
-                id="destination-path-input"
-                type="text"
-                value={transferState.targetPath}
-                onChange={(e) => setTransferState(prev => prev ? { ...prev, targetPath: e.target.value } : null)}
-                disabled={isTransferring}
-                placeholder="e.g., images/thumbnails or leave empty for root"
-                style={{
-                  width: '100%',
-                  padding: '8px',
-                  fontSize: '14px',
-                  border: '1px solid #444',
-                  borderRadius: '4px',
-                  backgroundColor: '#2a2a2a',
-                  color: '#fff'
-                }}
-              />
-              <p style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>
-                Leave empty to transfer to the root folder. End with / for folders.
-              </p>
-            </div>
-
-            {isTransferring && (
-              <div className="move-progress">
-                <p>{infoMessage}</p>
-                <div className="progress-bar">
-                  <div className="progress-fill"></div>
-                </div>
-              </div>
-            )}
-
-            <div className="modal-actions">
-              <button
-                className="modal-button cancel"
-                onClick={() => setTransferState(null)}
-                disabled={isTransferring}
-              >
-                Cancel
-              </button>
-              <button
-                className={`modal-button ${transferState.mode === 'move' ? 'move' : 'copy'}`}
-                onClick={handleTransferFiles}
-                disabled={!transferState.targetBucket || isTransferring}
-              >
-                {isTransferring 
-                  ? (transferState.mode === 'move' ? 'Moving...' : 'Copying...') 
-                  : (transferState.mode === 'move' ? 'Move Files' : 'Copy Files')
-                }
-              </button>
-            </div>
-          </div>
-        </div>
+      {transferState?.isDialogOpen && transferState.mode && (
+        <TransferModal
+          show={true}
+          mode={transferState.mode}
+          bucketName={bucketName}
+          currentPath={currentPath}
+          selectedCount={selectedFiles.length + selectedFolders.length}
+          availableBuckets={availableBuckets || []}
+          targetBucket={transferState.targetBucket}
+          targetPath={transferState.targetPath}
+          isTransferring={isTransferring}
+          infoMessage={infoMessage}
+          onClose={() => setTransferState(null)}
+          onTargetBucketChange={(bucket: string | null) => setTransferState(prev => prev ? { ...prev, targetBucket: bucket } : null)}
+          onTargetPathChange={(path: string) => setTransferState(prev => prev ? { ...prev, targetPath: path } : null)}
+          onSubmit={handleTransferFiles}
+        />
       )}
 
-      {contextMenu?.show && (
-        <>
-          <div 
-            className="context-menu-overlay" 
-            onClick={() => setContextMenu(null)}
-          />
-          <div 
-            className="context-menu"
-            style={{
-              position: 'fixed',
-              top: `${contextMenu.y}px`,
-              left: `${contextMenu.x}px`,
-              zIndex: 1000
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button onClick={() => startRename(contextMenu.itemType, contextMenu.itemKey)}>
-              ✏️ Rename
-            </button>
-            {contextMenu.itemType === 'file' && (
-              <button onClick={(e) => {
-                handleCopySignedUrl(contextMenu.itemKey, e)
-                setContextMenu(null)
-              }}>
-                🔗 Copy Link
-              </button>
-            )}
-          </div>
-        </>
-      )}
+      <ContextMenu 
+        show={contextMenu?.show || false}
+        x={contextMenu?.x || 0}
+        y={contextMenu?.y || 0}
+        itemType={contextMenu?.itemType || 'file'}
+        onClose={() => setContextMenu(null)}
+        onRename={() => startRename(contextMenu!.itemType, contextMenu!.itemKey)}
+        onCopyLink={contextMenu?.itemType === 'file' ? (e?: React.MouseEvent) => {
+          handleCopySignedUrl(contextMenu!.itemKey, e || {} as React.MouseEvent)
+          setContextMenu(null)
+        } : undefined}
+      />
 
       {renameState && (
-        <div className="modal-overlay" onClick={() => setRenameState(null)}>
-          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2>Rename {renameState.itemType === 'file' ? 'File' : 'Folder'}</h2>
-            
-            <div className="rename-input-container">
-              <div className="rename-current-name-section">
-                <span className="rename-label">Current name:</span>
-                <p className="current-name">{renameState.itemKey.split('/').pop()}</p>
-              </div>
-              
-              <label htmlFor="rename-new-name">New name:</label>
-              <input
-                id="rename-new-name"
-                name="rename-new-name"
-                type="text"
-                value={renameState.newName}
-                onChange={(e) => setRenameState(prev => 
-                  prev ? { ...prev, newName: e.target.value, error: '' } : null
-                )}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleRenameSubmit()
-                  if (e.key === 'Escape') setRenameState(null)
-                }}
-                autoFocus
-                placeholder="Enter new name"
-                aria-label="New name"
-                aria-describedby={renameState.error ? 'rename-error' : undefined}
-              />
-              
-              {renameState.error && (
-                <p id="rename-error" className="error-message" role="alert">{renameState.error}</p>
-              )}
-            </div>
-
-            <div className="modal-actions">
-              <button 
-                className="modal-button cancel"
-                onClick={() => setRenameState(null)}
-                disabled={renameState.isRenaming}
-              >
-                Cancel
-              </button>
-              <button
-                className="modal-button"
-                onClick={handleRenameSubmit}
-                disabled={!renameState.newName.trim() || renameState.isRenaming}
-              >
-                {renameState.isRenaming ? 'Renaming...' : 'Rename'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <RenameModal
+          show={true}
+          itemType={renameState.itemType}
+          itemKey={renameState.itemKey}
+          newName={renameState.newName}
+          error={renameState.error}
+          isRenaming={renameState.isRenaming}
+          onClose={() => setRenameState(null)}
+          onNewNameChange={(value: string) => setRenameState(prev => 
+            prev ? { ...prev, newName: value, error: '' } : null
+          )}
+          onSubmit={handleRenameSubmit}
+        />
       )}
 
       {process.env.NODE_ENV === 'development' && (
