@@ -538,6 +538,37 @@
   transform: scale(1.1);
 }
 
+/* Bucket list controls */
+.bucket-list-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+  padding: 0 0.5rem;
+}
+
+.deselect-all-button {
+  padding: 0.5rem 1rem;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.deselect-all-button:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+}
+
+.deselect-all-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* Bulk Action Toolbar */
 .bulk-action-toolbar {
   display: flex;

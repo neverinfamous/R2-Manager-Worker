@@ -4,7 +4,7 @@ import { SearchResultsTable } from './SearchResultsTable'
 import { ExtensionFilter } from '../filters/ExtensionFilter'
 import { SizeFilter } from '../filters/SizeFilter'
 import { DateFilter } from '../filters/DateFilter'
-import { detectExtensions, SIZE_PRESETS, DATE_PRESETS } from '../../utils/filterUtils'
+import { detectExtensions, SIZE_PRESETS, DATE_PRESETS, EXTENSION_GROUPS } from '../../utils/filterUtils'
 import type { SizeFilter as SizeFilterType, DateFilter as DateFilterType } from '../../types/filters'
 
 interface CrossBucketSearchProps {
@@ -59,9 +59,19 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
   }, [filters.extensions, setExtensions])
 
   const handleExtensionGroupSelect = useCallback((groupName: string) => {
-    // This will be handled by the ExtensionFilter component
-    console.log('Group selected:', groupName)
-  }, [])
+    const groupExtensions = EXTENSION_GROUPS[groupName as keyof typeof EXTENSION_GROUPS] || []
+    const availableInGroup = groupExtensions.filter(ext => availableExtensions.has(ext))
+    
+    // Toggle: if all are selected, deselect; otherwise select all
+    const allSelected = availableInGroup.every(ext => filters.extensions.includes(ext))
+    
+    if (allSelected) {
+      setExtensions(filters.extensions.filter(e => !availableInGroup.includes(e)))
+    } else {
+      const newExtensions = [...new Set([...filters.extensions, ...availableInGroup])]
+      setExtensions(newExtensions)
+    }
+  }, [availableExtensions, filters.extensions, setExtensions])
 
   const handleSizePresetChange = useCallback((preset: SizeFilterType['preset']) => {
     if (preset === 'all') {

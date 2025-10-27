@@ -1,12 +1,12 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** October 27, 2025 | **Status:** ✅ Production Ready | **Version:** 1.1.0  
+**Last Updated:** October 27, 2025 | **Status:** ✅ Production Ready | **Version:** 1.2.0  
 **Tech Stack:** React 19.2.0 | Vite 7.1.12 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v1.1.0-green)
+![Version](https://img.shields.io/badge/version-v1.2.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
@@ -51,6 +51,7 @@ Cloudflare's dashboard lacks the full-featured R2 file management capabilities. 
 
 ## ✨ Features
 
+- 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering (NEW in v1.2.0)
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
 - 📄 **File Management** - Rename files via right-click context menu with validation
@@ -225,6 +226,61 @@ R2 Bucket Manager supports selecting and force deleting multiple buckets at once
 - Streamline bucket management workflow
 
 **Note:** Like individual bucket deletion, bulk delete uses force deletion which permanently removes all files within each bucket before deleting the bucket itself. This operation cannot be undone.
+
+---
+
+## 🔎 Cross-Bucket Search (NEW in v1.2.0)
+
+R2 Bucket Manager now supports searching for files across all buckets from the main page, making it easy to find files regardless of which bucket they're stored in.
+
+### How to Use
+
+1. **Open Search** - Click "🔍 Search Across All Buckets" button on the main page
+2. **Enter Query** - Type filename to search (searches automatically after 300ms)
+3. **Apply Filters** - Use extension, size, and date filters to narrow results
+4. **View Results** - Results displayed in sortable table with bucket names
+5. **Take Action** - Download, move, copy, or delete files directly from results
+6. **Clear/Close** - Click "Clear All" to reset filters and collapse search panel
+
+### Search Features
+
+- **Real-time Search** - Debounced search activates automatically as you type
+- **Server-side Performance** - Searches all buckets in parallel for fast results
+- **Advanced Filters**:
+  - **Extensions** - Filter by file type (Images, Documents, Videos, Code, Archives, or custom)
+  - **Size** - Preset ranges (< 1 MB, 1-10 MB, etc.) or custom min/max
+  - **Date** - Preset ranges (Today, Last 7/30/90 Days, This Year) or custom range
+- **Sortable Table** - Click column headers to sort by filename, bucket, size, or date
+- **Bucket Navigation** - Click bucket badge to navigate directly to that bucket
+- **Full File Operations**:
+  - Download files with signed URLs
+  - Move files between buckets with folder selection
+  - Copy files between buckets with folder selection
+  - Delete files with confirmation
+
+### Search Interface
+
+- **Expandable Design** - Collapsed by default, doesn't clutter the main page
+- **Result Counter** - Shows number of matching files when collapsed
+- **Clear All Button** - One-click to reset all filters and close search
+- **Loading States** - Visual feedback during search operations
+- **Empty States** - Helpful messages when no results found
+- **Responsive Layout** - Works on mobile, tablet, and desktop
+
+### Use Cases
+
+- Find a file when you don't remember which bucket it's in
+- Locate all images of a certain type across multiple projects
+- Find large files (>100 MB) to identify storage usage
+- Search for files uploaded within a specific date range
+- Perform bulk operations on files from multiple buckets
+
+### Performance
+
+- Server-side parallel queries for optimal speed
+- Searches across thousands of files in seconds
+- Results limited to 100 files per search (configurable)
+- Minimal impact on bundle size (+0.1 kB gzipped)
 
 ---
 

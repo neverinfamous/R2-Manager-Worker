@@ -57,6 +57,9 @@
   padding: 1.5rem;
   border-top: 1px solid var(--border-color);
   animation: slideDown 0.3s ease;
+  overflow: visible;
+  position: relative;
+  z-index: 10;
 }
 
 @keyframes slideDown {
@@ -102,6 +105,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
+  position: relative;
+  z-index: 10;
 }
 
 .clear-all-button {
