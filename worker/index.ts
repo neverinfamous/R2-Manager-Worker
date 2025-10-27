@@ -38,7 +38,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     if (await validateSignature(request, env)) {
       const pathParts = url.pathname.split('/');
       const bucketName = pathParts[3];
-      const fileName = decodeURIComponent(pathParts[5]);
+      // Get everything after /download/ to support nested folders
+      const fileName = pathParts.slice(5).map(part => decodeURIComponent(part)).join('/');
 
       console.log('[Download] Attempting download:', {
         bucket: bucketName,
