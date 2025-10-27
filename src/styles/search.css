@@ -5,7 +5,7 @@
   border: 1px solid var(--border-color);
   border-radius: 0.5rem;
   background: var(--bg-secondary);
-  overflow: hidden;
+  overflow: visible;
   transition: all 0.3s ease;
 }
 
@@ -78,6 +78,9 @@
   flex-direction: column;
   gap: 1rem;
   margin-bottom: 1.5rem;
+  overflow: visible;
+  position: relative;
+  z-index: 20;
 }
 
 .search-input-group {

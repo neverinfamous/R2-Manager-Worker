@@ -544,16 +544,6 @@ export default function BucketManager() {
 
           <CrossBucketSearch onNavigateToBucket={handleBucketNavigate} />
 
-          <div className="bucket-list-controls">
-            <button
-              onClick={clearBucketSelection}
-              className="deselect-all-button"
-              disabled={selectedBuckets.length === 0}
-            >
-              Deselect All
-            </button>
-          </div>
-
           {selectedBuckets.length > 0 && (
             <div className="bulk-action-toolbar">
               <div className="bulk-action-info">
