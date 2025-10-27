@@ -862,12 +862,14 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         setFailedImages(new Set())
       }
       
-      // Trigger refresh first to reload file list with new filenames
+      // Close rename modal first
+      setRenameState(null)
+      
+      // Then trigger refresh to reload file list with new filenames
+      // The refresh will fetch fresh signed URLs for all files
       setShouldRefresh(true)
       onFilesChange?.()
       
-      // Close rename modal and show success message after triggering refresh
-      setRenameState(null)
       setInfoMessage(`${renameState.itemType === 'file' ? 'File' : 'Folder'} renamed successfully`)
       setTimeout(() => setInfoMessage(''), 3000)
     } catch (err) {
@@ -1215,8 +1217,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             const isVideo = isVideoFile(file.key)
             const isSelected = selectedFiles.includes(file.key)
             const checkboxId = `file-select-${file.key}`
-            // Don't use cached fileObject.url to avoid stale signed URLs after rename
-            const fileUrl = api.getFileUrl(bucketName, file.key)
+            const fileUrl = api.getFileUrl(bucketName, file.key, file)
             
             return (
               <div
@@ -1439,7 +1440,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {isImageFile(file.key) && !failedImages.has(file.key) ? (
                           <img 
-                            src={api.getFileUrl(bucketName, file.key)}
+                            src={api.getFileUrl(bucketName, file.key, file)}
                             alt={file.key}
                             style={{ width: '32px', height: '32px', objectFit: 'cover' }}
                             onError={() => handleImageError(file.key)}
