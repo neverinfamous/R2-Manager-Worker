@@ -1,5 +1,4 @@
 import { useCallback, useState, useEffect, useRef, useMemo } from 'react'
-import type { JSX } from 'react'
 import { api } from './services/api'
 import { ExtensionFilter } from './components/filters/ExtensionFilter'
 import { SizeFilter } from './components/filters/SizeFilter'
@@ -11,11 +10,12 @@ import { detectExtensions, EXTENSION_GROUPS, SIZE_PRESETS, DATE_PRESETS, getFile
 import { formatFileSize, getFileExtension, isImageFile, isVideoFile } from './utils/fileUtils'
 import { getFileTypeIcon, getFolderIcon } from './components/filegrid/FileTypeIcon'
 import { VideoPlayer } from './components/filegrid/VideoPlayer'
-import { CreateFolderModal } from './components/filegrid/CreateFolderModal'
-import { TransferModal } from './components/filegrid/TransferModal'
-import { RenameModal } from './components/filegrid/RenameModal'
-import { Breadcrumb } from './components/filegrid/Breadcrumb'
-import { ContextMenu } from './components/filegrid/ContextMenu'
+// TODO: Integrate these components into the main FileGrid component:
+// import { CreateFolderModal } from './components/filegrid/CreateFolderModal'
+// import { TransferModal } from './components/filegrid/TransferModal'
+// import { RenameModal } from './components/filegrid/RenameModal'
+// import { Breadcrumb } from './components/filegrid/Breadcrumb'
+// import { ContextMenu } from './components/filegrid/ContextMenu'
 
 interface FileObject {
   key: string
