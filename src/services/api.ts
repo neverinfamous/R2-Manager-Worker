@@ -88,7 +88,47 @@ class APIService {
         'video/webm',
         'video/x-msvideo',
         'video/x-ms-wmv',
-        'video/x-matroska'
+        'video/x-matroska',
+        'video/mpeg',
+        'video/x-flv',
+        'video/ogg',
+        'video/3gpp',
+        'video/3gpp2'
+      ]
+    },
+    audio: {
+      maxSize: 100 * 1024 * 1024, // 100MB
+      description: 'Audio',
+      accept: [
+        'audio/mpeg',
+        'audio/mp3',
+        'audio/wav',
+        'audio/x-wav',
+        'audio/wave',
+        'audio/ogg',
+        'audio/flac',
+        'audio/x-flac',
+        'audio/aac',
+        'audio/x-aac',
+        'audio/m4a',
+        'audio/x-m4a',
+        'audio/webm',
+        'audio/opus'
+      ]
+    },
+    font: {
+      maxSize: 10 * 1024 * 1024, // 10MB
+      description: 'Fonts',
+      accept: [
+        'font/ttf',
+        'font/otf',
+        'font/woff',
+        'font/woff2',
+        'application/font-woff',
+        'application/font-woff2',
+        'application/x-font-ttf',
+        'application/x-font-otf',
+        'application/vnd.ms-fontobject'
       ]
     },
     document: {
@@ -268,6 +308,12 @@ class APIService {
       'webp': 'image', 'avif': 'image', 'heic': 'image', 'svg': 'image', 'bmp': 'image', 'psd': 'image',
       // Videos
       'mp4': 'video', 'mov': 'video', 'webm': 'video', 'avi': 'video', 'wmv': 'video', 'mkv': 'video',
+      'mpeg': 'video', 'mpg': 'video', 'mpeg4': 'video', 'flv': 'video', 'ogg': 'video', 'ogv': 'video', 
+      '3gp': 'video', '3g2': 'video', 'm4v': 'video',
+      // Audio
+      'mp3': 'audio', 'wav': 'audio', 'flac': 'audio', 'aac': 'audio', 'm4a': 'audio', 'oga': 'audio', 'opus': 'audio',
+      // Fonts
+      'ttf': 'font', 'otf': 'font', 'woff': 'font', 'woff2': 'font', 'eot': 'font',
       // Documents
       'pdf': 'document', 'doc': 'document', 'docx': 'document',
       'xls': 'document', 'xlsx': 'document', 'ppt': 'document', 'pptx': 'document',

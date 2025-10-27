@@ -78,6 +78,7 @@ Cloudflare's dashboard lacks the full-featured R2 file management capabilities. 
 **Accepted file types and size limits:**
 
 - **Archives** (7Z, GZ, RAR, TAR, ZIP) - up to 500MB
+- **Audio** (AAC, FLAC, M4A, MP3, OGG, OPUS, WAV) - up to 100MB
 - **Code** (CSS, GO, HTML, Java, JS, Rust, TS, Python, etc.) - up to 10MB
 - **Config & Metadata** (CONF, ENV, INI, JSON, JSONC, LOCK, TOML, etc.) - up to 10MB
 - **Data Formats** (AVRO, FEATHER, NDJSON) - up to 50MB
@@ -85,9 +86,10 @@ Cloudflare's dashboard lacks the full-featured R2 file management capabilities. 
 - **Dev Environment** (Dockerfile, editorconfig, .gitignore, nvmrc, etc.) - up to 1MB
 - **Documents** (CSV, Excel, Markdown, PDF, PowerPoint, TXT, Word, etc.) - up to 50MB
 - **Documentation** (NFO) - up to 10MB
+- **Fonts** (EOT, OTF, TTF, WOFF, WOFF2) - up to 10MB
 - **Images** (AVIF, BMP, GIF, HEIC, JPG, PNG, PSD, SVG, WebP) - up to 15MB
 - **Jupyter Notebooks** (.ipynb) - up to 10MB
-- **Videos** (AVI, MKV, MOV, MP4, WebM, WMV) - up to 500MB
+- **Videos** (3GP, AVI, FLV, M4V, MKV, MOV, MP4, MPEG, OGG, WebM, WMV) - up to 500MB
 
 ---
 

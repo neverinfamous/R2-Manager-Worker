@@ -239,11 +239,35 @@ export const getFileTypeIcon = (filename: string): JSX.Element => {
   }
 
   // Video file icons - for formats that don't play reliably in browsers
-  if (ext === 'avi' || ext === 'wmv' || ext === 'mkv') {
+  if (ext === 'avi' || ext === 'wmv' || ext === 'mkv' || ext === 'flv' || 
+      ext === 'mpeg' || ext === 'mpg' || ext === 'mpeg4' || ext === '3gp' || ext === '3g2' || ext === 'm4v') {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
         <rect x="2" y="6" width="20" height="12" rx="2" />
         <polygon points="10 9 10 15 15 12" fill="currentColor" />
+      </svg>
+    )
+  }
+
+  // Audio file icons
+  if (ext === 'mp3' || ext === 'wav' || ext === 'flac' || ext === 'aac' || 
+      ext === 'm4a' || ext === 'oga' || ext === 'opus') {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M9 18V5l12-2v13" />
+        <circle cx="6" cy="18" r="3" />
+        <circle cx="18" cy="16" r="3" />
+      </svg>
+    )
+  }
+
+  // Font file icons
+  if (ext === 'ttf' || ext === 'otf' || ext === 'woff' || ext === 'woff2' || ext === 'eot') {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M4 7V4h16v3" />
+        <path d="M9 20h6" />
+        <path d="M12 4v16" />
       </svg>
     )
   }

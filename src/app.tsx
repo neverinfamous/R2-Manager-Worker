@@ -834,6 +834,7 @@ export default function BucketManager() {
                       <p>Accepted file types and size limits:</p>
                       <ul>
                         <li>Archives (7Z, GZ, RAR, TAR, ZIP) - up to 500MB</li>
+                        <li>Audio (AAC, FLAC, M4A, MP3, OGG, OPUS, WAV) - up to 100MB</li>
                         <li>Code (CSS, GO, HTML, Java, JS, Rust, TS, Python, etc.) - up to 10MB</li>
                         <li>Config & Metadata (CONF, ENV, INI, JSON, JSONC, LOCK, TOML, etc.) - up to 10MB</li>
                         <li>Data Formats (AVRO, FEATHER, NDJSON) - up to 50MB</li>
@@ -841,9 +842,10 @@ export default function BucketManager() {
                         <li>Dev Environment (Dockerfile, editorconfig, .gitignore, nvmrc, etc.) - up to 1MB</li>
                         <li>Documents (CSV, Excel, Markdown, PDF, PowerPoint, TXT, Word, etc.) - up to 50MB</li>
                         <li>Documentation (NFO) - up to 10MB</li>
+                        <li>Fonts (EOT, OTF, TTF, WOFF, WOFF2) - up to 10MB</li>
                         <li>Images (AVIF, BMP, GIF, HEIC, JPG, PNG, PSD, SVG, WebP) - up to 15MB</li>
                         <li>Jupyter Notebooks (.ipynb) - up to 10MB</li>
-                        <li>Videos (AVI, MKV, MOV, MP4, WebM, WMV) - up to 500MB</li>
+                        <li>Videos (3GP, AVI, FLV, M4V, MKV, MOV, MP4, MPEG, OGG, WebM, WMV) - up to 500MB</li>
                       </ul>
                     </div>
                   </div>
