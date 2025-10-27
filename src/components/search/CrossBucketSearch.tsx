@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { useSearch } from '../../hooks/useSearch'
 import { SearchResultsTable } from './SearchResultsTable'
 import { ExtensionFilter } from '../filters/ExtensionFilter'
@@ -34,10 +34,8 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
     sortResults
   } = useSearch()
 
-  // Detect available extensions from results
-  const [availableExtensions, setAvailableExtensions] = useState<Map<string, number>>(new Map())
-
-  useEffect(() => {
+  // Detect available extensions from results using useMemo
+  const availableExtensions = useMemo(() => {
     // Convert SearchResult[] to FileObject[] format for detectExtensions
     const fileObjects = results.map(r => ({
       key: r.key,
@@ -45,8 +43,7 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
       uploaded: r.uploaded,
       url: r.url
     }))
-    const extensions = detectExtensions(fileObjects)
-    setAvailableExtensions(extensions)
+    return detectExtensions(fileObjects)
   }, [results])
 
   const handleToggleExpand = useCallback(() => {
