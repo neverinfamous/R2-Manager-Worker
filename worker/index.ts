@@ -444,6 +444,23 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
       if (request.method === 'POST' && url.pathname === '/api/buckets') {
         const body = await request.json();
         console.log('[Buckets] Creating bucket:', body.name);
+        
+        // Mock response for local development
+        if (isLocalDev) {
+          console.log('[Buckets] Simulating bucket creation for local development');
+          return new Response(JSON.stringify({
+            result: {
+              name: body.name,
+              creation_date: new Date().toISOString()
+            }
+          }), {
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
+        
         const response = await fetch(
           CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets',
           {
@@ -627,6 +644,22 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const body = await request.json();
         const newBucketName = body.newName?.trim();
         console.log('[Buckets] Rename request:', oldBucketName, '->', newBucketName);
+        
+        // Mock response for local development
+        if (isLocalDev) {
+          console.log('[Buckets] Simulating bucket rename for local development');
+          return new Response(JSON.stringify({ 
+            success: true, 
+            newName: newBucketName 
+          }), { 
+            status: 200, 
+            headers: { 
+              'Content-Type': 'application/json', 
+              ...corsHeaders 
+            } 
+          });
+        }
+        
         // Zero Trust: All authenticated users can manage all buckets
         try {
           console.log('[Buckets] Creating new bucket:', newBucketName);
@@ -719,6 +752,9 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     const bucketName = parts[3];
     
     // Zero Trust: All authenticated users can access all buckets
+    
+    // In local development without credentials, return mock data
+    const isLocalDev = (isLocalhost || isLocalhostOrigin) && (!env.ACCOUNT_ID || !env.CF_EMAIL || !env.API_KEY);
 
     const cfHeaders = {
       'X-Auth-Email': env.CF_EMAIL,
@@ -781,6 +817,25 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         const limit = parseInt(url.searchParams.get('limit') || '20');
         const skipCache = url.searchParams.get('skipCache') === 'true';
         const prefix = url.searchParams.get('prefix');
+        
+        // Mock response for local development
+        if (isLocalDev) {
+          console.log('[Files] Using mock data for local development');
+          return new Response(JSON.stringify({
+            objects: [],
+            folders: [],
+            pagination: {
+              cursor: null,
+              hasMore: false
+            }
+          }), {
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': skipCache ? 'no-cache' : 'public, max-age=60',
+              ...corsHeaders
+            }
+          });
+        }
         
         let apiUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects'
           + '?include=customMetadata,httpMetadata'
@@ -936,6 +991,23 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           'file=' + fileName,
           'chunk=' + (chunkIndex + 1) + '/' + totalChunks
         );
+
+        // Mock response for local development
+        if (isLocalDev) {
+          console.log('[Files] Simulating upload success for local development');
+          const uploadTimestamp = new Date().toISOString();
+          return new Response(JSON.stringify({ 
+            success: true,
+            key: decodeURIComponent(fileName),
+            timestamp: uploadTimestamp
+          }), { 
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache',
+              ...corsHeaders
+            }
+          });
+        }
 
         const decodedFileName = decodeURIComponent(fileName);
         const uploadUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + decodedFileName;
@@ -1399,6 +1471,9 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     const parts = url.pathname.split('/');
     const bucketName = parts[3];
     
+    // In local development without credentials, return mock data
+    const isLocalDev = (isLocalhost || isLocalhostOrigin) && (!env.ACCOUNT_ID || !env.CF_EMAIL || !env.API_KEY);
+    
     const cfHeaders = {
       'X-Auth-Email': env.CF_EMAIL,
       'X-Auth-Key': env.API_KEY
@@ -1436,6 +1511,20 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
 
         // Ensure folder path ends with /
         const folderPath = folderName.endsWith('/') ? folderName : folderName + '/';
+        
+        // Mock response for local development
+        if (isLocalDev) {
+          console.log('[Folders] Simulating folder creation for local development');
+          return new Response(JSON.stringify({ 
+            success: true, 
+            folderPath 
+          }), {
+            headers: {
+              'Content-Type': 'application/json',
+              ...corsHeaders
+            }
+          });
+        }
         
         // Create a placeholder .keep file
         const keepFilePath = folderPath + '.keep';

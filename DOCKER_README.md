@@ -209,6 +209,19 @@ const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki', 'inte
 
 ## 🏗️ Local Development with Docker
 
+### Mock Operations in Development Mode
+
+When running without Cloudflare credentials, the development server returns simulated responses for UI testing:
+
+- ✅ **List buckets** - Returns `dev-bucket`
+- ✅ **Create bucket** - Simulates success
+- ✅ **Rename bucket** - Simulates success
+- ✅ **List files** - Returns empty array
+- ✅ **Upload files** - Simulates success (files not stored)
+- ✅ **Create folders** - Simulates success
+
+**Note:** Mock data enables UI/UX testing without Cloudflare API access. Files and folders are not actually stored. For full functionality with real storage, provide Cloudflare credentials or deploy to production.
+
 ### Option 1: Use Pre-built Image
 
 **Step 1: Pull the image**

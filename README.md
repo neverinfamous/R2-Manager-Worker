@@ -295,8 +295,20 @@ Open your browser to `http://localhost:5173` - the frontend will automatically c
 
 - **Authentication:** Automatically disabled for localhost requests
 - **CORS:** Configured to allow `http://localhost:5173` with credentials
-- **Data:** Returns mock bucket data (no real Cloudflare API calls)
+- **Mock Data:** Returns simulated responses (no real Cloudflare API calls)
 - **No Secrets Required:** Works without `ACCOUNT_ID`, `CF_EMAIL`, or `API_KEY`
+
+### Mock Operations in Local Development
+
+The following operations return simulated success responses for UI testing:
+- ✅ List buckets (returns `dev-bucket`)
+- ✅ Create bucket
+- ✅ Rename bucket
+- ✅ List files (returns empty array)
+- ✅ Upload files (simulates success, files not stored)
+- ✅ Create folders
+
+**Note:** Files and folders are not actually stored. Local development is for UI/UX testing only. For full functionality, deploy to Cloudflare Workers.
 
 **📖 For more details, see the [Development Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Development-Guide).**
 
