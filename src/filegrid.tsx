@@ -1,12 +1,10 @@
-import { useCallback, useState, useEffect, useRef, useMemo } from 'react'
+import { useCallback, useState, useEffect, useRef } from 'react'
 import { api } from './services/api'
 import { ExtensionFilter } from './components/filters/ExtensionFilter'
 import { SizeFilter } from './components/filters/SizeFilter'
 import { DateFilter } from './components/filters/DateFilter'
 import { ActiveFilterBadges } from './components/filters/ActiveFilterBadges'
 import { FilterStats } from './components/filters/FilterStats'
-import type { SizeFilter as SizeFilterType, DateFilter as DateFilterType } from './types/filters'
-import { detectExtensions, EXTENSION_GROUPS, SIZE_PRESETS, DATE_PRESETS, getFileExtension as getFileExt, calculateFilterStats } from './utils/filterUtils'
 import { formatFileSize, getFileExtension, isImageFile, isVideoFile } from './utils/fileUtils'
 import { getFileTypeIcon, getFolderIcon } from './components/filegrid/FileTypeIcon'
 import { VideoPlayer } from './components/filegrid/VideoPlayer'
@@ -18,6 +16,9 @@ import { ContextMenu } from './components/filegrid/ContextMenu'
 import { SortDropdown } from './components/filegrid/SortDropdown'
 import { TransferDropdown } from './components/filegrid/TransferDropdown'
 import { BucketDropdown } from './components/filegrid/BucketDropdown'
+import { useFileSort } from './hooks/useFileSort'
+import { useModalState } from './hooks/useModalState'
+import { useFileFilters } from './hooks/useFileFilters'
 
 interface FileObject {
   key: string
@@ -70,14 +71,6 @@ enum ViewMode {
   List = 'list'
 }
 
-type SortField = 'name' | 'size' | 'type' | 'uploaded'
-type SortDirection = 'asc' | 'desc'
-
-interface SortState {
-  field: SortField
-  direction: SortDirection
-}
-
 const ITEMS_PER_PAGE = 1000 // Fetch all files in one request (R2 API supports up to 1000)
 const INTERSECTION_THRESHOLD = 0.5
 const DEBOUNCE_DELAY = 250
@@ -97,17 +90,12 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   })
   const [isCreatingFolder, setIsCreatingFolder] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
-  const [showCreateFolderModal, setShowCreateFolderModal] = useState(false)
   const [paginationState, setPaginationState] = useState<PaginationState>({
     isLoading: false,
     hasError: false,
     isInitialLoad: true
   })
   const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Preview)
-  const [sortState, setSortState] = useState<SortState>({
-    field: 'uploaded',
-    direction: 'desc'
-  })
   const [shouldRefresh, setShouldRefresh] = useState(false)
   const [transferState, setTransferState] = useState<{
     isDialogOpen: boolean
@@ -118,122 +106,86 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     progress: number
   } | null>(null)
   const [isTransferring, setIsTransferring] = useState(false)
-  const [transferDropdownOpen, setTransferDropdownOpen] = useState(false)
-  const [sortDropdownOpen, setSortDropdownOpen] = useState(false)
-  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null)
-  const [sortDropdownPosition, setSortDropdownPosition] = useState<{ top: number; left: number } | null>(null)
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set())
-  const [bucketDropdownOpen, setBucketDropdownOpen] = useState(false)
-  const [bucketDropdownPosition, setBucketDropdownPosition] = useState<{ top: number; left: number } | null>(null)
   const [copyingUrl, setCopyingUrl] = useState<string | null>(null)
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null)
-  const [filterText, setFilterText] = useState<string>('')
-  const [filterType, setFilterType] = useState<'all' | 'files' | 'folders'>('all')
-  
-  // Advanced filter state
-  const [selectedExtensions, setSelectedExtensions] = useState<string[]>([])
-  const [availableExtensions, setAvailableExtensions] = useState<Map<string, number>>(new Map())
-  const [extensionDropdownOpen, setExtensionDropdownOpen] = useState(false)
-  const [sizeFilter, setSizeFilter] = useState<SizeFilterType>({
-    min: null,
-    max: null,
-    preset: 'all'
-  })
-  const [sizeDropdownOpen, setSizeDropdownOpen] = useState(false)
-  const [dateFilter, setDateFilter] = useState<DateFilterType>({
-    start: null,
-    end: null,
-    preset: 'all'
-  })
-  const [dateDropdownOpen, setDateDropdownOpen] = useState(false)
-
-  const [contextMenu, setContextMenu] = useState<{
-    show: boolean
-    x: number
-    y: number
-    itemType: 'file' | 'folder'
-    itemKey: string
-  } | null>(null)
-
-  const [renameState, setRenameState] = useState<{
-    isRenaming: boolean
-    itemType: 'file' | 'folder'
-    itemKey: string
-    newName: string
-    error: string
-  } | null>(null)
 
   const gridRef = useRef<HTMLDivElement>(null)
   const transferButtonRef = useRef<HTMLButtonElement>(null)
-  const sortButtonRef = useRef<HTMLButtonElement>(null)
   const bucketButtonRef = useRef<HTMLButtonElement>(null)
   const lastSelectedRef = useRef<string | null>(null)
   const loadingRef = useRef<LoadingState>({ isLoading: false })
   const mountedRef = useRef<boolean>(true)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadingTriggerRef = useRef<HTMLDivElement>(null)
-  const sortedFilesRef = useRef<FileObject[]>([])
   const debounceTimerRef = useRef<number | undefined>(undefined)
   const refreshTimeoutRef = useRef<number | undefined>(undefined)
 
-  // Update available extensions when files change
-  useEffect(() => {
-    const extensions = detectExtensions(paginatedFiles.objects)
-    setAvailableExtensions(extensions)
-  }, [paginatedFiles.objects])
+  // Use custom hooks
+  const {
+    sortState,
+    sortDropdownOpen,
+    sortDropdownPosition,
+    sortButtonRef,
+    sortedFilesRef,
+    sortFiles,
+    updateSortState,
+    handleSortButtonClick,
+    getSortLabel,
+    setSortDropdownOpen
+  } = useFileSort()
 
-  // Computed filtered results with advanced filters
-  const filteredFiles = useMemo(() => {
-    const hasAdvancedFilters = selectedExtensions.length > 0 || sizeFilter.preset !== 'all' || dateFilter.preset !== 'all'
-    
-    if (!filterText && filterType === 'all' && !hasAdvancedFilters) {
-      return paginatedFiles.objects
-    }
-    
-    return paginatedFiles.objects.filter(file => {
-      // Text filter
-      const fileName = file.key.split('/').pop() || file.key
-      const matchesText = !filterText || fileName.toLowerCase().includes(filterText.toLowerCase())
-      
-      // Type filter
-      const matchesType = filterType === 'all' || filterType === 'files'
-      
-      // Extension filter
-      const fileExt = getFileExt(file.key).toLowerCase()
-      const matchesExtension = selectedExtensions.length === 0 || selectedExtensions.includes(fileExt)
-      
-      // Size filter
-      const matchesSize = 
-        (sizeFilter.min === null || file.size >= sizeFilter.min) &&
-        (sizeFilter.max === null || file.size <= sizeFilter.max)
-      
-      // Date filter
-      const fileDate = new Date(file.uploaded)
-      const matchesDate = 
-        (dateFilter.start === null || fileDate >= dateFilter.start) &&
-        (dateFilter.end === null || fileDate <= dateFilter.end)
-      
-      return matchesText && matchesType && matchesExtension && matchesSize && matchesDate
-    })
-  }, [paginatedFiles.objects, filterText, filterType, selectedExtensions, sizeFilter, dateFilter])
+  const {
+    showCreateFolderModal,
+    setShowCreateFolderModal,
+    transferDropdownOpen,
+    setTransferDropdownOpen,
+    bucketDropdownOpen,
+    setBucketDropdownOpen,
+    extensionDropdownOpen,
+    setExtensionDropdownOpen,
+    sizeDropdownOpen,
+    setSizeDropdownOpen,
+    dateDropdownOpen,
+    setDateDropdownOpen,
+    dropdownPosition,
+    setDropdownPosition,
+    bucketDropdownPosition,
+    setBucketDropdownPosition,
+    contextMenu,
+    setContextMenu,
+    renameState,
+    setRenameState
+  } = useModalState()
 
-  const filteredFolders = useMemo(() => {
-    if (!filterText && filterType === 'all') return paginatedFiles.folders
-    
-    return paginatedFiles.folders.filter(folder => {
-      const matchesText = folder.name.toLowerCase().includes(filterText.toLowerCase())
-      const matchesType = filterType === 'all' || filterType === 'folders'
-      return matchesText && matchesType
-    })
-  }, [paginatedFiles.folders, filterText, filterType])
-
-  const filteredCount = filteredFiles.length + filteredFolders.length
-  const totalCount = paginatedFiles.objects.length + paginatedFiles.folders.length
-  
-  // Calculate filter statistics
-  const filterStats = useMemo(() => {
-    return calculateFilterStats(filteredFiles)
-  }, [filteredFiles])
+  const {
+    filterText,
+    setFilterText,
+    filterType,
+    setFilterType,
+    selectedExtensions,
+    availableExtensions,
+    sizeFilter,
+    dateFilter,
+    filteredFiles,
+    filteredFolders,
+    filteredCount,
+    totalCount,
+    filterStats,
+    handleExtensionToggle,
+    handleExtensionGroupSelect,
+    handleSizePresetChange,
+    handleCustomSizeRange,
+    handleDatePresetChange,
+    handleCustomDateRange,
+    clearAllFilters,
+    setSelectedExtensions,
+    setSizeFilter,
+    setDateFilter
+  } = useFileFilters({
+    files: paginatedFiles.objects,
+    folders: paginatedFiles.folders
+  })
 
   useEffect(() => {
     mountedRef.current = true
@@ -269,7 +221,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       document.addEventListener('click', handleClickOutside)
       return () => document.removeEventListener('click', handleClickOutside)
     }
-  }, [transferDropdownOpen, sortDropdownOpen, bucketDropdownOpen])
+  }, [transferDropdownOpen, sortDropdownOpen, bucketDropdownOpen, setSortDropdownOpen, setTransferDropdownOpen, setBucketDropdownOpen])
 
   // Close context menu when clicking outside or pressing Escape
   useEffect(() => {
@@ -303,7 +255,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       document.addEventListener('keydown', handleEscape)
       return () => document.removeEventListener('keydown', handleEscape)
     }
-  }, [contextMenu, renameState])
+  }, [contextMenu, renameState, setContextMenu, setRenameState])
 
   // Prevent browser context menu on file grid items
   useEffect(() => {
@@ -334,41 +286,6 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   const handleImageError = useCallback((fileName: string) => {
     setFailedImages(prev => new Set(prev).add(fileName))
   }, [])
-
-  const sortFiles = useCallback((files: FileObject[]) => {
-    return [...files].sort((a, b) => {
-      let result = 0
-
-      switch (sortState.field) {
-        case 'name':
-          result = a.key.localeCompare(b.key, undefined, {
-            numeric: true,
-            sensitivity: 'base'
-          })
-          break
-        case 'size':
-          result = a.size - b.size
-          break
-        case 'type': {
-          const typeA = getFileExtension(a.key)
-          const typeB = getFileExtension(b.key)
-          result = typeA.localeCompare(typeB)
-          if (result === 0) {
-            result = a.key.localeCompare(b.key)
-          }
-          break
-        }
-        case 'uploaded': {
-          const dateA = new Date(a.uploaded).getTime()
-          const dateB = new Date(b.uploaded).getTime()
-          result = dateA - dateB
-          break
-        }
-      }
-
-      return sortState.direction === 'asc' ? result : -result
-    })
-  }, [sortState])
 
   const loadFiles = useCallback(async (reset: boolean = false) => {
     if (!bucketName || loadingRef.current.isLoading) return
@@ -457,6 +374,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     } finally {
       loadingRef.current = { isLoading: false, lastRequestTime: now }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bucketName, paginatedFiles.cursor, sortFiles, shouldRefresh, currentPath])
 
   useEffect(() => {
@@ -533,11 +451,6 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       isInitialLoad: true
     })
     
-    setSortState({
-      field: 'uploaded',
-      direction: 'desc'
-    })
-    
     // Reset path to root when bucket changes
     onPathChange?.('')
     
@@ -583,6 +496,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     }
     
     lastSelectedRef.current = key
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleRowClick = useCallback((key: string, event: React.MouseEvent) => {
@@ -770,7 +684,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       progress: 0
     })
     setTransferDropdownOpen(false)
-  }, [])
+  }, [setTransferDropdownOpen])
 
   const handleTransferButtonClick = useCallback(() => {
     if (!transferDropdownOpen && transferButtonRef.current) {
@@ -781,7 +695,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       })
     }
     setTransferDropdownOpen(!transferDropdownOpen)
-  }, [transferDropdownOpen])
+  }, [transferDropdownOpen, setDropdownPosition, setTransferDropdownOpen])
 
   const selectedFileObjects = paginatedFiles.objects.filter(f => selectedFiles.includes(f.key))
   const totalSelectedSize = selectedFileObjects.reduce((sum, file) => sum + file.size, 0)
@@ -805,35 +719,6 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     )
   }, [])
 
-  const updateSortState = useCallback((field: SortField) => {
-    setSortState(prev => ({
-      field,
-      direction: prev.field === field && prev.direction === 'asc' ? 'desc' : 'asc'
-    }))
-    setSortDropdownOpen(false)
-  }, [])
-
-  const handleSortButtonClick = useCallback(() => {
-    if (!sortDropdownOpen && sortButtonRef.current) {
-      const rect = sortButtonRef.current.getBoundingClientRect()
-      setSortDropdownPosition({
-        top: rect.bottom + 4,
-        left: rect.left
-      })
-    }
-    setSortDropdownOpen(!sortDropdownOpen)
-  }, [sortDropdownOpen])
-
-  const getSortLabel = useCallback(() => {
-    const fieldLabels: Record<SortField, string> = {
-      name: 'Name',
-      size: 'Size',
-      type: 'Type',
-      uploaded: 'Uploaded'
-    }
-    return fieldLabels[sortState.field]
-  }, [sortState])
-
   const handleBucketButtonClick = useCallback(() => {
     if (!bucketDropdownOpen && bucketButtonRef.current) {
       const rect = bucketButtonRef.current.getBoundingClientRect()
@@ -843,7 +728,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       })
     }
     setBucketDropdownOpen(!bucketDropdownOpen)
-  }, [bucketDropdownOpen])
+  }, [bucketDropdownOpen, setBucketDropdownOpen, setBucketDropdownPosition])
 
   const handleBucketSelect = useCallback((selectedBucket: string) => {
     if (selectedBucket === bucketName) {
@@ -855,7 +740,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     if (onBucketNavigate) {
       onBucketNavigate(selectedBucket)
     }
-  }, [bucketName, onBucketNavigate])
+  }, [bucketName, onBucketNavigate, setBucketDropdownOpen])
 
   const handleFolderNavigation = useCallback((folderPath: string) => {
     // Ensure the folder path ends with / for proper prefix filtering
@@ -905,7 +790,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     } finally {
       setIsCreatingFolder(false)
     }
-  }, [bucketName, newFolderName, currentPath, onFilesChange])
+  }, [bucketName, newFolderName, currentPath, onFilesChange, setShowCreateFolderModal])
 
   const handleCopySignedUrl = useCallback(async (fileName: string, event: React.MouseEvent) => {
     event.stopPropagation()
@@ -943,97 +828,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       error: ''
     })
     setContextMenu(null)
-  }, [])
-
-  // Advanced filter handlers
-  const handleExtensionToggle = useCallback((extension: string) => {
-    setSelectedExtensions(prev => 
-      prev.includes(extension)
-        ? prev.filter(e => e !== extension)
-        : [...prev, extension]
-    )
-  }, [])
-
-  const handleExtensionGroupSelect = useCallback((groupName: string) => {
-    const groupExtensions = EXTENSION_GROUPS[groupName as keyof typeof EXTENSION_GROUPS] || []
-    const availableInGroup = groupExtensions.filter(ext => availableExtensions.has(ext))
-    
-    // Toggle: if all are selected, deselect; otherwise select all
-    const allSelected = availableInGroup.every(ext => selectedExtensions.includes(ext))
-    
-    if (allSelected) {
-      setSelectedExtensions(prev => prev.filter(e => !availableInGroup.includes(e)))
-    } else {
-      setSelectedExtensions(prev => {
-        const newSet = new Set([...prev, ...availableInGroup])
-        return Array.from(newSet)
-      })
-    }
-  }, [availableExtensions, selectedExtensions])
-
-  const handleSizePresetChange = useCallback((preset: SizeFilterType['preset']) => {
-    if (preset === 'all') {
-      setSizeFilter({ min: null, max: null, preset: 'all' })
-    } else if (preset === 'custom') {
-      // Custom is handled by handleCustomSizeRange
-      return
-    } else {
-      const presetValues = SIZE_PRESETS[preset as keyof typeof SIZE_PRESETS]
-      if (presetValues) {
-        setSizeFilter({
-          min: presetValues.min,
-          max: presetValues.max,
-          preset
-        })
-      }
-    }
-    setSizeDropdownOpen(false)
-  }, [])
-
-  const handleCustomSizeRange = useCallback((minMB: number, maxMB: number | null) => {
-    setSizeFilter({
-      min: minMB * 1024 * 1024,
-      max: maxMB !== null ? maxMB * 1024 * 1024 : null,
-      preset: 'custom'
-    })
-    setSizeDropdownOpen(false)
-  }, [])
-
-  const handleDatePresetChange = useCallback((preset: DateFilterType['preset']) => {
-    if (preset === 'all') {
-      setDateFilter({ start: null, end: null, preset: 'all' })
-    } else if (preset === 'custom') {
-      // Custom is handled by handleCustomDateRange
-      return
-    } else {
-      const presetFn = DATE_PRESETS[preset as keyof typeof DATE_PRESETS]
-      if (presetFn) {
-        const range = typeof presetFn === 'function' ? presetFn() : presetFn
-        setDateFilter({
-          start: range.start,
-          end: range.end,
-          preset
-        })
-      }
-    }
-    setDateDropdownOpen(false)
-  }, [])
-
-  const handleCustomDateRange = useCallback((start: Date | null, end: Date | null) => {
-    setDateFilter({
-      start,
-      end,
-      preset: 'custom'
-    })
-    setDateDropdownOpen(false)
-  }, [])
-
-  const clearAllFilters = useCallback(() => {
-    setFilterText('')
-    setSelectedExtensions([])
-    setSizeFilter({ min: null, max: null, preset: 'all' })
-    setDateFilter({ start: null, end: null, preset: 'all' })
-  }, [])
+  }, [setContextMenu, setRenameState])
 
   const handleRenameSubmit = useCallback(async () => {
     if (!renameState) return
@@ -1076,7 +871,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         error: err instanceof Error ? err.message : 'Rename failed'
       } : null)
     }
-  }, [renameState, bucketName, onFilesChange])
+  }, [renameState, bucketName, onFilesChange, setRenameState])
 
   return (
     <div className="file-grid-container">
