@@ -27,10 +27,10 @@ jobs:
         node-version: ['20', '22']
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     
     - name: Set up Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
@@ -56,7 +56,7 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
@@ -188,7 +188,7 @@ jobs:
     # Update Docker Hub description (optional - can be done manually)
     - name: Update Docker Hub Description
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      uses: peter-evans/dockerhub-description@v4
+      uses: peter-evans/dockerhub-description@v5
       continue-on-error: true
       timeout-minutes: 5
       with:
