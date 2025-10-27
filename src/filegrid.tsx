@@ -1262,6 +1262,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
               <TransferDropdown 
                 isOpen={transferDropdownOpen}
                 position={dropdownPosition}
+                buttonRef={transferButtonRef}
                 onToggle={handleTransferButtonClick}
                 onCopy={() => openTransferDialog('copy')}
                 onMove={() => openTransferDialog('move')}

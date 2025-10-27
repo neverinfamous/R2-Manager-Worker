@@ -1,8 +1,9 @@
-import { useRef } from 'react'
+import { RefObject } from 'react'
 
 interface TransferDropdownProps {
   isOpen: boolean
   position: { top: number; left: number } | null
+  buttonRef: RefObject<HTMLButtonElement | null>
   onToggle: () => void
   onCopy: () => void
   onMove: () => void
@@ -11,12 +12,11 @@ interface TransferDropdownProps {
 export const TransferDropdown = ({
   isOpen,
   position,
+  buttonRef,
   onToggle,
   onCopy,
   onMove
 }: TransferDropdownProps) => {
-  const buttonRef = useRef<HTMLButtonElement>(null)
-
   return (
     <div className={`transfer-dropdown-container ${isOpen ? 'open' : ''}`}>
       <button 
