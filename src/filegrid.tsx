@@ -865,9 +865,9 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       // Close rename modal first
       setRenameState(null)
       
-      // Then trigger refresh to reload file list with new filenames
-      // The refresh will fetch fresh signed URLs for all files
-      setShouldRefresh(true)
+      // Manually trigger file refresh to get updated file list with new filenames and fresh signed URLs
+      // This is more reliable than using setShouldRefresh which is async
+      await loadFiles(true)
       onFilesChange?.()
       
       setInfoMessage(`${renameState.itemType === 'file' ? 'File' : 'Folder'} renamed successfully`)
@@ -880,7 +880,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         error: err instanceof Error ? err.message : 'Rename failed'
       } : null)
     }
-  }, [renameState, bucketName, onFilesChange, setRenameState])
+  }, [renameState, bucketName, onFilesChange, setRenameState, loadFiles])
 
   return (
     <div className="file-grid-container">
