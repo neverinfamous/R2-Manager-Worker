@@ -240,7 +240,8 @@ export const getFileTypeIcon = (filename: string): JSX.Element => {
 
   // Video file icons - for formats that don't play reliably in browsers
   if (ext === 'avi' || ext === 'wmv' || ext === 'mkv' || ext === 'flv' || 
-      ext === 'mpeg' || ext === 'mpg' || ext === 'mpeg4' || ext === '3gp' || ext === '3g2' || ext === 'm4v') {
+      ext === 'mpeg' || ext === 'mpg' || ext === 'mpeg4' || ext === '3gp' || ext === '3g2' || ext === 'm4v' ||
+      ext === 'ogg' || ext === 'ogv') {
     return (
       <svg xmlns="http://www.w3.org/2000/svg" className="file-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
         <rect x="2" y="6" width="20" height="12" rx="2" />

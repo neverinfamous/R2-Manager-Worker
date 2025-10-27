@@ -23,8 +23,8 @@ export const isImageFile = (filename: string): boolean => {
 export const isVideoFile = (filename: string): boolean => {
   const ext = getFileExtension(filename)
   // Only return true for formats that reliably play in HTML5 video element
-  // Other formats (AVI, WMV, MKV, FLV, MPEG, 3GP) often use codecs not supported by browsers
+  // Other formats (AVI, WMV, MKV, FLV, MPEG, 3GP, OGG, OGV) often use codecs not supported by browsers
   // These will still show the proper video icon but won't attempt HTML5 preview
-  return ['mp4', 'mov', 'webm', 'ogg', 'ogv'].includes(ext)
+  return ['mp4', 'mov', 'webm'].includes(ext)
 }
 
