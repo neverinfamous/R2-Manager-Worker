@@ -1,6 +1,6 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** October 27, 2025 | **Status:** ✅ Production Ready | **Version:** 1.2.0  
+**Last Updated:** October 27, 2025 | **Version:** 1.2.0  
 **Tech Stack:** React 19.2.0 | Vite 7.1.12 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
@@ -91,13 +91,13 @@ docker run -p 8787:8787 -v "/path/to/wrangler.toml:/app/wrangler.toml" writenote
 | Tag | Description | Use Case |
 |-----|-------------|----------|
 | `latest` | Latest stable release | **Recommended for testing** |
-| `v1.0` | Specific version | Pin to exact version |
+| `v1.2.0` | Specific version | Pin to exact version |
 | `sha-abc1234` | Commit SHA (12-char short) | Development/traceability |
 
 **Pull a specific version:**
 
 ```bash
-docker pull writenotenow/r2-bucket-manager:v1.0
+docker pull writenotenow/r2-bucket-manager:v1.2.0
 ```
 
 ---
