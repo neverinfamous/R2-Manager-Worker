@@ -1,12 +1,12 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** October 27, 2025 | **Status:** ✅ Production Ready | **Version:** 1.0.1  
+**Last Updated:** October 27, 2025 | **Status:** ✅ Production Ready | **Version:** 1.1.0  
 **Tech Stack:** React 19.2.0 | Vite 7.1.12 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v1.0.1-green)
+![Version](https://img.shields.io/badge/version-v1.1.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
@@ -51,7 +51,7 @@ Cloudflare's dashboard lacks the full-featured R2 file management capabilities. 
 
 ## ✨ Features
 
-- 🪣 **Bucket Management** - Create, rename, and delete R2 buckets
+- 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
 - 📄 **File Management** - Rename files via right-click context menu with validation
 - 🔍 **Smart Filtering** - Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)
@@ -60,6 +60,7 @@ Cloudflare's dashboard lacks the full-featured R2 file management capabilities. 
 - 📥 **Bulk Downloads** - Download multiple files as ZIP archives
 - 🔗 **Shareable Links** - Generate signed URLs to share files securely
 - 🔄 **Advanced File Operations** - Move and copy files/folders between buckets and to specific folders within buckets
+- 🗑️ **Bulk Bucket Delete** - Select and force delete multiple buckets at once with progress tracking
 - 🧭 **Breadcrumb Navigation** - Navigate through folder hierarchies with ease
 - 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access Zero Trust
 - ⚡ **Edge Performance** - Deployed on Cloudflare's global network
@@ -188,6 +189,42 @@ R2 Bucket Manager supports both light and dark themes with automatic system pref
 - All colors managed via CSS custom properties
 - Mobile-friendly with responsive design
 - WCAG compliant color contrast ratios
+
+---
+
+## 🗑️ Bulk Bucket Deletion
+
+R2 Bucket Manager supports selecting and force deleting multiple buckets at once, making it easy to clean up test buckets or remove multiple buckets in a single operation.
+
+### How to Use
+
+1. **Select Buckets** - Click the checkbox in the top-left corner of each bucket card you want to delete
+2. **Review Selection** - The bulk action toolbar appears showing how many buckets are selected
+3. **Delete Selected** - Click the red "Delete Selected" button
+4. **Confirm** - Review the confirmation modal showing all buckets to be deleted and total file counts
+5. **Track Progress** - Watch the progress bar as buckets are deleted sequentially
+
+### Features
+
+- **Visual Selection** - Selected buckets are highlighted with a blue border and background
+- **Bulk Action Toolbar** - Shows selection count with "Clear Selection" and "Delete Selected" buttons
+- **Enhanced Confirmation Modal**:
+  - Lists all buckets to be deleted
+  - Shows total file count across all selected buckets
+  - Displays progress during deletion ("Deleting bucket X of Y...")
+  - Visual progress bar for real-time feedback
+- **Force Delete** - Automatically deletes all files within each bucket before removing the bucket
+- **Error Handling** - If one bucket fails to delete, the operation continues with remaining buckets
+- **Safety Features** - Clear warnings about permanent deletion that cannot be undone
+
+### Use Cases
+
+- Clean up multiple test or development buckets
+- Remove outdated project buckets in batch
+- Delete multiple empty buckets efficiently
+- Streamline bucket management workflow
+
+**Note:** Like individual bucket deletion, bulk delete uses force deletion which permanently removes all files within each bucket before deleting the bucket itself. This operation cannot be undone.
 
 ---
 

@@ -53,10 +53,13 @@ export default function BucketManager() {
   const [refreshTrigger, setRefreshTrigger] = useState(0)
   const [currentPath, setCurrentPath] = useState<string>('')
   const [deleteConfirmState, setDeleteConfirmState] = useState<{
-    bucketName: string | null
-    fileCount: number | null
+    bucketNames: string[]
+    totalFiles: number | null
     isDeleting: boolean
+    currentProgress?: { current: number; total: number }
   } | null>(null)
+  const [selectedBuckets, setSelectedBuckets] = useState<string[]>([])
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
   
   // Debug: Log currentPath changes
   useEffect(() => {
@@ -298,15 +301,15 @@ export default function BucketManager() {
           const files = await api.listFiles(name, undefined, 1000)
           const fileCount = files.objects.length
           setDeleteConfirmState({
-            bucketName: name,
-            fileCount,
+            bucketNames: [name],
+            totalFiles: fileCount,
             isDeleting: false
           })
         } catch {
           // If we can't get file count, show a generic count
           setDeleteConfirmState({
-            bucketName: name,
-            fileCount: null,
+            bucketNames: [name],
+            totalFiles: null,
             isDeleting: false
           })
         }
@@ -337,31 +340,110 @@ export default function BucketManager() {
     }
   }
 
-  const confirmForceBucketDelete = async () => {
-    if (!deleteConfirmState?.bucketName) return
+  const handleBulkDelete = async () => {
+    if (selectedBuckets.length === 0) return
+    
+    setIsBulkDeleting(true)
+    setError('')
+    
+    try {
+      // Get file counts for all selected buckets
+      let totalFiles = 0
+      const fileCounts: { [key: string]: number } = {}
+      
+      for (const bucketName of selectedBuckets) {
+        try {
+          const files = await api.listFiles(bucketName, undefined, 1000)
+          fileCounts[bucketName] = files.objects.length
+          totalFiles += files.objects.length
+        } catch {
+          // If we can't get file count, just continue
+          fileCounts[bucketName] = -1
+        }
+      }
+      
+      // Show confirmation modal
+      setDeleteConfirmState({
+        bucketNames: selectedBuckets,
+        totalFiles: totalFiles > 0 ? totalFiles : null,
+        isDeleting: false
+      })
+    } catch (err) {
+      setError('Failed to prepare bulk delete')
+      console.error('Bulk delete preparation error:', err)
+    } finally {
+      setIsBulkDeleting(false)
+    }
+  }
 
-    const bucketName = deleteConfirmState.bucketName
+  const confirmForceBucketDelete = async () => {
+    if (!deleteConfirmState?.bucketNames || deleteConfirmState.bucketNames.length === 0) return
+
+    const bucketNames = deleteConfirmState.bucketNames
     setError('')
     setDeleteConfirmState(prev => prev ? { ...prev, isDeleting: true } : null)
 
     try {
-      const response = await api.deleteBucket(bucketName, { force: true })
+      const errors: string[] = []
+      
+      for (let i = 0; i < bucketNames.length; i++) {
+        const bucketName = bucketNames[i]
+        
+        // Update progress
+        setDeleteConfirmState(prev => prev ? {
+          ...prev,
+          currentProgress: { current: i + 1, total: bucketNames.length }
+        } : null)
+        
+        try {
+          const response = await api.deleteBucket(bucketName, { force: true })
 
-      if (response.success) {
-        await loadBuckets()
-        if (selectedBucket === bucketName) {
-          setSelectedBucket(null)
+          if (!response.success) {
+            errors.push(`${bucketName}: ${response.error || 'Failed to delete'}`)
+          }
+          
+          // Clear from selected buckets if it was selected
+          if (selectedBucket === bucketName) {
+            setSelectedBucket(null)
+          }
+        } catch (err) {
+          errors.push(`${bucketName}: ${err instanceof Error ? err.message : 'Unknown error'}`)
+          console.error(`Force delete error for ${bucketName}:`, err)
         }
-        setDeleteConfirmState(null)
-      } else {
-        setError(response.error || 'Failed to delete bucket')
-        setDeleteConfirmState(prev => prev ? { ...prev, isDeleting: false } : null)
       }
+
+      // Reload buckets to reflect changes
+      await loadBuckets()
+      
+      // Clear selection
+      setSelectedBuckets([])
+      setIsBulkDeleting(false)
+      
+      // Show errors if any
+      if (errors.length > 0) {
+        setError(`Some buckets failed to delete:\n${errors.join('\n')}`)
+      }
+      
+      setDeleteConfirmState(null)
     } catch (err) {
-      setError('Failed to delete bucket')
+      setError('Failed to delete buckets')
       console.error('Force delete error:', err)
       setDeleteConfirmState(prev => prev ? { ...prev, isDeleting: false } : null)
     }
+  }
+  
+  const toggleBucketSelection = (bucketName: string) => {
+    setSelectedBuckets(prev => {
+      if (prev.includes(bucketName)) {
+        return prev.filter(name => name !== bucketName)
+      } else {
+        return [...prev, bucketName]
+      }
+    })
+  }
+  
+  const clearBucketSelection = () => {
+    setSelectedBuckets([])
   }
 
   const startEditingBucket = (bucketName: string) => {
@@ -459,11 +541,38 @@ export default function BucketManager() {
 
           {error && <div className="error-message">{error}</div>}
 
+          {selectedBuckets.length > 0 && (
+            <div className="bulk-action-toolbar">
+              <div className="bulk-action-info">
+                <span className="bulk-selection-count">
+                  {selectedBuckets.length} bucket{selectedBuckets.length !== 1 ? 's' : ''} selected
+                </span>
+              </div>
+              <div className="bulk-action-buttons">
+                <button
+                  onClick={clearBucketSelection}
+                  className="bulk-clear-button"
+                  disabled={isBulkDeleting}
+                >
+                  Clear Selection
+                </button>
+                <button
+                  onClick={handleBulkDelete}
+                  className="bulk-delete-button"
+                  disabled={isBulkDeleting}
+                >
+                  {isBulkDeleting ? 'Preparing...' : 'Delete Selected'}
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="bucket-grid">
             {buckets.map(bucket => {
               const isEditing = editingBucketName === bucket.name
+              const isSelected = selectedBuckets.includes(bucket.name)
               return (
-              <div key={bucket.name} className={`bucket-item ${isEditing ? 'editing' : ''}`}>
+              <div key={bucket.name} className={`bucket-item ${isEditing ? 'editing' : ''} ${isSelected ? 'selected' : ''}`}>
                 {isEditing ? (
                   <div className="bucket-edit-mode">
                     <input
@@ -500,6 +609,19 @@ export default function BucketManager() {
                   </div>
                 ) : (
                   <>
+                    <div className="bucket-checkbox-container">
+                      <input
+                        type="checkbox"
+                        className="bucket-checkbox"
+                        checked={isSelected}
+                        onChange={(e) => {
+                          e.stopPropagation()
+                          toggleBucketSelection(bucket.name)
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        aria-label={`Select ${bucket.name}`}
+                      />
+                    </div>
                     <div 
                       className="bucket-content"
                       onClick={() => setSelectedBucket(bucket.name)}
@@ -552,14 +674,53 @@ export default function BucketManager() {
       {deleteConfirmState && (
         <div className="modal-overlay" onClick={() => !deleteConfirmState.isDeleting && setDeleteConfirmState(null)}>
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2>Delete Non-Empty Bucket?</h2>
-            <p>
-              Bucket <strong>{deleteConfirmState.bucketName}</strong> contains{' '}
-              <strong>{deleteConfirmState.fileCount !== null ? deleteConfirmState.fileCount : 'multiple'}</strong> file(s).
-            </p>
+            <h2>
+              {deleteConfirmState.bucketNames.length === 1
+                ? 'Delete Non-Empty Bucket?'
+                : `Delete ${deleteConfirmState.bucketNames.length} Non-Empty Buckets?`}
+            </h2>
+            
+            {deleteConfirmState.bucketNames.length === 1 ? (
+              <p>
+                Bucket <strong>{deleteConfirmState.bucketNames[0]}</strong> contains{' '}
+                <strong>{deleteConfirmState.totalFiles !== null ? deleteConfirmState.totalFiles : 'multiple'}</strong> file(s).
+              </p>
+            ) : (
+              <>
+                <div className="bucket-list-in-modal">
+                  <p><strong>Buckets to delete:</strong></p>
+                  <ul>
+                    {deleteConfirmState.bucketNames.map(name => (
+                      <li key={name}>{name}</li>
+                    ))}
+                  </ul>
+                  {deleteConfirmState.totalFiles !== null && (
+                    <p className="total-files-count">
+                      Total files: <strong>{deleteConfirmState.totalFiles}</strong>
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
+            
             <p style={{ color: '#ff6b6b', fontWeight: 'bold' }}>
-              ⚠️ This will permanently delete all files and the bucket. This cannot be undone.
+              ⚠️ This will permanently delete all files and {deleteConfirmState.bucketNames.length === 1 ? 'the bucket' : 'these buckets'}. This cannot be undone.
             </p>
+            
+            {deleteConfirmState.isDeleting && deleteConfirmState.currentProgress && (
+              <div className="bulk-delete-progress">
+                <p>Deleting bucket {deleteConfirmState.currentProgress.current} of {deleteConfirmState.currentProgress.total}...</p>
+                <div className="progress-bar">
+                  <div 
+                    className="progress-bar-fill"
+                    style={{ 
+                      width: `${(deleteConfirmState.currentProgress.current / deleteConfirmState.currentProgress.total) * 100}%` 
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+            
             <div className="modal-actions">
               <button
                 className="modal-button cancel"
@@ -573,7 +734,11 @@ export default function BucketManager() {
                 onClick={confirmForceBucketDelete}
                 disabled={deleteConfirmState.isDeleting}
               >
-                {deleteConfirmState.isDeleting ? 'Deleting...' : 'Delete Bucket & All Files'}
+                {deleteConfirmState.isDeleting 
+                  ? 'Deleting...' 
+                  : deleteConfirmState.bucketNames.length === 1
+                    ? 'Delete Bucket & All Files'
+                    : `Delete ${deleteConfirmState.bucketNames.length} Buckets & All Files`}
               </button>
             </div>
           </div>

@@ -1,12 +1,12 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** October 27, 2025 | **Status:** ✅ Production Ready | **Version:** 1.0.1  
+**Last Updated:** October 27, 2025 | **Status:** ✅ Production Ready | **Version:** 1.1.0  
 **Tech Stack:** React 19.2.0 | Vite 7.1.12 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v1.0.1-green)
+![Version](https://img.shields.io/badge/version-v1.1.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 
@@ -104,7 +104,7 @@ docker pull writenotenow/r2-bucket-manager:v1.0
 
 ## ✨ Features
 
-- 🪣 **Bucket Management** - Create, rename, and delete R2 buckets
+- 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders
 - 📄 **File Management** - Rename files via context menu
 - 🔍 **Smart Filtering** - Real-time filtering by filename/folder name
@@ -113,6 +113,7 @@ docker pull writenotenow/r2-bucket-manager:v1.0
 - 📥 **Bulk Downloads** - Download multiple files as ZIP
 - 🔗 **Shareable Links** - Generate signed URLs
 - 🔄 **Advanced Operations** - Move/copy between buckets
+- 🗑️ **Bulk Bucket Delete** - Select and force delete multiple buckets at once with progress tracking
 - 🧭 **Breadcrumb Navigation** - Easy folder traversal
 - 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access
 - 🌓 **Light/Dark Mode** - System, light, or dark themes
@@ -312,7 +313,14 @@ See the [Installation & Setup Guide](https://github.com/neverinfamous/R2-Manager
 
 ## 🆕 Recent Updates
 
-### v1.0 (October 24, 2025) 🎉
+### v1.1.0 (October 27, 2025) 🎉
+- ✅ **Bulk Bucket Deletion** - Select and delete multiple buckets at once
+- ✅ **Progress Tracking** - Visual progress bar during bulk operations
+- ✅ **Enhanced Modal** - Lists all buckets and total file counts
+- ✅ **Code Refactoring** - Improved maintainability with custom hooks
+- ✅ **Bug Fixes** - Fixed file rename operations and context menu issues
+
+### v1.0 (October 24, 2025)
 - ✅ **Initial Release** - Production-ready R2 bucket manager
 - ✅ **Docker Support** - Containerized development environment
 - ✅ **Advanced Filtering** - Extension, size, and date filters
