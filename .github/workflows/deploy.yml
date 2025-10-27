@@ -4,12 +4,18 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:  # Allow manual deployments
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      deployments: write  # Required for creating deployments
+    
+    environment:
+      name: production
+      url: https://r2.adamic.tech
 
     steps:
       - name: Checkout code
@@ -24,8 +30,19 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Build application
+        run: npm run build
+
       - name: Deploy to Cloudflare Workers
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
+      
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "✅ Successfully deployed to production"
+          echo "🌐 URL: https://r2.adamic.tech"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "👤 Deployed by: ${{ github.actor }}"

@@ -53,6 +53,18 @@ jobs:
   build:
     runs-on: ubuntu-latest
     needs: test  # Only build if tests pass
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+      pull-requests: write
+      id-token: write
+      attestations: write
+      deployments: write  # Required for deployment tracking
+    
+    environment:
+      name: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && 'production' || '' }}
+      url: https://hub.docker.com/r/writenotenow/r2-bucket-manager
 
     steps:
     - name: Checkout repository
@@ -197,4 +209,13 @@ jobs:
         repository: ${{ env.IMAGE_NAME }}
         readme-filepath: ./DOCKER_README.md
         short-description: "Manage Cloudflare R2 buckets — drag-drop uploads, batch copy/move/delete, share links, GitHub SSO"
+    
+    - name: Deployment Summary
+      if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        echo "✅ Successfully published Docker images to production"
+        echo "🐳 Registry: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+        echo "🏷️ Tags: ${{ steps.meta.outputs.tags }}"
+        echo "📝 Commit: ${{ github.sha }}"
+        echo "👤 Published by: ${{ github.actor }}"
 
