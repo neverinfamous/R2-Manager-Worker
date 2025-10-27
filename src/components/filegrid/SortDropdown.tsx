@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { RefObject } from 'react'
 
 type SortField = 'name' | 'size' | 'type' | 'uploaded'
 type SortDirection = 'asc' | 'desc'
@@ -8,6 +8,7 @@ interface SortDropdownProps {
   position: { top: number; left: number } | null
   currentField: SortField
   currentDirection: SortDirection
+  buttonRef: RefObject<HTMLButtonElement | null>
   onToggle: () => void
   onSortChange: (field: SortField) => void
   getSortLabel: () => string
@@ -18,12 +19,11 @@ export const SortDropdown = ({
   position,
   currentField,
   currentDirection,
+  buttonRef,
   onToggle,
   onSortChange,
   getSortLabel
 }: SortDropdownProps) => {
-  const buttonRef = useRef<HTMLButtonElement>(null)
-
   return (
     <div className={`sort-dropdown-container ${isOpen ? 'open' : ''}`}>
       <button 

@@ -1288,6 +1288,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                 position={bucketDropdownPosition}
                 currentBucket={bucketName}
                 availableBuckets={availableBuckets}
+                buttonRef={bucketButtonRef}
                 onToggle={handleBucketButtonClick}
                 onSelect={handleBucketSelect}
               />
@@ -1297,6 +1298,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
               position={sortDropdownPosition}
               currentField={sortState.field}
               currentDirection={sortState.direction}
+              buttonRef={sortButtonRef}
               onToggle={handleSortButtonClick}
               onSortChange={updateSortState}
               getSortLabel={getSortLabel}

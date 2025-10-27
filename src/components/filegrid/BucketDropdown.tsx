@@ -1,10 +1,11 @@
-import { useRef } from 'react'
+import { RefObject } from 'react'
 
 interface BucketDropdownProps {
   isOpen: boolean
   position: { top: number; left: number } | null
   currentBucket: string
   availableBuckets: string[]
+  buttonRef: RefObject<HTMLButtonElement | null>
   onToggle: () => void
   onSelect: (bucket: string) => void
 }
@@ -14,11 +15,10 @@ export const BucketDropdown = ({
   position,
   currentBucket,
   availableBuckets,
+  buttonRef,
   onToggle,
   onSelect
 }: BucketDropdownProps) => {
-  const buttonRef = useRef<HTMLButtonElement>(null)
-
   return (
     <div className={`bucket-nav-dropdown-container ${isOpen ? 'open' : ''}`}>
       <button 
