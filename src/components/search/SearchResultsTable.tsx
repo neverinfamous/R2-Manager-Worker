@@ -121,21 +121,13 @@ export function SearchResultsTable({
     setTransferModalState(prev => prev ? { ...prev, isTransferring: true, infoMessage: 'Transferring...' } : null)
 
     try {
-      const fileName = transferModalState.sourceKey.split('/').pop() || transferModalState.sourceKey
-      
       // Construct destination path:
-      // - If targetPath is empty: use just the filename (root folder)
-      // - If targetPath ends with /: it's a folder, append filename
-      // - Otherwise: use targetPath as-is (user specified exact destination)
-      let destinationPath: string
-      if (!transferModalState.targetPath || transferModalState.targetPath.trim() === '') {
-        destinationPath = fileName
-      } else if (transferModalState.targetPath.endsWith('/')) {
-        destinationPath = `${transferModalState.targetPath}${fileName}`
-      } else {
-        // User provided a full path without trailing slash - use as-is but append filename
-        destinationPath = `${transferModalState.targetPath}/${fileName}`
-      }
+      // - If targetPath is empty: pass undefined (API will use just the filename in root)
+      // - If targetPath is provided: use it as-is (API will handle adding filename)
+      // Note: The API automatically appends the filename to the path if path doesn't end with the filename
+      const destinationPath = transferModalState.targetPath && transferModalState.targetPath.trim() !== '' 
+        ? transferModalState.targetPath 
+        : undefined
       
       if (transferModalState.mode === 'move') {
         await api.moveFile(
