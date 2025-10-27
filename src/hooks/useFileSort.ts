@@ -20,7 +20,7 @@ interface UseFileSortReturn {
   sortState: SortState
   sortDropdownOpen: boolean
   sortDropdownPosition: { top: number; left: number } | null
-  sortButtonRef: React.RefObject<HTMLButtonElement>
+  sortButtonRef: React.RefObject<HTMLButtonElement | null>
   sortedFilesRef: React.RefObject<FileObject[]>
   sortFiles: (files: FileObject[]) => FileObject[]
   updateSortState: (field: SortField) => void
