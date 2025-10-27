@@ -1,14 +1,13 @@
 import JSZip from 'jszip';
 import type { Env } from '../types';
 import { CF_API } from '../types';
-import type { CorsHeaders } from '../utils/cors';
 import { generateSignature } from '../utils/signing';
 
 export async function handleFileRoutes(
   request: Request,
   env: Env,
   url: URL,
-  corsHeaders: CorsHeaders,
+  corsHeaders: HeadersInit,
   isLocalDev: boolean
 ): Promise<Response> {
   console.log('[Files] Handling file operation');

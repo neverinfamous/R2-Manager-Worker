@@ -1,11 +1,4 @@
-export interface CorsHeaders {
-  'Access-Control-Allow-Origin': string;
-  'Access-Control-Allow-Methods': string;
-  'Access-Control-Allow-Headers': string;
-  'Access-Control-Allow-Credentials': string;
-}
-
-export function getCorsHeaders(request: Request): CorsHeaders {
+export function getCorsHeaders(request: Request): HeadersInit {
   const url = new URL(request.url);
   const origin = request.headers.get('Origin') || '';
   
@@ -22,7 +15,7 @@ export function getCorsHeaders(request: Request): CorsHeaders {
   };
 }
 
-export function handleCorsPreflightRequest(corsHeaders: CorsHeaders): Response {
+export function handleCorsPreflightRequest(corsHeaders: HeadersInit): Response {
   console.log('[CORS] Handling preflight request');
   return new Response(null, { headers: corsHeaders });
 }

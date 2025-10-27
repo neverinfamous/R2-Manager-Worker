@@ -1,5 +1,4 @@
 import type { Env } from '../types';
-import type { CorsHeaders } from './cors';
 
 export function handleSiteWebmanifest(): Response {
   return new Response(JSON.stringify({
@@ -19,7 +18,7 @@ export function handleSiteWebmanifest(): Response {
   });
 }
 
-export async function handleStaticAsset(request: Request, env: Env, corsHeaders: CorsHeaders): Promise<Response> {
+export async function handleStaticAsset(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
   const url = new URL(request.url);
   
   // Serve other static assets (only in production with ASSETS binding)

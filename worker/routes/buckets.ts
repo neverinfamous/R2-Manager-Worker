@@ -1,13 +1,12 @@
 import type { Env } from '../types';
 import { CF_API } from '../types';
-import type { CorsHeaders } from '../utils/cors';
 import { getBucketSize } from '../utils/helpers';
 
 export async function handleBucketRoutes(
   request: Request,
   env: Env,
   url: URL,
-  corsHeaders: CorsHeaders,
+  corsHeaders: HeadersInit,
   isLocalDev: boolean
 ): Promise<Response> {
   console.log('[Buckets] Handling bucket operation');

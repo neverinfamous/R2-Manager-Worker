@@ -1,12 +1,11 @@
 import type { Env } from '../types';
 import { CF_API } from '../types';
-import type { CorsHeaders } from '../utils/cors';
 
 export async function handleFolderRoutes(
   request: Request,
   env: Env,
   url: URL,
-  corsHeaders: CorsHeaders,
+  corsHeaders: HeadersInit,
   isLocalDev: boolean
 ): Promise<Response> {
   console.log('[Folders] Handling folder operation');
