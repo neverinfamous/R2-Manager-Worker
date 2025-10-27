@@ -5,6 +5,7 @@ import { FileGrid } from './filegrid'
 import { api } from './services/api'
 import { auth } from './services/auth'
 import { ThemeToggle } from './components/ThemeToggle'
+import { CrossBucketSearch } from './components/search/CrossBucketSearch'
 import type { FileRejection, FileWithPath } from 'react-dropzone'
 
 const formatFileSize = (bytes: number): string => {
@@ -540,6 +541,8 @@ export default function BucketManager() {
           </form>
 
           {error && <div className="error-message">{error}</div>}
+
+          <CrossBucketSearch onNavigateToBucket={handleBucketNavigate} />
 
           {selectedBuckets.length > 0 && (
             <div className="bulk-action-toolbar">

@@ -1022,6 +1022,53 @@ class APIService {
     return response.json()
   }
 
+  async searchAcrossBuckets(params: {
+    query?: string;
+    extensions?: string[];
+    minSize?: number | null;
+    maxSize?: number | null;
+    startDate?: Date | null;
+    endDate?: Date | null;
+    limit?: number;
+  }) {
+    const url = new URL(`${WORKER_API}/api/search`)
+    
+    if (params.query) {
+      url.searchParams.set('q', params.query)
+    }
+    if (params.extensions && params.extensions.length > 0) {
+      url.searchParams.set('extensions', params.extensions.join(','))
+    }
+    if (params.minSize !== null && params.minSize !== undefined) {
+      url.searchParams.set('minSize', params.minSize.toString())
+    }
+    if (params.maxSize !== null && params.maxSize !== undefined) {
+      url.searchParams.set('maxSize', params.maxSize.toString())
+    }
+    if (params.startDate) {
+      url.searchParams.set('startDate', params.startDate.toISOString())
+    }
+    if (params.endDate) {
+      url.searchParams.set('endDate', params.endDate.toISOString())
+    }
+    if (params.limit) {
+      url.searchParams.set('limit', params.limit.toString())
+    }
+
+    const response = await fetch(
+      url.toString(),
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      throw new Error(`Search failed: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
 }
 
 export const api = new APIService();

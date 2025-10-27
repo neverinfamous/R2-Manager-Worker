@@ -1,3 +1,5 @@
+@import './styles/search.css';
+
 :root {
   color-scheme: light dark;
   background-color: var(--bg-primary);
