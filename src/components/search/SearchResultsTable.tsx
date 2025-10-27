@@ -123,19 +123,33 @@ export function SearchResultsTable({
     try {
       const fileName = transferModalState.sourceKey.split('/').pop() || transferModalState.sourceKey
       
+      // Construct destination path:
+      // - If targetPath is empty: use just the filename (root folder)
+      // - If targetPath ends with /: it's a folder, append filename
+      // - Otherwise: use targetPath as-is (user specified exact destination)
+      let destinationPath: string
+      if (!transferModalState.targetPath || transferModalState.targetPath.trim() === '') {
+        destinationPath = fileName
+      } else if (transferModalState.targetPath.endsWith('/')) {
+        destinationPath = `${transferModalState.targetPath}${fileName}`
+      } else {
+        // User provided a full path without trailing slash - use as-is but append filename
+        destinationPath = `${transferModalState.targetPath}/${fileName}`
+      }
+      
       if (transferModalState.mode === 'move') {
         await api.moveFile(
           transferModalState.sourceBucket,
           transferModalState.sourceKey,
           transferModalState.targetBucket,
-          transferModalState.targetPath ? `${transferModalState.targetPath}${fileName}` : fileName
+          destinationPath
         )
       } else {
         await api.copyFile(
           transferModalState.sourceBucket,
           transferModalState.sourceKey,
           transferModalState.targetBucket,
-          transferModalState.targetPath ? `${transferModalState.targetPath}${fileName}` : fileName
+          destinationPath
         )
       }
 
@@ -326,10 +340,10 @@ export function SearchResultsTable({
                 value={transferModalState.targetPath}
                 onChange={(e) => setTransferModalState(prev => prev ? { ...prev, targetPath: e.target.value } : null)}
                 disabled={transferModalState.isTransferring}
-                placeholder="e.g., images/ or leave empty for root"
+                placeholder="e.g., images/ or documents/2024/"
               />
               <p style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>
-                Leave empty to transfer to the root folder. End with / for folders.
+                Leave empty for root folder. Specify folder path (e.g., "images/" or "docs/2024/").
               </p>
             </div>
 
