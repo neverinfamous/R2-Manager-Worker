@@ -792,8 +792,8 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     }
   }, [bucketName, newFolderName, currentPath, onFilesChange, setShowCreateFolderModal])
 
-  const handleCopySignedUrl = useCallback(async (fileName: string, event: React.MouseEvent) => {
-    event.stopPropagation()
+  const handleCopySignedUrl = useCallback(async (fileName: string, event?: React.MouseEvent) => {
+    event?.stopPropagation()
     
     try {
       setCopyingUrl(fileName)
@@ -859,6 +859,11 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       
       setInfoMessage(`${renameState.itemType === 'file' ? 'File' : 'Folder'} renamed successfully`)
       setTimeout(() => setInfoMessage(''), 3000)
+      
+      // Clear failed images cache when renaming files (especially images)
+      if (renameState.itemType === 'file') {
+        setFailedImages(new Set())
+      }
       
       setRenameState(null)
       setShouldRefresh(true)
@@ -1535,7 +1540,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         onClose={() => setContextMenu(null)}
         onRename={() => startRename(contextMenu!.itemType, contextMenu!.itemKey)}
         onCopyLink={contextMenu?.itemType === 'file' ? (e?: React.MouseEvent) => {
-          handleCopySignedUrl(contextMenu!.itemKey, e || {} as React.MouseEvent)
+          handleCopySignedUrl(contextMenu!.itemKey, e)
           setContextMenu(null)
         } : undefined}
       />
