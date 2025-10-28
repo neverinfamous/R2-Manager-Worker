@@ -5,10 +5,18 @@ on:
     branches:
       - main
   workflow_dispatch:  # Allow manual deployments
+  workflow_run:
+    workflows: ["Lint and Test"]
+    types:
+      - completed
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    # Only deploy if lint-and-test workflow succeeded
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
       deployments: write  # Required for creating deployments
