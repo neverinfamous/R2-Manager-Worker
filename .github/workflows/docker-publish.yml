@@ -158,9 +158,16 @@ jobs:
           echo "ℹ️ Consider running scout scan locally for large images"
         fi
 
-    # Only push if security scan passes
+    # Test local image before pushing to Docker Hub
+    - name: Test Docker image functionality
+      run: |
+        echo "Testing local image before push..."
+        docker run --rm local-scan:latest node --version
+        echo "✅ Image tests passed - safe to push"
+
+    # Only push if security scan AND functionality test pass
     - name: Build and push Docker image
-      if: success()
+      if: success()  # Only runs if scan AND test passed
       id: build
       uses: docker/build-push-action@v6
       with:
@@ -175,27 +182,6 @@ jobs:
         # Enable attestations for supply chain security
         provenance: mode=max
         sbom: true
-    
-    # Retry mechanism for transient Docker Hub API failures
-    - name: Retry Docker push on failure
-      if: failure() && steps.build.outcome == 'failure'
-      run: |
-        echo "⚠️ Initial push failed - retrying in 30 seconds..."
-        sleep 30
-        echo "🔄 Retry attempt starting..."
-
-    - name: Test Docker image functionality
-      if: github.event_name != 'pull_request'
-      run: |
-        # Extract the first tag from the metadata output
-        FIRST_TAG=$(echo '${{ steps.meta.outputs.tags }}' | head -n1)
-        echo "Testing image: $FIRST_TAG"
-        
-        # Test that the image starts correctly
-        echo "Testing image startup..."
-        docker run --rm $FIRST_TAG node --version
-        
-        echo "✅ Image tests passed"
 
     # Update Docker Hub description (optional - can be done manually)
     - name: Update Docker Hub Description
