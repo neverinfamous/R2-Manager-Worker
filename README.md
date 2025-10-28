@@ -20,7 +20,7 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
 - **[Docker Hub](https://hub.docker.com/r/writenotenow/r2-bucket-manager)** - Containerized development environment (~372MB)
 - **[Cloudflare Workers](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Installation-&-Setup)** - Production deployment on the edge
 
-**📰 [Read the v1.0 Release Article](https://adamic.tech/articles/2025-10-24-r2-bucket-manager-v1-0)** - Learn more about features, architecture, and deployment
+**📰 [Read the v1.2.0 Release Article](https://adamic.tech/articles/2025-10-27-r2-bucket-manager-v1-2-0)** - Learn more about features, architecture, and deployment
 
 ---
 
