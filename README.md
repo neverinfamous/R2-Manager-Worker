@@ -167,6 +167,8 @@ Access the development server at `http://localhost:8787`
 
 **Note:** Docker deployment is for development/testing only. For production, deploy to Cloudflare Workers using the instructions above.
 
+**Security:** The Docker image uses Google's distroless Node.js base image for enhanced security (no shell, no package manager, minimal attack surface).
+
 **📖 See the [Docker Hub page](https://hub.docker.com/r/writenotenow/r2-bucket-manager) for complete Docker documentation.**
 
 ---

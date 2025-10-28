@@ -1,8 +1,9 @@
 # =============================================================================
 # R2 Bucket Manager - Cloudflare Workers Deployment
 # =============================================================================
-# Multi-stage build for optimal image size and security
-# Production-ready image: ~150MB
+# Multi-stage build with Google Distroless base for enhanced security
+# Distroless runtime image: ~660MB (includes Wrangler + dependencies)
+# Security: Eliminates BusyBox CVEs, no shell, no package manager
 # =============================================================================
 
 # -----------------
@@ -30,49 +31,54 @@ COPY . .
 # Build the application
 RUN npm run build
 
+# Create a minimal wrangler.toml for Docker runtime
+# This is a self-contained configuration for the development server
+RUN printf 'name = "r2"\nmain = "worker/index.ts"\ncompatibility_date = "2025-01-01"\ncompatibility_flags = ["nodejs_compat"]\nplacement = { mode = "off" }\n\n[assets]\ndirectory = "dist"\nbinding = "ASSETS"\n' > wrangler.toml
+
 # -----------------
-# Stage 2: Runtime
+# Stage 2: Runtime Dependencies
 # -----------------
-FROM node:22-alpine AS runtime
+# Install production dependencies in a separate stage to copy to distroless
+FROM node:22-alpine AS deps
 
 WORKDIR /app
-
-# Install runtime dependencies only
-RUN apk add --no-cache \
-    curl \
-    ca-certificates
-
-# Create non-root user for security
-# Note: Alpine Linux uses GID 1000 for 'users' group, so we use a different GID
-RUN addgroup -g 1001 app && \
-    adduser -D -u 1001 -G app app
 
 # Copy package files
 COPY package*.json ./
 
-# Install production dependencies only
+# Install production dependencies + wrangler (needed for runtime)
+# Note: wrangler is in devDependencies but required to run the dev server
 RUN npm ci --omit=dev && \
+    npm install wrangler && \
     npm cache clean --force
 
-# Copy built application from builder
+# -----------------
+# Stage 3: Distroless Runtime
+# -----------------
+FROM gcr.io/distroless/nodejs22-debian12 AS runtime
+
+WORKDIR /app
+
+# Copy production dependencies + wrangler from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy package files for runtime
+COPY --from=builder /app/package*.json ./
+
+# Copy built application and config from builder
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/worker ./worker
-COPY --from=builder /app/wrangler.toml.example ./wrangler.toml.example
-
-# Set ownership to non-root user
-RUN chown -R app:app /app
-
-# Switch to non-root user
-USER app
+COPY --from=builder /app/wrangler.toml ./wrangler.toml
 
 # Expose Wrangler dev server port
 EXPOSE 8787
 
-# Health check
+# Health check using Node.js instead of curl (distroless has no shell/curl)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8787/health || exit 1
+    CMD ["worker/health-check.js"]
 
 # Default command: Run Wrangler in development mode
-# Override with specific commands for production deployment
-CMD ["npx", "wrangler", "dev", "--ip", "0.0.0.0", "--port", "8787"]
+# Distroless runs as non-root user 'nonroot' (UID 65532) by default
+# Use wrangler binary directly (npx not available in distroless)
+CMD ["node_modules/wrangler/bin/wrangler.js", "dev", "--ip", "0.0.0.0", "--port", "8787"]
 
