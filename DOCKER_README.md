@@ -145,28 +145,19 @@ docker pull writenotenow/r2-bucket-manager:v1.2.0
 
 ### Image Specifications
 
-- **Base Image:** Google Distroless Node.js 22 (Debian 12)
+- **Base Image:** Node.js 22 Alpine
 - **Platforms:** AMD64, ARM64 (multi-arch)
-- **Size:** ~660MB
-- **User:** Non-root (`nonroot` UID 65532)
+- **Size:** ~372MB compressed
+- **User:** Non-root (`app:1001`)
 - **Working Directory:** `/app`
 
 ### Security Features
 
-- ✅ **Distroless base** - No shell, no package manager, minimal attack surface
-- ✅ **CVE-free** - Eliminates BusyBox vulnerabilities (CVE-2025-46394, CVE-2024-58251)
-- ✅ **Non-root execution** - Runs as `nonroot` user by default
-- ✅ **Multi-stage build** - Optimized layer caching
+- ✅ **Non-root execution** - Runs as user `app`
+- ✅ **Multi-stage build** - Minimal attack surface
+- ✅ **Alpine base** - Latest security patches
 - ✅ **Supply chain attestation** - SBOM and provenance included
-- ✅ **Node.js health checks** - Custom health check script (no curl dependency)
-
-### Debugging Notes
-
-Since the distroless image contains no shell:
-- ❌ **No shell access** - `docker exec -it <container> sh` will not work
-- ✅ **View logs** - Use `docker logs <container>` for troubleshooting
-- ✅ **Node.js debugging** - Use `docker exec <container> /nodejs/bin/node -e "console.log(...)"` for inspection
-- 💡 **Debug variant** - Use `gcr.io/distroless/nodejs22-debian12:debug` tag if you need BusyBox shell for debugging
+- ✅ **Health checks** - Built-in container health monitoring
 
 ---
 
