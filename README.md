@@ -53,6 +53,7 @@ Cloudflare's dashboard lacks the full-featured R2 file management capabilities. 
 
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering (NEW in v1.2.0)
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
+- 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
 - 📄 **File Management** - Rename files via right-click context menu with validation
 - 🔍 **Smart Filtering** - Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)
@@ -190,6 +191,56 @@ R2 Bucket Manager supports both light and dark themes with automatic system pref
 - All colors managed via CSS custom properties
 - Mobile-friendly with responsive design
 - WCAG compliant color contrast ratios
+
+---
+
+## 📦 Multi-Bucket Download
+
+R2 Bucket Manager allows you to download multiple buckets at once as a single ZIP archive, making it easy to back up or migrate multiple buckets in one operation.
+
+### How to Use
+
+1. **Select All** - Click the green "Select All" button to quickly select all buckets, or manually select buckets using checkboxes
+2. **Review Selection** - The bulk action toolbar appears showing how many buckets are selected
+3. **Download Selected** - Click the blue "Download Selected" button
+4. **Track Progress** - Watch the progress indicator (Preparing → Downloading → Complete)
+5. **Save ZIP** - Browser downloads a single ZIP file containing all selected buckets
+
+### Features
+
+- **Select All Button** - Green button on the left side of toolbar for quick selection of all buckets
+- **Bulk Action Toolbar** - Shows selection count with "Select All", "Clear Selection", "Download Selected", and "Delete Selected" buttons
+- **Single ZIP Archive** - All buckets downloaded as one file with each bucket as a top-level folder
+- **Progress Tracking** - Visual feedback during preparation and download phases
+- **Timestamped Filenames** - ZIP files named `buckets-YYYY-MM-DDTHH-MM-SS.zip` for easy organization
+- **Automatic Cleanup** - Selected buckets automatically deselected after successful download
+- **No Size Limits** - Downloads all files from all selected buckets (no cumulative size restrictions)
+- **Nested Structure** - Files maintain their folder hierarchy within each bucket folder
+
+### Use Cases
+
+- Back up multiple buckets for disaster recovery
+- Migrate entire projects containing multiple buckets
+- Create snapshots of development/staging environments
+- Archive completed project buckets
+- Transfer buckets between Cloudflare accounts
+
+### Example ZIP Structure
+
+```
+buckets-2025-10-30T14-30-00.zip
+├── bucket-one/
+│   ├── file1.jpg
+│   ├── folder/
+│   │   └── file2.txt
+│   └── file3.pdf
+├── bucket-two/
+│   ├── index.html
+│   └── assets/
+│       └── style.css
+└── bucket-three/
+    └── data.json
+```
 
 ---
 

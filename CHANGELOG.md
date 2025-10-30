@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Multi-Bucket Download** - Download multiple selected buckets as a single ZIP archive
+  - "Select All" button on main page to quickly select all buckets
+  - "Download Selected" button in bulk action toolbar
+  - Downloads all selected buckets as one ZIP file with each bucket as a folder
+  - Progress tracking with visual feedback (Preparing → Downloading → Complete)
+  - Automatic deselection after successful download
+  - No size limit enforcement (downloads all files from all selected buckets)
+  - Timestamped ZIP filename: `buckets-YYYY-MM-DDTHH-MM-SS.zip`
+  - Works seamlessly with existing bulk selection UI
+
 ### Changed
 - **Architecture Simplification** - Removed D1 database dependency
   - Removed D1 database binding from all configuration files
@@ -25,6 +36,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Now `*.workers.dev` subdomain remains enabled after deployments
 
 ### Technical Details
+- **Multi-Bucket Download Implementation:**
+  - New API method: `downloadMultipleBuckets()` in `src/services/api.ts`
+  - New worker endpoint: `POST /api/files/download-buckets-zip` in `worker/routes/files.ts`
+  - Uses JSZip to create nested folder structure (bucket/file.ext)
+  - Parallel file fetching from multiple buckets
+  - Frontend state management with progress tracking
+  - ~200 lines of new code across 3 files
+- **UI Enhancements:**
+  - Green "Select All" button positioned on left side of toolbar
+  - Blue "Download Selected" button between "Clear Selection" and "Delete Selected"
+  - Toolbar shows/hides buttons based on selection state
+  - Visual spacing improvements (3px between checkbox and bucket name)
 - **Removed Files/Sections:**
   - D1 database binding configuration
   - D1 type definitions (D1Database, D1PreparedStatement, D1Result, D1ExecResult)

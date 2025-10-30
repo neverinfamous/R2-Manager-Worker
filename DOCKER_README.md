@@ -106,6 +106,7 @@ docker pull writenotenow/r2-bucket-manager:v1.2.0
 
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering (NEW in v1.2.0)
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
+- 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders
 - 📄 **File Management** - Rename files via context menu
 - 🔍 **Smart Filtering** - Real-time filtering by filename/folder name
