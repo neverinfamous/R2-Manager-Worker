@@ -225,10 +225,7 @@ export async function handleBucketRoutes(
           console.log('[Buckets] Delete successful, data:', data);
           
           if (data.success || response.status === 204) {
-            await env.DB
-              .prepare('DELETE FROM bucket_owners WHERE bucket_name = ?')
-              .bind(bucketName)
-              .run();
+            // D1 database operations removed - not needed with Zero Trust auth
             
             // Return success response
             return new Response(JSON.stringify({ success: true }), {
@@ -242,10 +239,7 @@ export async function handleBucketRoutes(
         } catch (parseErr) {
           console.error('[Buckets] Error parsing delete response:', parseErr);
           // If we can't parse the response but the HTTP status is OK, consider it a success
-          await env.DB
-            .prepare('DELETE FROM bucket_owners WHERE bucket_name = ?')
-            .bind(bucketName)
-            .run();
+          // D1 database operations removed - not needed with Zero Trust auth
           
           return new Response(JSON.stringify({ success: true }), {
             status: 200,
@@ -362,7 +356,7 @@ export async function handleBucketRoutes(
         }
         const deleteResponse = await fetch(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + oldBucketName, { method: 'DELETE', headers: cfHeaders });
         if (!deleteResponse.ok) throw new Error('Failed to delete old bucket');
-        await env.DB.prepare('UPDATE bucket_owners SET bucket_name = ? WHERE bucket_name = ?').bind(newBucketName, oldBucketName).run();
+        // D1 database operations removed - not needed with Zero Trust auth
         console.log('[Buckets] Rename completed');
         return new Response(JSON.stringify({ success: true, newName: newBucketName }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       } catch (err) {

@@ -119,12 +119,10 @@ Cloudflare's dashboard lacks the full-featured R2 file management capabilities. 
    
    Edit both files with your settings.
 
-3. **Create Cloudflare resources:**
+3. **Create R2 bucket:**
    ```bash
    npx wrangler login
    npx wrangler r2 bucket create your-bucket-name
-   npx wrangler d1 create your-database-name
-   npx wrangler d1 execute your-database-name --remote --file=worker/schema.sql
    ```
 
 4. **Configure Cloudflare Access:**
@@ -420,7 +418,6 @@ The following operations return simulated success responses for UI testing:
 | Language | TypeScript | 5.9.3 |
 | Backend | Cloudflare Workers | Runtime API |
 | Storage | Cloudflare R2 | S3-compatible |
-| Database | Cloudflare D1 | SQLite |
 | Auth | Cloudflare Access | Zero Trust |
 
 ### File Organization
@@ -432,7 +429,8 @@ The following operations return simulated success responses for UI testing:
 │   └── services/            # API client and auth utilities
 ├── worker/
 │   ├── index.ts             # Worker runtime & API endpoints
-│   └── schema.sql           # D1 database schema
+│   ├── routes/              # API route handlers
+│   └── utils/               # Helper utilities
 ├── wrangler.toml.example    # Wrangler configuration template
 └── .env.example             # Environment variables template
 ```
@@ -485,7 +483,7 @@ The following operations return simulated success responses for UI testing:
 - **Refactor worker/index.ts and filegrid.tsx** - Large monolithic files
 - **AWS S3 Migration** - Add support for migrating AWS S3 to R2
 - **File Versioning** - Track and restore previous versions
-- **Audit Logging** - Track all user actions in D1 database
+- **Audit Logging** - Track all user actions with detailed logs
 - **Role-Based Access Control (RBAC)** - Fine-grained permissions
 - **Offline Upload Queue** - Resumable uploads with service workers
 - **Custom Branding** - Configurable logo and colors
@@ -592,7 +590,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
 - [Cloudflare R2 Storage Documentation](https://developers.cloudflare.com/r2/)
-- [Cloudflare D1 Database Documentation](https://developers.cloudflare.com/d1/)
 - [Cloudflare Access (Zero Trust) Documentation](https://developers.cloudflare.com/cloudflare-one/policies/access/)
 - [React 19 Documentation](https://react.dev/)
 - [Vite Documentation](https://vite.dev/)

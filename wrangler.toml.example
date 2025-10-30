@@ -29,17 +29,6 @@ binding = "ASSETS"
 binding = "R2"
 bucket_name = "your-bucket-name"  # CHANGE THIS
 
-# ============================================
-# D1 DATABASE CONFIGURATION
-# ============================================
-# Replace with your D1 database details
-# Create database: wrangler d1 create <database-name>
-# Then run: wrangler d1 execute <database-name> --file=worker/schema.sql
-[[d1_databases]]
-binding = "DB"
-database_name = "your-database-name"  # CHANGE THIS
-database_id = "your-database-id"      # CHANGE THIS (from wrangler d1 create output)
-
 [observability.logs]
 enabled = true
 

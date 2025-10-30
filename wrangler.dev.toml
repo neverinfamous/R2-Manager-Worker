@@ -24,12 +24,6 @@ binding = "R2"
 bucket_name = "r2-bucket"
 preview_bucket_name = "r2-bucket"  # Using same bucket for dev (will be prompted to create preview if needed)
 
-[[d1_databases]]
-binding = "DB"
-database_name = "r2manager"
-database_id = "7c4e1036-b1ee-4aaa-b0b2-20ca3fe6e3d9"
-preview_database_id = "7c4e1036-b1ee-4aaa-b0b2-20ca3fe6e3d9"  # Using same DB for dev
-
 [observability.logs]
 enabled = true
 

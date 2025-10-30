@@ -309,7 +309,6 @@ See the [Installation & Setup Guide](https://github.com/neverinfamous/R2-Manager
 **Cloudflare Documentation:**
 - [Cloudflare Workers](https://developers.cloudflare.com/workers/)
 - [Cloudflare R2](https://developers.cloudflare.com/r2/)
-- [Cloudflare D1](https://developers.cloudflare.com/d1/)
 - [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/)
 
 ---

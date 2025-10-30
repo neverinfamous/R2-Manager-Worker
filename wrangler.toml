@@ -18,10 +18,12 @@ binding = "ASSETS"
 binding = "R2"
 bucket_name = "r2-bucket"
 
-[[d1_databases]]
-binding = "DB"
-database_name = "r2manager"
-database_id = "7c4e1036-b1ee-4aaa-b0b2-20ca3fe6e3d9"
+# D1 database binding removed - not needed with Zero Trust authentication
+# All bucket operations use Cloudflare R2 REST API directly
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "r2manager"
+# database_id = "7c4e1036-b1ee-4aaa-b0b2-20ca3fe6e3d9"
 
 [observability.logs]
 enabled = true
