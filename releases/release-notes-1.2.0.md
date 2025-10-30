@@ -239,7 +239,7 @@ Looking ahead to v1.3.0 and beyond:
 - **Rate Limiting** - API endpoint rate limiting with Cloudflare KV
 - **AWS S3 Migration** - Tools for migrating from AWS S3 to R2
 - **File Versioning** - Track and restore previous file versions
-- **Audit Logging** - Track all user actions in D1 database
+- **Audit Logging** - Track all user actions with detailed logs
 - **Role-Based Access Control (RBAC)** - Fine-grained permissions
 - **Custom Metadata** - User-defined tags and labels
 

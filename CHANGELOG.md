@@ -213,7 +213,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TypeScript 5.9.3
 - Cloudflare Workers Runtime API
 - Cloudflare R2 (S3-compatible storage)
-- Cloudflare D1 (SQLite database)
 - Cloudflare Access (Zero Trust authentication)
 
 ### Documentation

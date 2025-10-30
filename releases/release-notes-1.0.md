@@ -72,7 +72,6 @@ A self-hosted, feature-rich file management interface for Cloudflare R2 storage 
 | Language   | TypeScript         | 5.9.3         |
 | Backend    | Cloudflare Workers | Runtime API   |
 | Storage    | Cloudflare R2      | S3-compatible |
-| Database   | Cloudflare D1      | SQLite        |
 | Auth       | Cloudflare Access  | Zero Trust    |
 
 ---
@@ -100,8 +99,6 @@ cp wrangler.toml.example wrangler.toml
 # Create Cloudflare resources
 npx wrangler login
 npx wrangler r2 bucket create your-bucket-name
-npx wrangler d1 create your-database-name
-npx wrangler d1 execute your-database-name --remote --file=worker/schema.sql
 
 # Set Worker secrets
 npx wrangler secret put ACCOUNT_ID

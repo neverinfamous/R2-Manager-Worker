@@ -34,7 +34,7 @@ This project follows security best practices:
 - Authorization delegated to Cloudflare Access policies
 
 ### Data Protection
-- No sensitive user data stored in D1 (only file metadata)
+- No user data stored - all operations use Cloudflare R2 API directly
 - File operations authenticated via Cloudflare Access
 - Signed URLs for downloads use HMAC-SHA256
 - Environment secrets managed via Wrangler and Cloudflare Workers secrets

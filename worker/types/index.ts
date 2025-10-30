@@ -83,31 +83,7 @@ declare global {
     suffix?: number;
   }
 
-  interface D1Database {
-    prepare(query: string): D1PreparedStatement;
-    dump(): Promise<ArrayBuffer>;
-    batch<T = unknown>(statements: D1PreparedStatement[]): Promise<D1Result<T>[]>;
-    exec(query: string): Promise<D1ExecResult>;
-  }
-
-  interface D1PreparedStatement {
-    bind(...values: unknown[]): D1PreparedStatement;
-    first<T = unknown>(colName?: string): Promise<T | null>;
-    run<T = unknown>(): Promise<D1Result<T>>;
-    all<T = unknown>(): Promise<D1Result<T>>;
-    raw<T = unknown>(): Promise<T[]>;
-  }
-
-  interface D1Result<T = unknown> {
-    results: T[];
-    success: boolean;
-    meta: Record<string, unknown>;
-  }
-
-  interface D1ExecResult {
-    count: number;
-    duration: number;
-  }
+  // D1 type definitions removed - no longer using D1 database
 
   interface Fetcher {
     fetch(request: Request | string): Promise<Response>;
@@ -122,7 +98,6 @@ declare global {
 export interface Env {
   R2: R2Bucket
   ASSETS: Fetcher
-  DB: D1Database
   CF_EMAIL: string
   API_KEY: string
   ACCOUNT_ID: string
