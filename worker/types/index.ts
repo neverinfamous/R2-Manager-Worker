@@ -83,8 +83,6 @@ declare global {
     suffix?: number;
   }
 
-  // D1 type definitions removed - no longer using D1 database
-
   interface Fetcher {
     fetch(request: Request | string): Promise<Response>;
   }
