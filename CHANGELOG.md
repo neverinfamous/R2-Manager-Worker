@@ -266,7 +266,7 @@ Initial production release with full R2 bucket management capabilities, enterpri
 
 **Links:**
 - [GitHub Repository](https://github.com/neverinfamous/R2-Manager-Worker)
-- [Live Demo](https://r2.adamic.tech/)
+- [Live Demo](https://r2.adamic.workers.dev/)
 - [Docker Hub](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 - [Documentation Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki)
 

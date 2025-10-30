@@ -225,7 +225,7 @@ Use `docker pull writenotenow/r2-bucket-manager:latest` to get the updated image
 
 ## 🔗 Links
 
-- **Live Demo:** https://r2.adamic.tech/
+- **Live Demo:** https://r2.adamic.workers.dev/
 - **GitHub Repository:** https://github.com/neverinfamous/R2-Manager-Worker
 - **Docker Hub:** https://hub.docker.com/r/writenotenow/r2-bucket-manager
 - **GitHub Wiki:** https://github.com/neverinfamous/R2-Manager-Worker/wiki

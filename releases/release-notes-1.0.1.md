@@ -87,7 +87,7 @@ Open `http://localhost:5173` in your browser - authentication is automatically d
 
 ## 🔗 Links
 
-- **Live Demo:** https://r2.adamic.tech/
+- **Live Demo:** https://r2.adamic.workers.dev/
 - **GitHub Repository:** https://github.com/neverinfamous/R2-Manager-Worker
 - **Docker Hub:** https://hub.docker.com/r/writenotenow/r2-bucket-manager
 - **GitHub Wiki:** https://github.com/neverinfamous/R2-Manager-Worker/wiki
