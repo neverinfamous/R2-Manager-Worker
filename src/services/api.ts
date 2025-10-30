@@ -767,6 +767,67 @@ class APIService {
     }
   }
 
+  async downloadMultipleBuckets(bucketNames: string[], options: DownloadOptions = {}): Promise<void> {
+    const { onProgress } = options
+
+    try {
+      onProgress?.(0)
+      
+      // Collect all files from all buckets
+      const bucketFiles: { bucketName: string; files: string[] }[] = []
+      
+      for (const bucketName of bucketNames) {
+        let allFiles: FileObject[] = []
+        let cursor: string | undefined = undefined
+
+        do {
+          const response = await this.listFiles(bucketName, cursor)
+          allFiles = [...allFiles, ...response.objects]
+          cursor = response.pagination.cursor
+        } while (cursor)
+
+        bucketFiles.push({
+          bucketName,
+          files: allFiles.map(f => f.key)
+        })
+      }
+
+      onProgress?.(10)
+
+      const response = await fetch(`${WORKER_API}/api/files/download-buckets-zip`, {
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          buckets: bucketFiles
+        })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to download buckets')
+      }
+
+      onProgress?.(50)
+
+      const blob = await response.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
+      link.download = `buckets-${timestamp}.zip`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      onProgress?.(100)
+    } catch (error) {
+      console.error('Multi-bucket download failed:', error)
+      throw new Error('Failed to download buckets')
+    }
+  }
+
   async moveFile(sourceBucket: string, sourceKey: string, destBucket: string, destPath?: string): Promise<void> {
     const response = await fetch(
       `${WORKER_API}/api/files/${sourceBucket}/${encodeURIComponent(sourceKey)}/move`,

@@ -1,12 +1,12 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** October 30, 2025 | **Version:** 1.2.0  
+**Last Updated:** October 30, 2025 | **Version:** 1.3.0  
 **Tech Stack:** React 19.2.0 | Vite 7.1.12 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v1.2.0-green)
+![Version](https://img.shields.io/badge/version-v1.3.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
@@ -20,7 +20,7 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
 - **[Docker Hub](https://hub.docker.com/r/writenotenow/r2-bucket-manager)** - Containerized development environment (~372MB)
 - **[Cloudflare Workers](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Installation-&-Setup)** - Production deployment on the edge
 
-**📰 [Read the v1.2.0 Release Article](https://adamic.tech/articles/2025-10-27-r2-bucket-manager-v1-2-0)** - Learn more about features, architecture, and deployment
+**📰 [Read the v1.3.0 Release Article](https://adamic.tech/articles/2025-10-30-r2-bucket-manager-v1-3-0)** - Learn more about features, architecture, and deployment
 
 ---
 
@@ -51,7 +51,7 @@ Cloudflare's dashboard lacks the full-featured R2 file management capabilities. 
 
 ## ✨ Features
 
-- 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering (NEW in v1.2.0)
+- 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
@@ -280,7 +280,7 @@ R2 Bucket Manager supports selecting and force deleting multiple buckets at once
 
 ---
 
-## 🔎 Cross-Bucket Search (NEW in v1.2.0)
+## 🔎 Cross-Bucket Search
 
 R2 Bucket Manager now supports searching for files across all buckets from the main page, making it easy to find files regardless of which bucket they're stored in.
 

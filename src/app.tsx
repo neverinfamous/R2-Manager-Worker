@@ -61,6 +61,11 @@ export default function BucketManager() {
   } | null>(null)
   const [selectedBuckets, setSelectedBuckets] = useState<string[]>([])
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  const [bulkDownloadProgress, setBulkDownloadProgress] = useState<{
+    progress: number
+    status: 'preparing' | 'downloading' | 'complete' | 'error'
+    error?: string
+  } | null>(null)
   
   // Debug: Log currentPath changes
   useEffect(() => {
@@ -377,6 +382,39 @@ export default function BucketManager() {
     }
   }
 
+  const handleBulkDownload = async () => {
+    if (selectedBuckets.length === 0) return
+    
+    setError('')
+    setBulkDownloadProgress({ progress: 0, status: 'preparing' })
+    
+    try {
+      await api.downloadMultipleBuckets(selectedBuckets, {
+        onProgress: (progress) => {
+          setBulkDownloadProgress({
+            progress,
+            status: progress < 100 ? 'downloading' : 'complete'
+          })
+        }
+      })
+      
+      // Clear selection after successful download
+      setSelectedBuckets([])
+      
+      setTimeout(() => {
+        setBulkDownloadProgress(null)
+      }, 2000)
+    } catch (err) {
+      console.error('Bulk download error:', err)
+      setError(err instanceof Error ? err.message : 'Failed to download buckets')
+      setBulkDownloadProgress({
+        progress: 0,
+        status: 'error',
+        error: err instanceof Error ? err.message : 'Download failed'
+      })
+    }
+  }
+
   const confirmForceBucketDelete = async () => {
     if (!deleteConfirmState?.bucketNames || deleteConfirmState.bucketNames.length === 0) return
 
@@ -544,28 +582,54 @@ export default function BucketManager() {
 
           <CrossBucketSearch onNavigateToBucket={handleBucketNavigate} />
 
-          {selectedBuckets.length > 0 && (
+          {(selectedBuckets.length > 0 || buckets.length > 0) && (
             <div className="bulk-action-toolbar">
               <div className="bulk-action-info">
-                <span className="bulk-selection-count">
-                  {selectedBuckets.length} bucket{selectedBuckets.length !== 1 ? 's' : ''} selected
-                </span>
+                {selectedBuckets.length === 0 && buckets.length > 0 && (
+                  <button
+                    onClick={() => setSelectedBuckets(buckets.map(b => b.name))}
+                    className="bulk-select-all-button"
+                  >
+                    Select All
+                  </button>
+                )}
+                {selectedBuckets.length > 0 && (
+                  <span className="bulk-selection-count">
+                    {selectedBuckets.length} bucket{selectedBuckets.length !== 1 ? 's' : ''} selected
+                  </span>
+                )}
               </div>
               <div className="bulk-action-buttons">
-                <button
-                  onClick={clearBucketSelection}
-                  className="bulk-clear-button"
-                  disabled={isBulkDeleting}
-                >
-                  Clear Selection
-                </button>
-                <button
-                  onClick={handleBulkDelete}
-                  className="bulk-delete-button"
-                  disabled={isBulkDeleting}
-                >
-                  {isBulkDeleting ? 'Preparing...' : 'Delete Selected'}
-                </button>
+                {selectedBuckets.length > 0 && (
+                  <>
+                    <button
+                      onClick={clearBucketSelection}
+                      className="bulk-clear-button"
+                      disabled={isBulkDeleting || bulkDownloadProgress !== null}
+                    >
+                      Clear Selection
+                    </button>
+                    <button
+                      onClick={handleBulkDownload}
+                      className="bulk-download-button"
+                      disabled={bulkDownloadProgress !== null}
+                    >
+                      {bulkDownloadProgress ? (
+                        bulkDownloadProgress.status === 'error' ? 'Download Failed' :
+                        bulkDownloadProgress.status === 'complete' ? 'Download Complete' :
+                        bulkDownloadProgress.status === 'preparing' ? 'Preparing...' :
+                        `Downloading (${Math.round(bulkDownloadProgress.progress)}%)`
+                      ) : 'Download Selected'}
+                    </button>
+                    <button
+                      onClick={handleBulkDelete}
+                      className="bulk-delete-button"
+                      disabled={isBulkDeleting || bulkDownloadProgress !== null}
+                    >
+                      {isBulkDeleting ? 'Preparing...' : 'Delete Selected'}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           )}

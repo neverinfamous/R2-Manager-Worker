@@ -1,12 +1,12 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** October 30, 2025 | **Version:** 1.2.0  
+**Last Updated:** October 30, 2025 | **Version:** 1.3.0  
 **Tech Stack:** React 19.2.0 | Vite 7.1.12 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v1.2.0-green)
+![Version](https://img.shields.io/badge/version-v1.3.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 
@@ -16,7 +16,7 @@
  
 **🚀 Docker Deployment:** Run the development server in a containerized environment for testing and local development.
 
-**📰 [Read the v2.0 Release Article](https://adamic.tech/articles/2025-10-27-r2-bucket-manager-v1-2-0)** - Learn more about features, architecture, and deployment
+**📰 [Read the v1.3.0 Release Article](https://adamic.tech/articles/2025-10-30-r2-bucket-manager-v1-3-0)** - Learn more about features, architecture, and deployment
 
 ---
 
@@ -91,20 +91,20 @@ docker run -p 8787:8787 -v "/path/to/wrangler.toml:/app/wrangler.toml" writenote
 | Tag | Description | Use Case |
 |-----|-------------|----------|
 | `latest` | Latest stable release | **Recommended for testing** |
-| `v1.2.0` | Specific version | Pin to exact version |
+| `v1.3.0` | Specific version | Pin to exact version |
 | `sha-abc1234` | Commit SHA (12-char short) | Development/traceability |
 
 **Pull a specific version:**
 
 ```bash
-docker pull writenotenow/r2-bucket-manager:v1.2.0
+docker pull writenotenow/r2-bucket-manager:v1.3.0
 ```
 
 ---
 
 ## ✨ Features
 
-- 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering (NEW in v1.2.0)
+- 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders
@@ -316,7 +316,7 @@ See the [Installation & Setup Guide](https://github.com/neverinfamous/R2-Manager
 
 ## 🆕 Recent Updates
 
-### v1.2.0 (October 27, 2025) 🎉
+### v1.3.0 (October 30, 2025) 🎉
 - ✅ **Cross-Bucket Search** - Search for files across all buckets with advanced filters
 - ✅ **Sortable Results Table** - Click headers to sort by filename, bucket, size, or date
 - ✅ **Full File Operations** - Download, move, copy, delete from search results

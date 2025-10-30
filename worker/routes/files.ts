@@ -19,6 +19,64 @@ export async function handleFileRoutes(
     'X-Auth-Key': env.API_KEY
   };
 
+  // Handle multi-bucket ZIP download
+  if (request.method === 'POST' && url.pathname === '/api/files/download-buckets-zip') {
+    try {
+      console.log('[Files] Processing multi-bucket ZIP download request');
+      const { buckets } = await request.json() as { buckets: { bucketName: string; files: string[] }[] };
+      
+      const zip = new JSZip();
+      
+      for (const bucket of buckets) {
+        console.log('[Files] Processing bucket:', bucket.bucketName);
+        const bucketFolder = zip.folder(bucket.bucketName);
+        
+        if (!bucketFolder) {
+          throw new Error('Failed to create folder for bucket: ' + bucket.bucketName);
+        }
+        
+        for (const fileName of bucket.files) {
+          console.log('[Files] Fetching:', fileName, 'from bucket:', bucket.bucketName);
+          const response = await fetch(
+            CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucket.bucketName + '/objects/' + fileName,
+            { headers: cfHeaders }
+          );
+          
+          if (!response.ok) {
+            throw new Error('Failed to fetch file: ' + fileName + ' from bucket: ' + bucket.bucketName);
+          }
+          
+          const buffer = await response.arrayBuffer();
+          bucketFolder.file(fileName, buffer);
+        }
+      }
+      
+      console.log('[Files] Creating multi-bucket ZIP');
+      const zipContent = await zip.generateAsync({type: "uint8array"});
+      
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+      return new Response(zipContent.buffer as ArrayBuffer, {
+        headers: {
+          'Content-Type': 'application/zip',
+          'Content-Disposition': 'attachment; filename="buckets-' + timestamp + '.zip"',
+          ...corsHeaders
+        }
+      });
+
+    } catch (err) {
+      console.error('[Files] Multi-bucket ZIP download error:', err);
+      return new Response(JSON.stringify({ 
+        error: 'Failed to create multi-bucket zip file'
+      }), {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          ...corsHeaders
+        }
+      });
+    }
+  }
+
   // Handle ZIP download
   if (request.method === 'POST' && parts[4] === 'download-zip') {
     try {
