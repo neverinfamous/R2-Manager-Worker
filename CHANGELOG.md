@@ -5,6 +5,42 @@ All notable changes to R2 Bucket Manager will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **Architecture Simplification** - Removed D1 database dependency
+  - Removed D1 database binding from all configuration files
+  - Removed D1 operations from worker routes (bucket ownership tracking)
+  - Removed D1 type definitions and interfaces from worker types
+  - All bucket operations now use Cloudflare R2 REST API directly
+  - Simplified deployment process (no database setup required)
+  - Updated all documentation to reflect D1 removal (22 files updated)
+  - Updated 11 wiki pages to remove D1 references and setup steps
+
+### Fixed
+- **Workers.dev Subdomain** - Fixed subdomain being disabled on every deployment
+  - Added `workers_dev = true` to wrangler.toml to persist setting
+  - Added `preview_urls = true` to enable version-specific preview URLs
+  - Updated wrangler.toml.example with both settings
+  - Now `*.workers.dev` subdomain remains enabled after deployments
+
+### Technical Details
+- **Removed Files/Sections:**
+  - D1 database binding configuration
+  - D1 type definitions (D1Database, D1PreparedStatement, D1Result, D1ExecResult)
+  - DB binding from Env interface
+  - bucket_owners table operations (INSERT, UPDATE, DELETE)
+  - worker/schema.sql references from documentation
+- **Updated Documentation:**
+  - Main repo: 11 files (code, config, README, release notes, security)
+  - Wiki: 11 pages (installation, config, troubleshooting, architecture, etc.)
+- **Lines Removed:** ~300+ lines of D1-related code and documentation
+- **Architecture Benefits:**
+  - Simpler deployment (2 fewer setup steps)
+  - No database management required
+  - Lower complexity and maintenance burden
+  - Same functionality with Zero Trust authentication
+
 ## [1.2.0] - 2025-10-27
 
 ### Added
