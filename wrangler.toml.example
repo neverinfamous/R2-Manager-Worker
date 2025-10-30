@@ -8,6 +8,8 @@ name = "r2"
 main = "worker/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true   # Enable *.workers.dev subdomain
+preview_urls = true  # Enable preview URLs for each version
 
 # Smart Placement disabled for SPA - UI responsiveness priority
 placement = { mode = "off" }

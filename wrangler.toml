@@ -2,6 +2,8 @@ name = "r2"
 main = "worker/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+preview_urls = true
 
 # Smart Placement disabled for SPA - UI responsiveness priority
 placement = { mode = "off" }
