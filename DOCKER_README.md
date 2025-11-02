@@ -12,7 +12,7 @@
 
  R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to manage Cloudflare R2 buckets and objects. Supports drag-and-drop uploads, batch copy/move/delete, multi-file ZIP downloads, signed share links, folder hierarchies, advanced search + filters (extension, size, date), and GitHub SSO via Cloudflare Zero Trust.
 
-**🎯 [Try the Live Demo](https://r2.adamic.workers.dev/)** - See R2 Bucket Manager in action
+**🎯 [Try the Live Demo](https://r2.adamic.tech/)** - See R2 Bucket Manager in action
  
 **🚀 Docker Deployment:** Run the development server in a containerized environment for testing and local development.
 
