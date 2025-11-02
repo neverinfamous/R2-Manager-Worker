@@ -10,20 +10,41 @@ class AuthService {
    */
   async logout(): Promise<void> {
     try {
-      // Call our logout endpoint which clears the Cloudflare Access session
+      // Clear any local storage/session storage
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Call Cloudflare Access logout endpoint which clears the session
+      // Use a no-cache fetch to prevent stale responses
       const response = await fetch('/cdn-cgi/access/logout', {
         method: 'GET',
-        credentials: 'include'
+        credentials: 'include',
+        cache: 'no-store',
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
       
-      if (response.ok) {
-        // Redirect to home or login page
-        window.location.href = '/';
+      if (response.ok || response.status === 302) {
+        // Small delay to ensure logout is processed
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Force a full page reload to clear any cached state
+        // Using replace() instead of href to prevent back button issues
+        window.location.replace('/');
+      } else {
+        console.warn('Logout response not OK:', response.status);
+        // Force redirect anyway
+        window.location.replace('/');
       }
     } catch (error) {
       console.error('Logout failed:', error);
-      // Force redirect anyway
-      window.location.href = '/';
+      // Clear storage and force redirect anyway
+      localStorage.clear();
+      sessionStorage.clear();
+      window.location.replace('/');
     }
   }
 

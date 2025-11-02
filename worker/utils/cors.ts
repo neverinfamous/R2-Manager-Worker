@@ -6,12 +6,17 @@ export function getCorsHeaders(request: Request): HeadersInit {
   const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
   const isLocalhostOrigin = origin.includes('localhost') || origin.includes('127.0.0.1');
   
-  // Use specific origin for localhost to allow credentials, wildcard for production
+  // For production with Cloudflare Access, we need to:
+  // 1. Use the specific origin (not wildcard) to support credentials
+  // 2. Allow credentials so cookies (CF_Authorization) can be sent
+  const allowCredentials = true; // Always allow credentials for Cloudflare Access to work
+  
   return {
-    'Access-Control-Allow-Origin': (isLocalhost || isLocalhostOrigin) ? origin : '*',
+    'Access-Control-Allow-Origin': (isLocalhost || isLocalhostOrigin) ? origin : (origin || url.origin),
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS, PATCH',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Name, X-Chunk-Index, X-Total-Chunks',
-    'Access-Control-Allow-Credentials': (isLocalhost || isLocalhostOrigin) ? 'true' : 'false'
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Name, X-Chunk-Index, X-Total-Chunks, cf-access-jwt-assertion',
+    'Access-Control-Allow-Credentials': allowCredentials ? 'true' : 'false',
+    'Vary': 'Origin' // Important for caching with different origins
   };
 }
 

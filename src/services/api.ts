@@ -365,10 +365,31 @@ class APIService {
 
   private getFetchOptions(init?: RequestInit): RequestInit {
     // Always include credentials so cookies are sent automatically
+    // Add cache control to prevent stale auth tokens
     return {
       ...init,
-      credentials: 'include'
+      credentials: 'include',
+      cache: 'no-store'
     }
+  }
+
+  private async handleResponse(response: Response): Promise<Response> {
+    // Check for authentication errors
+    if (response.status === 401 || response.status === 403) {
+      console.error('[API] Authentication error:', response.status);
+      // Clear any cached data
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Throw error with status to trigger logout in app
+      throw new Error(`Authentication error: ${response.status}`);
+    }
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+    
+    return response;
   }
 
   private async sleep(ms: number): Promise<void> {
@@ -513,9 +534,7 @@ class APIService {
       })
     )
     
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
+    await this.handleResponse(response);
 
     const data = await response.json()
     return data.result.buckets.map((bucket: CloudflareBucket) => ({
