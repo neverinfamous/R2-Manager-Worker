@@ -123,20 +123,25 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     }
   }
 
-  // Check rate limits for API requests (skip for localhost)
-  if (!isLocalhost && url.pathname.startsWith('/api/')) {
-    const rateLimitResult = await checkRateLimit(env, request.method, url.pathname, userEmail);
-    
-    if (!rateLimitResult.success) {
-      // Rate limit exceeded - return 429 response
-      console.warn('[Rate Limit] Request blocked', {
-        userEmail,
-        method: request.method,
-        pathname: url.pathname,
-        tier: rateLimitResult.tier
-      });
+  // Check rate limits for API requests (skip for localhost and if rate limiters not configured)
+  if (!isLocalhost && url.pathname.startsWith('/api/') && env.RATE_LIMITER_READ) {
+    try {
+      const rateLimitResult = await checkRateLimit(env, request.method, url.pathname, userEmail);
       
-      return createRateLimitResponse(rateLimitResult, corsHeaders);
+      if (!rateLimitResult.success) {
+        // Rate limit exceeded - return 429 response
+        console.warn('[Rate Limit] Request blocked', {
+          userEmail,
+          method: request.method,
+          pathname: url.pathname,
+          tier: rateLimitResult.tier
+        });
+        
+        return createRateLimitResponse(rateLimitResult, corsHeaders);
+      }
+    } catch (error) {
+      // Log error but don't block request if rate limiting fails
+      console.error('[Rate Limit] Error checking rate limit:', error);
     }
   }
 
