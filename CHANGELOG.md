@@ -1,5 +1,7 @@
 # Changelog
 
+*Last Updated November 6, 2025*
+
 All notable changes to R2 Bucket Manager will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
@@ -8,6 +10,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **API Rate Limiting** - Tiered rate limiting to protect API endpoints from abuse
+  - Three-tier rate limiting system based on operation type (READ/WRITE/DELETE)
+  - READ operations: 100 requests per 60 seconds (GET endpoints)
+  - WRITE operations: 30 requests per 60 seconds (POST/PATCH endpoints)
+  - DELETE operations: 10 requests per 60 seconds (DELETE endpoints)
+  - Per-user enforcement using authenticated email as rate limit key
+  - Automatic endpoint classification by HTTP method and path
+  - Detailed 429 error responses with tier, limit, period, and retry guidance
+  - Violation logging with timestamp, user email, endpoint, and tier
+  - Standard rate limit response headers (Retry-After, X-RateLimit-*)
+  - Automatic bypass for localhost development
+  - Configurable limits via wrangler.toml
+  - Uses Cloudflare Workers Rate Limiting API (no KV required)
+  - Minimal performance impact with sub-millisecond latency
 - **Multi-Bucket Download** - Download multiple selected buckets as a single ZIP archive
   - "Select All" button on main page to quickly select all buckets
   - "Download Selected" button in bulk action toolbar
@@ -36,6 +52,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Now `*.workers.dev` subdomain remains enabled after deployments
 
 ### Technical Details
+- **Rate Limiting Implementation:**
+  - New utility module: `worker/utils/ratelimit.ts` (154 lines)
+  - New rate limit bindings in wrangler.toml (RATE_LIMITER_READ, RATE_LIMITER_WRITE, RATE_LIMITER_DELETE)
+  - Updated TypeScript types with RateLimit and RateLimitResult interfaces
+  - Integrated rate limiting check in worker/index.ts after authentication
+  - Rate limit check executes before route handling with 429 response on violation
+  - Automatic classification: GET → READ, POST/PATCH → WRITE, DELETE → DELETE
+  - ~150 lines of new code for rate limiting logic
+  - Requires Wrangler 4.36.0 or later
+  - Requires Cloudflare Workers paid plan
 - **Multi-Bucket Download Implementation:**
   - New API method: `downloadMultipleBuckets()` in `src/services/api.ts`
   - New worker endpoint: `POST /api/files/download-buckets-zip` in `worker/routes/files.ts`

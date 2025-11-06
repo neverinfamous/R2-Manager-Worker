@@ -1,6 +1,6 @@
 # 🎉 R2 Bucket Manager v1.3.0 - Minor Release
 
-**Release Date:** October 30, 2025  
+**Release Date:** November 30, 2025  
 **Status:** ✅ Production Ready
 
 This minor release brings **major architectural simplification** by removing the D1 database dependency and adds the highly requested **multi-bucket download** feature. The removal of D1 makes deployment easier with no database setup required, while multi-bucket download enables backing up or migrating multiple buckets in a single operation.
@@ -240,11 +240,10 @@ Follow the same steps as above. The D1 database was never required in v1.0.x, so
 ## 🎬 What's Next?
 
 Looking ahead to v1.4.0 and beyond:
-- **Rate Limiting** - API endpoint rate limiting with Cloudflare KV
-- **Refactor Large Files** - Break down `worker/index.ts` and `filegrid.tsx` into smaller modules
+- ✅ **Rate Limiting** - API endpoint rate limiting with Cloudflare Workers Rate Limiting API (completed, pending release)
+- **Audit Logging** - Track all user actions with detailed logs
 - **AWS S3 Migration** - Tools for migrating from AWS S3 to R2
 - **File Versioning** - Track and restore previous file versions
-- **Audit Logging** - Track all user actions with detailed logs
 - **Role-Based Access Control (RBAC)** - Fine-grained permissions
 - **Custom Metadata** - User-defined tags and labels
 

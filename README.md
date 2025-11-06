@@ -1,6 +1,6 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** October 30, 2025 | **Version:** 1.3.0  
+**Last Updated:** November 6, 2025 | **Version:** 1.3.0  
 **Tech Stack:** React 19.2.0 | Vite 7.1.12 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
@@ -65,6 +65,7 @@ Cloudflare's dashboard lacks the full-featured R2 file management capabilities. 
 - 🗑️ **Bulk Bucket Delete** - Select and force delete multiple buckets at once with progress tracking
 - 🧭 **Breadcrumb Navigation** - Navigate through folder hierarchies with ease
 - 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access Zero Trust
+- 🛡️ **Rate Limiting** - Tiered API rate limits (100/min reads, 30/min writes, 10/min deletes) with automatic enforcement
 - ⚡ **Edge Performance** - Deployed on Cloudflare's global network
 - 🎨 **Modern UI** - Beautiful, responsive interface built with React 19
 - 🌓 **Light/Dark Mode** - Auto-detects system preference with manual toggle (System → Light → Dark)
@@ -402,6 +403,53 @@ R2 Bucket Manager includes a comprehensive filtering system to help you quickly 
 
 ---
 
+## 🛡️ Rate Limiting
+
+R2 Bucket Manager implements intelligent rate limiting to protect API endpoints from abuse while ensuring fair resource access for all users.
+
+### Rate Limit Tiers
+
+Rate limits are enforced per-user (identified by authenticated email) with three tiers based on operation type:
+
+| Tier | Operations | Limit | Period | Endpoints |
+|------|-----------|-------|--------|-----------|
+| **READ** | Get operations | 100 requests | 60 seconds | List buckets, list files, search, signed URL generation |
+| **WRITE** | Modify operations | 30 requests | 60 seconds | File uploads, renames, copies, moves, folder creation |
+| **DELETE** | Removal operations | 10 requests | 60 seconds | Delete buckets, delete files, delete folders |
+
+### Key Features
+
+- **Per-User Enforcement** - Each authenticated user has independent rate limits based on their email
+- **Tiered by Operation** - Different limits for read, write, and delete operations
+- **Automatic Blocking** - Requests exceeding limits receive a 429 (Too Many Requests) response
+- **Detailed Error Messages** - Rate limit responses include current limit, period, and retry-after time
+- **Violation Logging** - All rate limit violations are logged for monitoring and analysis
+- **Local Development Bypass** - Rate limiting is automatically disabled for localhost development
+
+### Response Headers
+
+When rate limited, responses include:
+
+- `Retry-After` - Seconds to wait before retrying
+- `X-RateLimit-Limit` - Maximum requests allowed in the period
+- `X-RateLimit-Period` - Time period in seconds
+- `X-RateLimit-Tier` - Which tier was exceeded (READ/WRITE/DELETE)
+
+### Configuration
+
+Rate limits are defined in `wrangler.toml` using Cloudflare Workers Rate Limiting API bindings. To modify limits, edit the configuration and redeploy:
+
+```toml
+[[ratelimits]]
+name = "RATE_LIMITER_READ"
+namespace_id = "1001"
+simple = { limit = 100, period = 60 }
+```
+
+**Note:** Requires Wrangler 4.36.0 or later.
+
+---
+
 ## 🛠️ Local Development
 
 ### Quick Start (Two Terminal Windows Required)
@@ -427,7 +475,7 @@ npx wrangler dev --config wrangler.dev.toml --local
 
 Open your browser to `http://localhost:5173` - the frontend will automatically communicate with the Worker API on port 8787.
 
-**Note:** Authentication is disabled on localhost for easier development. No Cloudflare Access configuration needed for local dev.
+**Note:** Authentication and rate limiting are disabled on localhost for easier development. No Cloudflare Access configuration needed for local dev.
 
 ### Development Configuration Files
 
@@ -438,6 +486,7 @@ Open your browser to `http://localhost:5173` - the frontend will automatically c
 ### What's Different in Local Development
 
 - **Authentication:** Automatically disabled for localhost requests
+- **Rate Limiting:** Automatically bypassed for localhost requests
 - **CORS:** Configured to allow `http://localhost:5173` with credentials
 - **Mock Data:** Returns simulated responses (no real Cloudflare API calls)
 - **No Secrets Required:** Works without `ACCOUNT_ID`, `CF_EMAIL`, or `API_KEY`
@@ -519,6 +568,7 @@ The following operations return simulated success responses for UI testing:
 
 - ✅ **Zero Trust Architecture** - All requests authenticated by Cloudflare Access
 - ✅ **JWT Validation** - Tokens verified on every API call
+- ✅ **Rate Limiting** - Tiered API rate limits prevent abuse and ensure fair usage
 - ✅ **HTTPS Only** - All traffic encrypted via Cloudflare's edge network
 - ✅ **Signed URLs** - Download operations use HMAC-SHA256 signatures
 - ✅ **No Stored Credentials** - No user passwords stored anywhere
@@ -529,16 +579,16 @@ The following operations return simulated success responses for UI testing:
 
 ## 📋 Roadmap
 
+### Unreleased Features (In Development)
+- ✅ **API Rate Limiting** - Tiered rate limits using Cloudflare Workers Rate Limiting API (completed, pending release)
+
 ### Planned Features
-- **Add rate limiting for API endpoints** (Cloudflare KV)
-- **Refactor worker/index.ts and filegrid.tsx** - Large monolithic files
+- **Audit Logging** - Track all user actions with detailed logs
 - **AWS S3 Migration** - Add support for migrating AWS S3 to R2
 - **File Versioning** - Track and restore previous versions
-- **Audit Logging** - Track all user actions with detailed logs
 - **Role-Based Access Control (RBAC)** - Fine-grained permissions
-- **Offline Upload Queue** - Resumable uploads with service workers
-- **Custom Branding** - Configurable logo and colors
 - **Custom Metadata** - User-defined tags and labels
+- **Offline Upload Queue** - Resumable uploads with service workers
 
 **📖 See the full [Roadmap](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Roadmap) for details.**
 

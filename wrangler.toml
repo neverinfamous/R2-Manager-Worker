@@ -2,11 +2,8 @@ name = "r2"
 main = "worker/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
-workers_dev = true
-preview_urls = true
-
-# Smart Placement disabled for SPA - UI responsiveness priority
-placement = { mode = "off" }
+workers_dev = false
+preview_urls = false
 
 [build]
 command = "npm run build"
@@ -27,10 +24,19 @@ bucket_name = "r2-bucket"
 # database_name = "r2manager"
 # database_id = "7c4e1036-b1ee-4aaa-b0b2-20ca3fe6e3d9"
 
-[observability.logs]
-enabled = true
-
 [[routes]]
 pattern = "r2.adamic.tech"
 custom_domain = true
 zone_name = "adamic.tech"
+
+[observability]
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+persist = true
+invocation_logs = true
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+persist = true

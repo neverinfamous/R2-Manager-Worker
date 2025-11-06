@@ -91,6 +91,14 @@ declare global {
     waitUntil(promise: Promise<unknown>): void;
     passThroughOnException(): void;
   }
+
+  interface RateLimit {
+    limit(options: { key: string }): Promise<RateLimitResult>;
+  }
+
+  interface RateLimitResult {
+    success: boolean;
+  }
 }
 
 export interface Env {
@@ -103,6 +111,9 @@ export interface Env {
   URL_SIGNING_KEY: string
   TEAM_DOMAIN: string
   POLICY_AUD: string
+  RATE_LIMITER_READ: RateLimit
+  RATE_LIMITER_WRITE: RateLimit
+  RATE_LIMITER_DELETE: RateLimit
 }
 
 export const CF_API = 'https://api.cloudflare.com/client/v4';

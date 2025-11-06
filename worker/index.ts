@@ -4,6 +4,7 @@ import { validateAccessJWT } from './utils/auth';
 import { validateSignature } from './utils/signing';
 import { getCorsHeaders, handleCorsPreflightRequest, isLocalDevelopment } from './utils/cors';
 import { handleSiteWebmanifest, handleStaticAsset, serveFrontendAssets } from './utils/assets';
+import { checkRateLimit, createRateLimitResponse } from './utils/ratelimit';
 import { handleBucketRoutes } from './routes/buckets';
 import { handleFileRoutes } from './routes/files';
 import { handleFolderRoutes } from './routes/folders';
@@ -119,6 +120,23 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         status: 401,
         headers: corsHeaders
       });
+    }
+  }
+
+  // Check rate limits for API requests (skip for localhost)
+  if (!isLocalhost && url.pathname.startsWith('/api/')) {
+    const rateLimitResult = await checkRateLimit(env, request.method, url.pathname, userEmail);
+    
+    if (!rateLimitResult.success) {
+      // Rate limit exceeded - return 429 response
+      console.warn('[Rate Limit] Request blocked', {
+        userEmail,
+        method: request.method,
+        pathname: url.pathname,
+        tier: rateLimitResult.tier
+      });
+      
+      return createRateLimitResponse(rateLimitResult, corsHeaders);
     }
   }
 

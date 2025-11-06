@@ -1,6 +1,6 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** October 30, 2025 | **Version:** 1.3.0  
+**Last Updated:** November 6, 2025 | **Version:** 1.3.0  
 **Tech Stack:** React 19.2.0 | Vite 7.1.12 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
@@ -118,6 +118,7 @@ docker pull writenotenow/r2-bucket-manager:v1.3.0
 - 🗑️ **Bulk Bucket Delete** - Select and force delete multiple buckets at once with progress tracking
 - 🧭 **Breadcrumb Navigation** - Easy folder traversal
 - 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access
+- 🛡️ **Rate Limiting** - Tiered API rate limits (disabled in local dev)
 - 🌓 **Light/Dark Mode** - System, light, or dark themes
 
 **\*Upload Size Limits:** Plan-based (Free: 100MB, Pro: 100MB, Business: 200MB, Enterprise: 500MB)
@@ -225,7 +226,7 @@ When running without Cloudflare credentials, the development server returns simu
 - ✅ **Upload files** - Simulates success (files not stored)
 - ✅ **Create folders** - Simulates success
 
-**Note:** Mock data enables UI/UX testing without Cloudflare API access. Files and folders are not actually stored. For full functionality with real storage, provide Cloudflare credentials or deploy to production.
+**Note:** Mock data enables UI/UX testing without Cloudflare API access. Files and folders are not actually stored. Authentication and rate limiting are automatically disabled for localhost development. For full functionality with real storage, provide Cloudflare credentials or deploy to production.
 
 ### Option 1: Use Pre-built Image
 
@@ -267,6 +268,7 @@ docker run -p 8787:8787 r2-manager-local
 
 - ✅ **Zero Trust Architecture** - Cloudflare Access authentication
 - ✅ **JWT Validation** - Token verification on every API call
+- ✅ **Rate Limiting** - Tiered API rate limits (production only)
 - ✅ **HTTPS Only** - Encrypted via Cloudflare edge
 - ✅ **Signed URLs** - HMAC-SHA256 for downloads
 - ✅ **No Stored Credentials** - Zero password storage
@@ -311,28 +313,6 @@ See the [Installation & Setup Guide](https://github.com/neverinfamous/R2-Manager
 - [Cloudflare Workers](https://developers.cloudflare.com/workers/)
 - [Cloudflare R2](https://developers.cloudflare.com/r2/)
 - [Cloudflare Access](https://developers.cloudflare.com/cloudflare-one/policies/access/)
-
----
-
-## 🆕 Recent Updates
-
-### v1.3.0 (October 30, 2025) 🎉
-- ✅ **Cross-Bucket Search** - Search for files across all buckets with advanced filters
-- ✅ **Sortable Results Table** - Click headers to sort by filename, bucket, size, or date
-- ✅ **Full File Operations** - Download, move, copy, delete from search results
-- ✅ **Bulk Bucket Deletion** - Select and delete multiple buckets at once
-- ✅ **Progress Tracking** - Visual progress bar during bulk operations
-- ✅ **Bug Fixes** - Fixed file transfer path logic and rename operations
-- ✅ **Code Refactoring** - Improved maintainability with custom hooks
-
-### v1.0 (October 24, 2025)
-- ✅ **Initial Release** - Production-ready R2 bucket manager
-- ✅ **Docker Support** - Containerized development environment
-- ✅ **Advanced Filtering** - Extension, size, and date filters
-- ✅ **Smart Uploads** - Chunked uploads with retry logic
-- ✅ **Bulk Operations** - Download multiple files as ZIP
-- ✅ **Theme Support** - Light, dark, and system modes
-- ✅ **Enterprise Auth** - Cloudflare Access integration
 
 ---
 
