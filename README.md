@@ -101,8 +101,10 @@ Cloudflare's dashboard lacks the full-featured R2 file management capabilities. 
 
 - [Cloudflare account](https://dash.cloudflare.com/sign-up) (Free tier works!)
 - [Node.js](https://nodejs.org/) 18+ and npm
-- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/)
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) (4.36.0+ for rate limiting)
 - Domain managed by Cloudflare (optional - can use Workers.dev subdomain)
+
+**Note:** Rate limiting requires a Cloudflare Workers paid plan. All other features work on the free tier.
 
 ### Installation
 
@@ -120,6 +122,11 @@ Cloudflare's dashboard lacks the full-featured R2 file management capabilities. 
    ```
    
    Edit both files with your settings.
+   
+   **Optional - Enable Rate Limiting:**
+   - Rate limiting is pre-configured in `wrangler.toml.example`
+   - Requires Wrangler 4.36.0+ and Workers paid plan
+   - If you don't have a paid plan, the app works fine without it
 
 3. **Create R2 bucket:**
    ```bash
@@ -446,7 +453,11 @@ namespace_id = "1001"
 simple = { limit = 100, period = 60 }
 ```
 
-**Note:** Requires Wrangler 4.36.0 or later.
+**Requirements:**
+- Wrangler CLI version 4.36.0 or later
+- Cloudflare Workers paid plan (rate limiting not available on free plan)
+
+**Note:** Rate limiting is optional. If not configured in `wrangler.toml`, the application will function normally without rate limiting protection.
 
 ---
 

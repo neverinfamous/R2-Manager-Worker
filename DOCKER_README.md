@@ -268,10 +268,12 @@ docker run -p 8787:8787 r2-manager-local
 
 - ✅ **Zero Trust Architecture** - Cloudflare Access authentication
 - ✅ **JWT Validation** - Token verification on every API call
-- ✅ **Rate Limiting** - Tiered API rate limits (production only)
+- ✅ **Rate Limiting** - Tiered API rate limits (production only, requires paid plan)
 - ✅ **HTTPS Only** - Encrypted via Cloudflare edge
 - ✅ **Signed URLs** - HMAC-SHA256 for downloads
 - ✅ **No Stored Credentials** - Zero password storage
+
+**Note:** Rate limiting requires Cloudflare Workers paid plan and is not available in Docker development mode.
 
 ---
 
