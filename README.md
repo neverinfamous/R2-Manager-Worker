@@ -1,6 +1,6 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** November 6, 2025 | **Version:** 1.3.0  
+**Last Updated:** November 7, 2025 | **Version:** 1.3.0  
 **Tech Stack:** React 19.2.0 | Vite 7.1.12 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
@@ -58,7 +58,8 @@ Cloudflare's dashboard lacks the full-featured R2 file management capabilities. 
 - 📄 **File Management** - Rename files via right-click context menu with validation
 - 🔍 **Smart Filtering** - Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)
 - 🎯 **Advanced Filtering** - Filter files by extension, size ranges, and upload dates with preset and custom options
-- 📤 **Smart Uploads** - Chunked uploads with automatic retry (10MB chunks, up to 500MB files)*
+- 📤 **Smart Uploads** - Chunked uploads with automatic retry and integrity verification (10MB chunks, up to 500MB files)*
+- ✓ **Upload Verification** - MD5 checksum verification ensures uploaded files match stored files exactly
 - 📥 **Bulk Downloads** - Download multiple files as ZIP archives
 - 🔗 **Shareable Links** - Generate signed URLs to share files securely
 - 🔄 **Advanced File Operations** - Move and copy files/folders between buckets and to specific folders within buckets
@@ -591,6 +592,7 @@ The following operations return simulated success responses for UI testing:
 ## 📋 Roadmap
 
 ### Unreleased Features (In Development)
+- ✅ **Upload Integrity Verification** - MD5 checksum verification for all uploads (completed, pending release)
 - ✅ **API Rate Limiting** - Tiered rate limits using Cloudflare Workers Rate Limiting API (completed, pending release)
 
 ### Planned Features

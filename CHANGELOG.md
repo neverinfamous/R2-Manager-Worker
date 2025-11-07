@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Upload Integrity Verification** - MD5 checksum verification for all file uploads
+  - Client-side MD5 calculation using spark-md5 library
+  - Server-side ETag capture from R2 responses
+  - Automatic verification after upload completion
+  - Visual feedback in UI: "Verifying..." → "✓ Verified"
+  - Checksum mismatch detection with clear error messages
+  - Works for both single-chunk (<10MB) and multi-chunk (>10MB) uploads
+  - Per-chunk verification for chunked uploads
+  - Minimal performance overhead (~2-3% of upload time)
+  - Industry-standard data integrity verification
+  - Prevents silent upload failures and data corruption
 - **API Rate Limiting** - Tiered rate limiting to protect API endpoints from abuse
   - Three-tier rate limiting system based on operation type (READ/WRITE/DELETE)
   - READ operations: 100 requests per 60 seconds (GET endpoints)

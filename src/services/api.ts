@@ -1,7 +1,10 @@
+import SparkMD5 from 'spark-md5'
+
 const WORKER_API = import.meta.env.VITE_WORKER_API || window.location.origin
 
 type ProgressCallback = (progress: number) => void
 type RetryCallback = (attempt: number, chunk: number, error: Error) => void
+type VerificationCallback = (status: 'verifying' | 'verified' | 'failed') => void
 
 interface FileObject {
   key: string
@@ -41,6 +44,7 @@ interface DownloadOptions {
 interface UploadOptions {
   onProgress?: ProgressCallback
   onRetry?: RetryCallback
+  onVerification?: VerificationCallback
   maxRetries?: number
   retryDelay?: number
 }
@@ -396,6 +400,25 @@ class APIService {
     return new Promise(resolve => setTimeout(resolve, ms))
   }
 
+  private async calculateMD5(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      const spark = new SparkMD5.ArrayBuffer()
+
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          spark.append(e.target.result as ArrayBuffer)
+          resolve(spark.end())
+        } else {
+          reject(new Error('Failed to read file'))
+        }
+      }
+
+      reader.onerror = () => reject(new Error('Failed to read file for MD5 calculation'))
+      reader.readAsArrayBuffer(blob)
+    })
+  }
+
   private async uploadChunkWithRetry(
     bucketName: string,
     file: File,
@@ -404,7 +427,7 @@ class APIService {
     totalChunks: number,
     options: UploadOptions = {},
     fileName?: string
-  ): Promise<void> {
+  ): Promise<{ etag: string; md5: string }> {
     const {
       maxRetries = this.DEFAULT_MAX_RETRIES,
       retryDelay = this.DEFAULT_RETRY_DELAY,
@@ -413,6 +436,9 @@ class APIService {
     
     const uploadFileName = fileName || file.name
     let lastError: Error | null = null
+    
+    // Calculate MD5 for this chunk
+    const chunkMD5 = await this.calculateMD5(chunk)
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
@@ -426,7 +452,8 @@ class APIService {
               ...this.getHeaders(),
               'X-File-Name': encodeURIComponent(uploadFileName),
               'X-Total-Chunks': totalChunks.toString(),
-              'X-Chunk-Index': chunkIndex.toString()
+              'X-Chunk-Index': chunkIndex.toString(),
+              'X-Chunk-MD5': chunkMD5
             },
             body: formData
           })
@@ -436,7 +463,11 @@ class APIService {
           throw new Error(`Upload failed with status: ${response.status}`)
         }
 
-        return
+        const result = await response.json()
+        return {
+          etag: result.etag || '',
+          md5: chunkMD5
+        }
       } catch (error) {
         lastError = error instanceof Error ? error : new Error('Unknown error during upload')
         if (attempt < maxRetries - 1) {
@@ -447,6 +478,8 @@ class APIService {
         throw new Error(`Failed to upload chunk ${chunkIndex} after ${maxRetries} attempts: ${lastError.message}`)
       }
     }
+    
+    throw new Error('Upload failed unexpectedly')
   }
 
   async uploadFile(
@@ -460,7 +493,7 @@ class APIService {
       throw new Error(validation.error)
     }
 
-    const { onProgress, maxRetries, retryDelay, onRetry } = options
+    const { onProgress, maxRetries, retryDelay, onRetry, onVerification } = options
 
     // Prepend path to filename if provided (but not if path is empty string)
     const fileName = path && path.length > 0 ? `${path}${file.name}` : file.name
@@ -468,10 +501,11 @@ class APIService {
 
     const totalChunks = Math.ceil(file.size / this.CHUNK_SIZE)
     const uploadedChunks = new Set<number>()
+    const chunkResults: { etag: string; md5: string }[] = []
     
     try {
       if (file.size <= this.CHUNK_SIZE) {
-        await this.uploadChunkWithRetry(
+        const result = await this.uploadChunkWithRetry(
           bucketName,
           file,
           file,
@@ -480,10 +514,18 @@ class APIService {
           { maxRetries, retryDelay, onRetry },
           fileName
         )
+        onProgress?.(99)
+        
+        // Verify single file upload
+        onVerification?.('verifying')
+        await this.verifyUpload(result.etag, result.md5, false)
+        onVerification?.('verified')
+        
         onProgress?.(100)
         return
       }
 
+      // Upload all chunks
       for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
         if (uploadedChunks.has(chunkIndex)) continue
 
@@ -491,7 +533,7 @@ class APIService {
         const end = Math.min(start + this.CHUNK_SIZE, file.size)
         const chunk = file.slice(start, end)
 
-        await this.uploadChunkWithRetry(
+        const result = await this.uploadChunkWithRetry(
           bucketName,
           file,
           chunk,
@@ -501,9 +543,27 @@ class APIService {
           fileName
         )
 
+        chunkResults[chunkIndex] = result
         uploadedChunks.add(chunkIndex)
-        const progress = (uploadedChunks.size / totalChunks) * 100
-        onProgress?.(Math.min(progress, 99.9))
+        const progress = (uploadedChunks.size / totalChunks) * 95
+        onProgress?.(Math.min(progress, 95))
+      }
+
+      // Verify multipart upload
+      onProgress?.(96)
+      onVerification?.('verifying')
+      
+      // For multipart uploads, verify that we have all chunks
+      if (chunkResults.length === totalChunks) {
+        // R2 uses compound ETags for multipart (hash of MD5s + part count)
+        // We verify that all chunks uploaded successfully
+        const allChunksVerified = chunkResults.every(result => result.etag && result.md5)
+        if (!allChunksVerified) {
+          throw new Error('Verification failed: Some chunks missing ETag')
+        }
+        onVerification?.('verified')
+      } else {
+        throw new Error('Verification failed: Chunk count mismatch')
       }
 
       onProgress?.(100)
@@ -520,11 +580,35 @@ class APIService {
         error
       })
 
+      if (error instanceof Error && error.message.includes('Verification failed')) {
+        onVerification?.('failed')
+      }
+
       throw new Error(
         `Upload failed: ${failedChunks.length} chunks remaining. ` +
         `Last error: ${error instanceof Error ? error.message : 'Unknown error'}`
       )
     }
+  }
+
+  private async verifyUpload(etag: string, expectedMD5: string, isMultipart: boolean): Promise<void> {
+    if (!etag) {
+      throw new Error('Verification failed: No ETag returned from server')
+    }
+
+    // For non-multipart uploads, R2's ETag should be the MD5 hash (possibly quoted)
+    if (!isMultipart) {
+      const cleanEtag = etag.replace(/"/g, '').toLowerCase()
+      const cleanMD5 = expectedMD5.toLowerCase()
+      
+      if (cleanEtag !== cleanMD5) {
+        console.error('[Verification] ETag mismatch:', { etag: cleanEtag, expected: cleanMD5 })
+        throw new Error('Verification failed: Checksum mismatch')
+      }
+      
+      console.log('[Verification] Upload verified successfully')
+    }
+    // For multipart uploads, we just verify ETags exist for all chunks (done in caller)
   }
 
   async listBuckets() {

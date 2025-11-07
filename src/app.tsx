@@ -30,11 +30,12 @@ interface BucketObject {
 interface UploadProgress {
   fileName: string
   progress: number
-  status: 'uploading' | 'retrying' | 'completed' | 'error'
+  status: 'uploading' | 'retrying' | 'verifying' | 'verified' | 'completed' | 'error'
   error?: string
   currentChunk?: number
   totalChunks?: number
   retryAttempt?: number
+  verificationStatus?: 'verifying' | 'verified' | 'failed'
 }
 
 interface RejectedFile {
@@ -211,6 +212,15 @@ export default function BucketManager() {
                     attempt,
                     error.message
                   )
+                },
+                onVerification: (status) => {
+                  if (status === 'verifying') {
+                    updateProgress(file.name, 99, 'verifying')
+                  } else if (status === 'verified') {
+                    updateProgress(file.name, 100, 'verified')
+                  } else if (status === 'failed') {
+                    updateProgress(file.name, 0, 'error', undefined, undefined, undefined, 'Verification failed: Checksum mismatch')
+                  }
                 },
                 maxRetries: 3,
                 retryDelay: 1000
@@ -868,6 +878,10 @@ export default function BucketManager() {
                           <span className="upload-percentage">
                             {status === 'retrying' ? (
                               `Retrying chunk ${currentChunk}/${totalChunks} (Attempt ${retryAttempt})`
+                            ) : status === 'verifying' ? (
+                              'Verifying...'
+                            ) : status === 'verified' ? (
+                              '✓ Verified'
                             ) : status === 'error' ? (
                               'Failed'
                             ) : (

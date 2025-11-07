@@ -327,6 +327,7 @@ export async function handleFileRoutes(
       const decodedFileName = decodeURIComponent(fileName);
       const uploadUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + decodedFileName;
       const uploadTimestamp = new Date().toISOString();
+      let etag = '';
       
       // For single chunk uploads
       if (totalChunks === 1) {
@@ -345,7 +346,9 @@ export async function handleFileRoutes(
           throw new Error('Upload failed: ' + uploadResponse.status);
         }
 
-        console.log('[Files] Upload completed:', decodedFileName);
+        // Capture ETag from R2 response for verification
+        etag = uploadResponse.headers.get('etag') || uploadResponse.headers.get('ETag') || '';
+        console.log('[Files] Upload completed:', decodedFileName, 'ETag:', etag);
       } else {
         // Handle chunked uploads
         const chunkId = decodedFileName + '-' + chunkIndex;
@@ -366,7 +369,9 @@ export async function handleFileRoutes(
           throw new Error('Chunk upload failed: ' + uploadResponse.status);
         }
 
-        console.log('[Files] Chunk uploaded:', chunkId);
+        // Capture ETag from R2 response for verification
+        etag = uploadResponse.headers.get('etag') || uploadResponse.headers.get('ETag') || '';
+        console.log('[Files] Chunk uploaded:', chunkId, 'ETag:', etag);
       }
 
       // Force a cache refresh of the file listing
@@ -379,7 +384,9 @@ export async function handleFileRoutes(
 
       return new Response(JSON.stringify({ 
         success: true,
-        timestamp: uploadTimestamp
+        timestamp: uploadTimestamp,
+        etag: etag,
+        chunkIndex: chunkIndex
       }), { 
         headers: {
           'Content-Type': 'application/json',
