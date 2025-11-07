@@ -329,48 +329,37 @@ export async function handleFileRoutes(
       const uploadTimestamp = new Date().toISOString();
       let etag = '';
       
-      // For single chunk uploads
+      // Upload file using REST API
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'PUT',
+        headers: { 
+          ...cfHeaders, 
+          'Content-Type': file.type || 'application/octet-stream',
+          'X-Upload-Created': uploadTimestamp,
+          'Cache-Control': 'no-cache'
+        },
+        body: file
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Upload failed: ' + uploadResponse.status);
+      }
+
+      // R2 REST API doesn't return ETag in PUT response headers
+      // We need to do a HEAD request to get the ETag
+      const headResponse = await fetch(uploadUrl, {
+        method: 'HEAD',
+        headers: cfHeaders
+      });
+
+      if (headResponse.ok) {
+        etag = headResponse.headers.get('etag') || headResponse.headers.get('ETag') || '';
+      }
+      
       if (totalChunks === 1) {
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 
-            ...cfHeaders, 
-            'Content-Type': file.type,
-            'X-Upload-Created': uploadTimestamp,
-            'Cache-Control': 'no-cache'
-          },
-          body: file
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error('Upload failed: ' + uploadResponse.status);
-        }
-
-        // Capture ETag from R2 response for verification
-        etag = uploadResponse.headers.get('etag') || uploadResponse.headers.get('ETag') || '';
         console.log('[Files] Upload completed:', decodedFileName, 'ETag:', etag);
       } else {
-        // Handle chunked uploads
         const chunkId = decodedFileName + '-' + chunkIndex;
-        console.log('[Files] Uploading chunk:', chunkId);
-
-        const uploadResponse = await fetch(uploadUrl, {
-          method: 'PUT',
-          headers: { 
-            ...cfHeaders, 
-            'Content-Type': file.type,
-            'X-Upload-Created': uploadTimestamp,
-            'Cache-Control': 'no-cache'
-          },
-          body: file
-        });
-
-        if (!uploadResponse.ok) {
-          throw new Error('Chunk upload failed: ' + uploadResponse.status);
-        }
-
-        // Capture ETag from R2 response for verification
-        etag = uploadResponse.headers.get('etag') || uploadResponse.headers.get('ETag') || '';
         console.log('[Files] Chunk uploaded:', chunkId, 'ETag:', etag);
       }
 
