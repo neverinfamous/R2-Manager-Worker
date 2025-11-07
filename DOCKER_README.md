@@ -112,6 +112,7 @@ docker pull writenotenow/r2-bucket-manager:v1.3.0
 - 🔍 **Smart Filtering** - Real-time filtering by filename/folder name
 - 🎯 **Advanced Filtering** - Filter by extension, size, and date
 - 📤 **Smart Uploads** - Chunked uploads with retry (up to 500MB)*
+- ✓ Upload Verification - MD5 checksum verification ensures uploaded files match stored files exactly
 - 📥 **Bulk Downloads** - Download multiple files as ZIP
 - 🔗 **Shareable Links** - Generate signed URLs
 - 🔄 **Advanced Operations** - Move/copy between buckets
