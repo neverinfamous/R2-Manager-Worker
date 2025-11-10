@@ -1,7 +1,7 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** November 7, 2025 | **Version:** 1.3.0  
-**Tech Stack:** React 19.2.0 | Vite 7.1.12 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
+**Last Updated:** November 9, 2025 | **Version:** 1.3.0  
+**Tech Stack:** React 19.2.0 | Vite 7.2.2 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
@@ -526,7 +526,7 @@ The following operations return simulated success responses for UI testing:
 | Component | Technology | Version |
 |-----------|-----------|---------|
 | Frontend | React | 19.2.0 |
-| Build Tool | Vite | 7.1.12 |
+| Build Tool | Vite | 7.2.2 |
 | Language | TypeScript | 5.9.3 |
 | Backend | Cloudflare Workers | Runtime API |
 | Storage | Cloudflare R2 | S3-compatible |
