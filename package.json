@@ -38,6 +38,7 @@
     "wrangler": "^4.46.0"
   },
   "overrides": {
-    "esbuild": "^0.25.10"
+    "esbuild": "^0.25.10",
+    "glob": "^11.1.0"
   }
 }
