@@ -8,9 +8,28 @@
 # -----------------
 # Stage 1: Builder
 # -----------------
-FROM node:22-alpine AS builder
+FROM node:20-alpine AS builder
 
 WORKDIR /app
+
+# Upgrade npm to latest version to fix CVE-2024-21538 (cross-spawn vulnerability)
+RUN npm install -g npm@latest
+
+# Patch npm's own dependencies to fix CVE-2025-64756 (glob) and CVE-2025-64118 (tar)
+# npm@11.6.2 bundles vulnerable versions glob@11.0.3, glob@10.4.5 (in node-gyp), and tar@7.5.1
+# We download patched versions first, then replace all vulnerable ones
+RUN cd /tmp && \
+    npm pack glob@11.1.0 && \
+    npm pack tar@7.5.2 && \
+    rm -rf /usr/local/lib/node_modules/npm/node_modules/glob && \
+    rm -rf /usr/local/lib/node_modules/npm/node_modules/tar && \
+    rm -rf /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob && \
+    tar -xzf glob-11.1.0.tgz && \
+    cp -r package /usr/local/lib/node_modules/npm/node_modules/glob && \
+    cp -r package /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob && \
+    tar -xzf tar-7.5.2.tgz && \
+    mv package /usr/local/lib/node_modules/npm/node_modules/tar && \
+    rm -rf /tmp/*
 
 # Install build dependencies
 RUN apk add --no-cache \
@@ -33,11 +52,36 @@ RUN npm run build
 # -----------------
 # Stage 2: Runtime
 # -----------------
-FROM node:22-alpine AS runtime
+FROM node:20-alpine AS runtime
 
 WORKDIR /app
 
+# Upgrade npm to latest version to fix CVE-2024-21538 (cross-spawn vulnerability)
+RUN npm install -g npm@latest
+
+# Patch npm's own dependencies to fix CVE-2025-64756 (glob) and CVE-2025-64118 (tar)
+# npm@11.6.2 bundles vulnerable versions glob@11.0.3, glob@10.4.5 (in node-gyp), and tar@7.5.1
+# We download patched versions first, then replace all vulnerable ones
+RUN cd /tmp && \
+    npm pack glob@11.1.0 && \
+    npm pack tar@7.5.2 && \
+    rm -rf /usr/local/lib/node_modules/npm/node_modules/glob && \
+    rm -rf /usr/local/lib/node_modules/npm/node_modules/tar && \
+    rm -rf /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob && \
+    tar -xzf glob-11.1.0.tgz && \
+    cp -r package /usr/local/lib/node_modules/npm/node_modules/glob && \
+    cp -r package /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob && \
+    tar -xzf tar-7.5.2.tgz && \
+    mv package /usr/local/lib/node_modules/npm/node_modules/tar && \
+    rm -rf /tmp/*
+
 # Install runtime dependencies only
+# Security Notes:
+# - Application dependencies: glob@11.1.0, tar@7.5.2 (patched via package.json overrides)
+# - npm CLI dependencies: glob@11.1.0, tar@7.5.2 (manually patched in npm's installation)
+# - curl 8.14.1-r2 has CVE-2025-10966 (MEDIUM) with no fix available yet (Alpine base package)
+# - busybox 1.37.0-r19 has CVE-2025-46394 & CVE-2024-58251 (LOW) with no fixes available yet (Alpine base package)
+# Alpine base package vulnerabilities (curl, busybox) are accepted risks with no available patches
 RUN apk add --no-cache \
     curl \
     ca-certificates

@@ -39,6 +39,9 @@
   },
   "overrides": {
     "esbuild": "^0.25.10",
-    "glob": "^11.1.0"
+    "cross-spawn": "^7.0.5",
+    "brace-expansion": "^2.0.2",
+    "glob": "^11.1.0",
+    "tar": "^7.5.2"
   }
 }
