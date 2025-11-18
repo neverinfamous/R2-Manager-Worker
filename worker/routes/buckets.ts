@@ -51,7 +51,7 @@ export async function handleBucketRoutes(
       
       // With Zero Trust auth, show all R2 buckets to authenticated users
       // Exclude system/internal buckets
-      const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki'];
+      const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki', 'kv-manager-backups'];
       const filteredBuckets = (data.result.buckets || []).filter((b: { name: string }) =>
         !systemBuckets.includes(b.name)
       );

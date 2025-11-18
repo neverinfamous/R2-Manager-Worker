@@ -74,7 +74,7 @@ export async function handleSearchRoutes(
     const bucketsData = await bucketsResponse.json();
     
     // Filter out system buckets
-    const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki'];
+    const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki', 'kv-manager-backups'];
     const buckets = (bucketsData.result.buckets || [])
       .filter((b: { name: string }) => !systemBuckets.includes(b.name))
       .map((b: { name: string }) => b.name);
