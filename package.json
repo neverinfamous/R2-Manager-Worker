@@ -22,7 +22,7 @@
     "@babel/core": "^7.28.5",
     "@cloudflare/workers-types": "^4.20251109.0",
     "@eslint/js": "^9.39.0",
-    "@types/node": "24.10.0",
+    "@types/node": "24.10.1",
     "@types/react": "^19.2.2",
     "@types/react-dom": "^19.2.2",
     "@types/spark-md5": "^3.0.5",
