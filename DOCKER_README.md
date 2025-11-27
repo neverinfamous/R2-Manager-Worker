@@ -164,6 +164,27 @@ docker pull writenotenow/r2-bucket-manager:v2.0.0
 
 ---
 
+## 🔄 Upgrading
+
+### Database Schema Updates
+
+If you're upgrading from a previous version and want to enable new features like individual action logging (file uploads, downloads, deletes, etc.), run the schema migration:
+
+```bash
+npx wrangler d1 execute r2-manager-metadata --remote --file=worker/schema.sql
+```
+
+> **Note:** This command is safe to run multiple times - it uses `CREATE TABLE IF NOT EXISTS` so existing tables are not affected. If you haven't run this migration, the application will continue to work normally but individual actions won't be logged in Job History.
+
+### Version-Specific Upgrades
+
+**Upgrading to v2.0.0 or later:**
+- Job History requires a D1 database. See the [Installation Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Installation-&-Setup) for setup instructions.
+- Rate limiting requires a Cloudflare Workers paid plan.
+- AI Search requires the `[ai]` binding in your wrangler.toml.
+
+---
+
 ## 🔍 Filtering & Search
 
 ### Basic Filtering

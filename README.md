@@ -131,6 +131,20 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
 
 ---
 
+### Upgrading from v2.0.0
+
+If you already have Job History set up and want to enable individual action logging (file uploads, downloads, deletes, etc.), run the schema migration to add the new `audit_log` table:
+
+```bash
+npx wrangler d1 execute r2-manager-metadata --remote --file=worker/schema.sql
+```
+
+> **Note:** This command is safe to run multiple times - it uses `CREATE TABLE IF NOT EXISTS` so existing tables are not affected. If you don't run the migration, the application will continue to work normally but individual actions won't be logged (only bulk operations).
+
+**📖 See the [Job History Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Job-History) for complete documentation.**
+
+---
+
 ## 🐳 Docker Development Environment
 
 For local development and testing, use the Docker image:
@@ -215,10 +229,6 @@ Create the database and run the schema:
 npx wrangler d1 create r2-manager-metadata
 npx wrangler d1 execute r2-manager-metadata --remote --file=worker/schema.sql
 ```
-
-**📖 See the [Job History Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Job-History) for complete documentation.**
-
----
 
 ## 🤖 AI Search Integration
 

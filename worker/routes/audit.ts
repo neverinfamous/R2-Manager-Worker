@@ -15,25 +15,40 @@ interface APIResponse {
  * Log an audit event for a single operation
  */
 export async function logAuditEvent(
-  db: D1Database,
+  db: D1Database | undefined,
   params: LogAuditEventParams
 ): Promise<void> {
-  await db.prepare(`
-    INSERT INTO audit_log (
-      operation_type, bucket_name, object_key, user_email, 
-      status, metadata, size_bytes, destination_bucket, destination_key
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(
-    params.operationType,
-    params.bucketName ?? null,
-    params.objectKey ?? null,
-    params.userEmail,
-    params.status ?? 'success',
-    params.metadata ? JSON.stringify(params.metadata) : null,
-    params.sizeBytes ?? null,
-    params.destinationBucket ?? null,
-    params.destinationKey ?? null
-  ).run();
+  // Skip if no database bound
+  if (!db) {
+    return;
+  }
+
+  try {
+    await db.prepare(`
+      INSERT INTO audit_log (
+        operation_type, bucket_name, object_key, user_email, 
+        status, metadata, size_bytes, destination_bucket, destination_key
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      params.operationType,
+      params.bucketName ?? null,
+      params.objectKey ?? null,
+      params.userEmail,
+      params.status ?? 'success',
+      params.metadata ? JSON.stringify(params.metadata) : null,
+      params.sizeBytes ?? null,
+      params.destinationBucket ?? null,
+      params.destinationKey ?? null
+    ).run();
+  } catch (error) {
+    // Log error but don't fail the operation - audit logging is non-critical
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('no such table')) {
+      console.log('[Audit] audit_log table does not exist - run schema migration: npx wrangler d1 execute r2-manager-metadata --remote --file=worker/schema.sql');
+    } else {
+      console.error('[Audit] Failed to log audit event:', error);
+    }
+  }
 }
 
 /**
