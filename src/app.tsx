@@ -37,7 +37,7 @@ const formatFileSize = (bytes: number): string => {
 interface BucketObject {
   name: string
   created: string
-  size?: number
+  size?: number | undefined
 }
 
 interface UploadProgress {

@@ -789,6 +789,8 @@ class APIService {
     if (!response.ok) {
       throw new Error(`Delete failed: ${response.status}`)
     }
+    
+    return { success: true }
   }
 
   async downloadFiles(bucketName: string, files: FileObject[], options: DownloadOptions = {}): Promise<void> {

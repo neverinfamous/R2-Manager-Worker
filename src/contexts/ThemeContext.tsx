@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useEffect, useState, type ReactNode, useMemo } from 'react'
+import { createContext, useEffect, useState, type ReactNode, useMemo, type JSX } from 'react'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 export type ResolvedTheme = 'light' | 'dark'
