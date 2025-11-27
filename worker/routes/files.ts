@@ -363,15 +363,31 @@ export async function handleFileRoutes(
         throw new Error('Upload failed: ' + String(uploadResponse.status));
       }
 
-      // R2 REST API doesn't return ETag in PUT response headers
-      // We need to do a HEAD request to get the ETag
-      const headResponse = await fetch(uploadUrl, {
-        method: 'HEAD',
-        headers: cfHeaders
-      });
+      // Try to get ETag from PUT response headers first
+      etag = uploadResponse.headers.get('etag') ?? uploadResponse.headers.get('ETag') ?? '';
+      
+      // If not in headers, try parsing from response body (R2 REST API returns JSON)
+      if (!etag) {
+        try {
+          const uploadResult = await uploadResponse.json() as { result?: { etag?: string; httpEtag?: string } };
+          etag = uploadResult.result?.etag ?? uploadResult.result?.httpEtag ?? '';
+        } catch {
+          // Response might not be JSON, continue without ETag from body
+        }
+      }
 
-      if (headResponse.ok) {
-        etag = headResponse.headers.get('etag') ?? headResponse.headers.get('ETag') ?? '';
+      // If still no ETag, do a GET request to list objects and find the file
+      if (!etag) {
+        const listUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects?prefix=' + encodeURIComponent(decodedFileName);
+        const listResponse = await fetch(listUrl, { headers: cfHeaders });
+        
+        if (listResponse.ok) {
+          const listData = await listResponse.json() as CloudflareApiResponse<{ key: string; etag?: string; httpEtag?: string }[]>;
+          const fileObj = listData.result?.find(obj => obj.key === decodedFileName);
+          if (fileObj) {
+            etag = fileObj.etag ?? fileObj.httpEtag ?? '';
+          }
+        }
       }
       
       if (totalChunks === 1) {

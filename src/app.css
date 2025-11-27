@@ -2402,9 +2402,10 @@
 
 .upload-header {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  text-align: center;
+  gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .upload-header h2 {
@@ -2412,4 +2413,27 @@
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.ai-search-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--accent-blue);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.ai-search-toggle-btn:hover {
+  background: var(--accent-blue-hover);
+}
+
+.ai-search-toggle-btn svg {
+  flex-shrink: 0;
 }

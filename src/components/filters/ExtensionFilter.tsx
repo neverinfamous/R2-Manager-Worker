@@ -137,9 +137,12 @@ export function ExtensionFilter({
                     className="filter-checkbox-label"
                     role="menuitemcheckbox"
                     aria-checked={selectedExtensions.includes(ext)}
+                    htmlFor={`ext-filter-${ext}`}
                   >
                     <input
                       type="checkbox"
+                      id={`ext-filter-${ext}`}
+                      name={`ext-filter-${ext}`}
                       checked={selectedExtensions.includes(ext)}
                       onChange={() => onExtensionToggle(ext)}
                       className="filter-checkbox-input"

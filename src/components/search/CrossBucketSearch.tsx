@@ -146,6 +146,8 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
             <div className="search-input-group">
               <input
                 type="text"
+                id="cross-bucket-search"
+                name="cross-bucket-search"
                 className="search-input"
                 placeholder="Search by filename..."
                 value={filters.query}

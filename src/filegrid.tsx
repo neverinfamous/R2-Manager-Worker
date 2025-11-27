@@ -915,6 +915,8 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           </svg>
           <input
             type="text"
+            id="filter-text"
+            name="filter-text"
             placeholder="Filter files and folders..."
             value={filterText}
             onChange={(e) => setFilterText(e.target.value)}
@@ -935,6 +937,8 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         
         <div className="filter-controls">
           <select 
+            id="filter-type"
+            name="filter-type"
             className="filter-type-select"
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as 'all' | 'files' | 'folders')}

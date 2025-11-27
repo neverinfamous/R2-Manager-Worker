@@ -6,6 +6,7 @@ import { api } from './services/api'
 import { auth } from './services/auth'
 import { ThemeToggle } from './components/ThemeToggle'
 import { CrossBucketSearch } from './components/search/CrossBucketSearch'
+import { AISearchPanel } from './components/ai-search'
 import type { FileRejection, FileWithPath } from 'react-dropzone'
 
 // API response types
@@ -80,6 +81,7 @@ export default function BucketManager(): JSX.Element {
     status: 'preparing' | 'downloading' | 'complete' | 'error'
     error?: string
   } | null>(null)
+  const [showAISearch, setShowAISearch] = useState(false)
   
   // Debug: Log currentPath changes
   useEffect(() => {
@@ -701,6 +703,8 @@ export default function BucketManager(): JSX.Element {
                     <div className="bucket-checkbox-container">
                       <input
                         type="checkbox"
+                        id={`bucket-select-${bucket.name}`}
+                        name={`bucket-select-${bucket.name}`}
                         className="bucket-checkbox"
                         checked={isSelected}
                         onChange={(e) => {
@@ -730,9 +734,9 @@ export default function BucketManager(): JSX.Element {
                           startEditingBucket(bucket.name)
                         }}
                         className="bucket-edit"
-                        title="Edit bucket name"
+                        title="Rename bucket"
                       >
-                        Edit
+                        Rename
                       </button>
                       <button
                         onClick={(e) => {
@@ -839,7 +843,26 @@ export default function BucketManager(): JSX.Element {
           <div className="upload-panel">
             <div className="upload-header">
               <h2>Bucket Name: {selectedBucket}</h2>
+              <button
+                className="ai-search-toggle-btn"
+                onClick={() => setShowAISearch(!showAISearch)}
+                title="AI Search"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="20" height="20">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                  <path d="M11 8v6M8 11h6" />
+                </svg>
+                {showAISearch ? 'Hide AI Search' : 'AI Search'}
+              </button>
             </div>
+
+            {showAISearch && (
+              <AISearchPanel
+                bucketName={selectedBucket}
+                onClose={() => setShowAISearch(false)}
+              />
+            )}
 
             {error && <div className="error-message">{error}</div>}
 

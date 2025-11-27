@@ -9,6 +9,7 @@ import { handleBucketRoutes } from './routes/buckets';
 import { handleFileRoutes } from './routes/files';
 import { handleFolderRoutes } from './routes/folders';
 import { handleSearchRoutes } from './routes/search';
+import { handleAISearchRoutes } from './routes/ai-search';
 
 async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
@@ -149,6 +150,10 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   const isLocalDev = isLocalhost && (!env.ACCOUNT_ID || !env.CF_EMAIL || !env.API_KEY);
 
   // Route API requests
+  if (url.pathname.startsWith('/api/ai-search')) {
+    return await handleAISearchRoutes(request, env, url, corsHeaders, isLocalDev);
+  }
+
   if (url.pathname.startsWith('/api/search')) {
     return await handleSearchRoutes(request, env, url, corsHeaders, isLocalDev);
   }

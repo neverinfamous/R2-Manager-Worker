@@ -206,6 +206,8 @@ export function SearchResultsTable({
                 <th className="checkbox-column">
                   <input
                     type="checkbox"
+                    id="search-select-all"
+                    name="search-select-all"
                     onChange={(e) => {
                       if (e.target.checked) {
                         setSelectedFiles(new Set(results.map(r => `${r.bucket}:${r.key}`)))
@@ -214,6 +216,7 @@ export function SearchResultsTable({
                       }
                     }}
                     checked={selectedFiles.size === results.length && results.length > 0}
+                    aria-label="Select all results"
                   />
                 </th>
                 <th className="sortable" onClick={() => onSort('filename')}>
@@ -232,17 +235,21 @@ export function SearchResultsTable({
               </tr>
             </thead>
             <tbody>
-              {results.map((result) => {
+              {results.map((result, index) => {
                 const id = `${result.bucket}:${result.key}`
                 const isSelected = selectedFiles.has(id)
+                const checkboxId = `search-result-${index}`
                 
                 return (
                   <tr key={id} className={isSelected ? 'selected' : ''}>
                     <td className="checkbox-column">
                       <input
                         type="checkbox"
+                        id={checkboxId}
+                        name={checkboxId}
                         checked={isSelected}
                         onChange={() => toggleFileSelection(result.bucket, result.key)}
+                        aria-label={`Select ${result.key}`}
                       />
                     </td>
                     <td className="filename-column">

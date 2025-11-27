@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search (formerly AutoRAG) for semantic search
+  - Bucket compatibility analysis shows which files can be indexed by AI Search
+  - Visual donut chart displaying indexable vs non-indexable file ratios
+  - Supported file types: markdown, text, JSON, YAML, HTML, code files (up to 4MB each)
+  - Direct link to Cloudflare Dashboard for creating AI Search instances
+  - Query interface with two search modes: AI-powered (with LLM response) and semantic search (retrieval only)
+  - Instance management: list, sync, and query existing AI Search instances
+  - Real-time search results with relevance scores and content snippets
+  - Configurable result limits and reranking options
+  - Mock data support for local development
+  - New API endpoints: `/api/ai-search/*` for compatibility, instances, and queries
+  - Requires `[ai]` binding in wrangler.toml for Workers AI access
+
+- **Accessibility Improvements** - Added id/name attributes to form elements for better accessibility compliance
+  - Filter inputs and selects now have proper id and name attributes
+  - AI Search query and options have accessible identifiers
+  - Checkbox elements include unique identifiers for screen readers
+
 - **Strict TypeScript & ESLint Compliance** - Achieved full strict type safety across the codebase
   - Fixed 280+ ESLint errors and 55 type safety warnings
   - Enabled `strictTypeChecked` and `stylisticTypeChecked` ESLint rule sets
@@ -76,6 +94,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Now `*.workers.dev` subdomain remains enabled after deployments
 
 ### Technical Details
+- **AI Search Implementation:**
+  - New route file: `worker/routes/ai-search.ts` (~600 lines)
+  - New frontend components: `src/components/ai-search/` (AISearchPanel, CompatibilityReport, AISearchQuery)
+  - New CSS: `src/components/ai-search/ai-search.css` (~900 lines)
+  - New API service methods in `src/services/api.ts`
+  - New TypeScript types for AI Search responses in `worker/types/index.ts`
+  - Uses Cloudflare Workers AI binding for native integration
+  - Supports both AI-powered search (with LLM) and semantic search (retrieval only)
+  - Mock data support for local development without AI binding
+  - ~2,000 lines of new code across 8 files
+
 - **Rate Limiting Implementation:**
   - New utility module: `worker/utils/ratelimit.ts` (154 lines)
   - New rate limit bindings in wrangler.toml (RATE_LIMITER_READ, RATE_LIMITER_WRITE, RATE_LIMITER_DELETE)

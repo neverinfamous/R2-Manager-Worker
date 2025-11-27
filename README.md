@@ -19,19 +19,9 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
 
 ---
 
-## 🎯 Why It Exists
-
-Cloudflare's dashboard lacks the full-featured R2 file management capabilities. This tool provides a self-hosted alternative for developers and enterprises wanting:
-
-- Complete control over R2 buckets with advanced file operations
-- Seamless SSO integration via GitHub (or other identity providers)
-- Modern, responsive interface for managing files at scale
-- Edge-deployed performance on Cloudflare's global network
-
----
-
 ## ✨ Features
 
+- 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search and RAG capabilities
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
@@ -192,6 +182,41 @@ Comprehensive client-side filtering for large buckets.
 
 ---
 
+## 🤖 AI Search Integration
+
+Connect your R2 buckets to Cloudflare AI Search (formerly AutoRAG) for powerful semantic search and AI-powered question answering.
+
+### Features
+
+- **Compatibility Analysis**: See which files in your bucket can be indexed by AI Search
+- **Visual Reports**: Donut chart showing indexable vs non-indexable file ratios
+- **Dual Search Modes**: 
+  - **AI Search**: Get AI-generated answers based on your data
+  - **Semantic Search**: Retrieve relevant documents without AI generation
+- **Instance Management**: List, sync, and query AI Search instances from the UI
+- **Direct Dashboard Link**: Quick access to Cloudflare Dashboard for instance creation
+
+### Supported File Types
+
+AI Search can index these file types (up to 4MB each):
+- **Text**: `.txt`, `.md`, `.rst`, `.log`
+- **Config**: `.json`, `.yaml`, `.yml`, `.toml`, `.ini`, `.conf`, `.env`
+- **Code**: `.js`, `.ts`, `.py`, `.html`, `.css`, `.xml`
+- **Documents**: `.tex`, `.latex`, `.sh`, `.bat`, `.ps1`
+
+### Configuration
+
+Add the AI binding to your `wrangler.toml`:
+
+```toml
+[ai]
+binding = "AI"
+```
+
+**📖 See the [AI Search Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/AI-Search) for complete setup instructions.**
+
+---
+
 ## 🛡️ Rate Limiting
 
 Intelligent, per-user rate limiting prevents abuse while ensuring fair resource access. Limits are applied based on the authenticated user's email.
@@ -344,6 +369,15 @@ The following operations return simulated success responses for UI testing:
 - `POST /api/folders/:bucketName/:folderPath/move` - Move a folder to another bucket or folder (supports `destinationPath`)
 - `DELETE /api/folders/:bucketName/:folderPath` - Delete a folder and its contents (with optional `?force=true`)
 
+#### AI Search Operations
+- `GET /api/ai-search/compatibility/:bucketName` - Analyze bucket files for AI Search indexability
+- `GET /api/ai-search/instances` - List AI Search instances
+- `POST /api/ai-search/instances` - Create an AI Search instance
+- `DELETE /api/ai-search/instances/:name` - Delete an AI Search instance
+- `POST /api/ai-search/instances/:name/sync` - Trigger instance re-indexing
+- `POST /api/ai-search/:instanceName/search` - Semantic search (retrieval only)
+- `POST /api/ai-search/:instanceName/ai-search` - AI-powered search with generated response
+
 ---
 
 ## 🔐 Security
@@ -362,6 +396,7 @@ The following operations return simulated success responses for UI testing:
 ## 📋 Roadmap
 
 ### Unreleased Features (In Development)
+- ✅ **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search (completed, pending release)
 - ✅ **Upload Integrity Verification** - MD5 checksum verification for all uploads (completed, pending release)
 - ✅ **API Rate Limiting** - Tiered rate limits using Cloudflare Workers Rate Limiting API (completed, pending release)
 

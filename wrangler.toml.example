@@ -35,6 +35,14 @@ bucket_name = "your-bucket-name"  # CHANGE THIS
 enabled = true
 
 # ============================================
+# AI BINDING CONFIGURATION (for AI Search)
+# ============================================
+# Enable AI binding for querying AI Search instances
+# Requires an AI Search instance to be created via Dashboard first
+[ai]
+binding = "AI"
+
+# ============================================
 # RATE LIMITING CONFIGURATION
 # ============================================
 # Rate limiting bindings for API endpoint protection

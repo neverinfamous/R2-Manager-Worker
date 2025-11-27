@@ -70,6 +70,96 @@ interface SignedUrlResponse {
   url: string
 }
 
+// AI Search Types
+export interface AISearchCompatibility {
+  bucketName: string
+  totalFiles: number
+  indexableFiles: number
+  nonIndexableFiles: number
+  totalSize: number
+  indexableSize: number
+  files: {
+    indexable: AISearchFileInfo[]
+    nonIndexable: AISearchFileInfo[]
+  }
+  supportedExtensions: string[]
+}
+
+export interface AISearchFileInfo {
+  key: string
+  size: number
+  extension: string
+  reason?: string
+}
+
+export interface AISearchInstance {
+  name: string
+  description?: string
+  created_at?: string
+  modified_at?: string
+  status?: 'active' | 'indexing' | 'paused' | 'error'
+  data_source?: {
+    type: 'r2' | 'website'
+    bucket_name?: string
+    domain?: string
+  }
+}
+
+export interface AISearchInstancesResponse {
+  instances: AISearchInstance[]
+  error?: string
+  dashboardUrl?: string
+}
+
+export interface AISearchCreateResponse {
+  success: boolean
+  instance?: AISearchInstance
+  error?: string
+  dashboardUrl?: string
+}
+
+export interface AISearchSyncResponse {
+  success: boolean
+  message?: string
+  job_id?: string
+  error?: string
+}
+
+export interface AISearchQueryParams {
+  query: string
+  rewrite_query?: boolean
+  max_num_results?: number
+  score_threshold?: number
+  reranking?: {
+    enabled: boolean
+    model?: string
+  }
+  stream?: boolean
+}
+
+export interface AISearchResult {
+  file_id: string
+  filename: string
+  score: number
+  attributes?: {
+    modified_date?: number
+    folder?: string
+  }
+  content: {
+    id: string
+    type: string
+    text: string
+  }[]
+}
+
+export interface AISearchResponse {
+  response?: string
+  data: AISearchResult[]
+  has_more: boolean
+  next_page: string | null
+  error?: string
+}
+
 interface FileTypeConfig {
   maxSize: number
   description: string
@@ -1325,6 +1415,128 @@ class APIService {
     }
 
     return response.json() as Promise<{ results: unknown[]; pagination?: { total?: number; hasMore?: boolean } }>
+  }
+
+  // AI Search Methods
+
+  async getAISearchCompatibility(bucketName: string): Promise<AISearchCompatibility> {
+    const response = await fetch(
+      `${WORKER_API}/api/ai-search/compatibility/${encodeURIComponent(bucketName)}`,
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to get AI Search compatibility: ${response.status}`)
+    }
+
+    return response.json() as Promise<AISearchCompatibility>
+  }
+
+  async getAISearchInstances(): Promise<AISearchInstancesResponse> {
+    const response = await fetch(
+      `${WORKER_API}/api/ai-search/instances`,
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to get AI Search instances: ${response.status}`)
+    }
+
+    return response.json() as Promise<AISearchInstancesResponse>
+  }
+
+  async createAISearchInstance(params: {
+    name: string;
+    bucketName: string;
+    description?: string;
+  }): Promise<AISearchCreateResponse> {
+    const response = await fetch(
+      `${WORKER_API}/api/ai-search/instances`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(params)
+      })
+    )
+
+    return response.json() as Promise<AISearchCreateResponse>
+  }
+
+  async deleteAISearchInstance(instanceName: string): Promise<{ success: boolean; error?: string }> {
+    const response = await fetch(
+      `${WORKER_API}/api/ai-search/instances/${encodeURIComponent(instanceName)}`,
+      this.getFetchOptions({
+        method: 'DELETE',
+        headers: this.getHeaders()
+      })
+    )
+
+    return response.json() as Promise<{ success: boolean; error?: string }>
+  }
+
+  async triggerAISearchSync(instanceName: string): Promise<AISearchSyncResponse> {
+    const response = await fetch(
+      `${WORKER_API}/api/ai-search/instances/${encodeURIComponent(instanceName)}/sync`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: this.getHeaders()
+      })
+    )
+
+    return response.json() as Promise<AISearchSyncResponse>
+  }
+
+  async aiSearch(instanceName: string, params: AISearchQueryParams): Promise<AISearchResponse> {
+    const response = await fetch(
+      `${WORKER_API}/api/ai-search/${encodeURIComponent(instanceName)}/ai-search`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(params)
+      })
+    )
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'AI Search failed' })) as { error?: string }
+      throw new Error(error.error ?? 'AI Search failed')
+    }
+
+    return response.json() as Promise<AISearchResponse>
+  }
+
+  async semanticSearch(instanceName: string, params: AISearchQueryParams): Promise<AISearchResponse> {
+    const response = await fetch(
+      `${WORKER_API}/api/ai-search/${encodeURIComponent(instanceName)}/search`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(params)
+      })
+    )
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Search failed' })) as { error?: string }
+      throw new Error(error.error ?? 'Search failed')
+    }
+
+    return response.json() as Promise<AISearchResponse>
+  }
+
+  getAISearchDashboardUrl(): string {
+    return 'https://dash.cloudflare.com/?to=/:account/ai/ai-search'
   }
 
 }
