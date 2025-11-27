@@ -55,3 +55,44 @@ CREATE TABLE IF NOT EXISTS job_audit_events (
 -- Indexes for job events
 CREATE INDEX IF NOT EXISTS idx_job_events_job ON job_audit_events(job_id);
 CREATE INDEX IF NOT EXISTS idx_job_events_timestamp ON job_audit_events(timestamp DESC);
+
+-- Audit log table for tracking individual user actions
+-- This complements bulk_jobs by tracking instant single-item operations
+CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    operation_type TEXT NOT NULL CHECK (operation_type IN (
+        'file_upload',
+        'file_download',
+        'file_delete',
+        'file_rename',
+        'file_move',
+        'file_copy',
+        'bucket_create',
+        'bucket_delete',
+        'bucket_rename',
+        'folder_create',
+        'folder_delete',
+        'folder_rename',
+        'folder_move',
+        'folder_copy'
+    )),
+    bucket_name TEXT,
+    object_key TEXT,
+    user_email TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'success' CHECK (status IN (
+        'success',
+        'failed'
+    )),
+    timestamp TEXT DEFAULT (datetime('now')),
+    metadata TEXT, -- JSON string for operation-specific data
+    size_bytes INTEGER,
+    destination_bucket TEXT,
+    destination_key TEXT
+);
+
+-- Indexes for audit log queries
+CREATE INDEX IF NOT EXISTS idx_audit_log_operation ON audit_log(operation_type);
+CREATE INDEX IF NOT EXISTS idx_audit_log_bucket ON audit_log(bucket_name);
+CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_email);
+CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_status ON audit_log(status);

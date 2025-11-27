@@ -253,3 +253,62 @@ export interface LogJobEventParams {
   userEmail: string;
   details?: Record<string, unknown>;
 }
+
+// Audit Log Types - for tracking individual user actions
+export type AuditOperationType =
+  | 'file_upload'
+  | 'file_download'
+  | 'file_delete'
+  | 'file_rename'
+  | 'file_move'
+  | 'file_copy'
+  | 'bucket_create'
+  | 'bucket_delete'
+  | 'bucket_rename'
+  | 'folder_create'
+  | 'folder_delete'
+  | 'folder_rename'
+  | 'folder_move'
+  | 'folder_copy';
+
+export type AuditStatus = 'success' | 'failed';
+
+export interface AuditLogEntry {
+  id: number;
+  operation_type: AuditOperationType;
+  bucket_name: string | null;
+  object_key: string | null;
+  user_email: string;
+  status: AuditStatus;
+  timestamp: string;
+  metadata: string | null;
+  size_bytes: number | null;
+  destination_bucket: string | null;
+  destination_key: string | null;
+}
+
+export interface LogAuditEventParams {
+  operationType: AuditOperationType;
+  bucketName?: string | undefined;
+  objectKey?: string | undefined;
+  userEmail: string;
+  status?: AuditStatus | undefined;
+  metadata?: Record<string, unknown> | undefined;
+  sizeBytes?: number | undefined;
+  destinationBucket?: string | undefined;
+  destinationKey?: string | undefined;
+}
+
+export interface AuditLogListResponse {
+  entries: AuditLogEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AuditLogSummary {
+  operation_type: AuditOperationType;
+  count: number;
+  success_count: number;
+  failed_count: number;
+}

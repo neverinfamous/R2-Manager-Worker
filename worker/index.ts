@@ -11,6 +11,7 @@ import { handleFolderRoutes } from './routes/folders';
 import { handleSearchRoutes } from './routes/search';
 import { handleAISearchRoutes } from './routes/ai-search';
 import { handleJobRoutes } from './routes/jobs';
+import { handleAuditRoutes } from './routes/audit';
 
 async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
@@ -162,12 +163,19 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     }
   }
 
+  if (url.pathname.startsWith('/api/audit')) {
+    const auditResponse = await handleAuditRoutes(request, env, url, corsHeaders, isLocalDev, userEmail);
+    if (auditResponse) {
+      return auditResponse;
+    }
+  }
+
   if (url.pathname.startsWith('/api/search')) {
     return await handleSearchRoutes(request, env, url, corsHeaders, isLocalDev);
   }
 
   if (url.pathname.startsWith('/api/buckets')) {
-    return await handleBucketRoutes(request, env, url, corsHeaders, isLocalDev);
+    return await handleBucketRoutes(request, env, url, corsHeaders, isLocalDev, userEmail);
   }
 
   if (url.pathname.startsWith('/api/files/')) {
@@ -175,7 +183,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   }
 
   if (url.pathname.startsWith('/api/folders/')) {
-    return await handleFolderRoutes(request, env, url, corsHeaders, isLocalDev);
+    return await handleFolderRoutes(request, env, url, corsHeaders, isLocalDev, userEmail);
   }
 
   // Serve frontend assets

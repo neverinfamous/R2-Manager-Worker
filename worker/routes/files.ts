@@ -3,6 +3,7 @@ import type { Env, CloudflareApiResponse, JobOperationType } from '../types';
 import { CF_API } from '../types';
 import { generateSignature } from '../utils/signing';
 import { generateJobId, createJob, updateJobProgress, completeJob, logJobEvent } from './jobs';
+import { logAuditEvent } from './audit';
 
 interface MultiBucketDownloadBody {
   buckets: { bucketName: string; files: string[] }[];
@@ -564,6 +565,19 @@ export async function handleFileRoutes(
         }
       });
 
+      // Log audit event for file upload (only for final chunk or single chunk uploads)
+      if (db && (totalChunks === 1 || chunkIndex === totalChunks - 1)) {
+        await logAuditEvent(db, {
+          operationType: 'file_upload',
+          bucketName: bucketName ?? undefined,
+          objectKey: decodedFileName,
+          userEmail,
+          status: 'success',
+          sizeBytes: file.size,
+          metadata: { etag, totalChunks }
+        });
+      }
+
       return new Response(JSON.stringify({ 
         success: true,
         timestamp: uploadTimestamp,
@@ -579,6 +593,19 @@ export async function handleFileRoutes(
 
     } catch (err) {
       console.error('[Files] Upload error:', err);
+      
+      // Log failed upload
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'file_upload',
+          bucketName: bucketName ?? undefined,
+          objectKey: fileName !== null ? decodeURIComponent(fileName) : undefined,
+          userEmail,
+          status: 'failed',
+          metadata: { error: String(err) }
+        });
+      }
+      
       return new Response(JSON.stringify({
         error: 'Upload failed'
       }), { 
@@ -614,6 +641,17 @@ export async function handleFileRoutes(
       // Return the full URL
       const fullUrl = new URL(signedUrl, request.url).toString();
       
+      // Log audit event for file download (signed URL generation)
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'file_download',
+          bucketName: bucketName ?? undefined,
+          objectKey: key,
+          userEmail,
+          status: 'success'
+        });
+      }
+      
       return new Response(JSON.stringify({ 
         success: true,
         url: fullUrl
@@ -640,6 +678,7 @@ export async function handleFileRoutes(
 
   // Delete file
   if (request.method === 'DELETE' && parts[4] === 'delete') {
+    let fileKey = '';
     try {
       const keyPart = parts[5];
       if (keyPart === undefined) {
@@ -648,11 +687,11 @@ export async function handleFileRoutes(
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
       }
-      const key = decodeURIComponent(keyPart);
-      console.log('[Files] Deleting file:', key);
+      fileKey = decodeURIComponent(keyPart);
+      console.log('[Files] Deleting file:', fileKey);
       
       const response = await fetch(
-        CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + key,
+        CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + fileKey,
         {
           method: 'DELETE',
           headers: cfHeaders
@@ -661,6 +700,17 @@ export async function handleFileRoutes(
 
       if (!response.ok) {
         throw new Error('Delete failed: ' + String(response.status));
+      }
+
+      // Log audit event for file delete
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'file_delete',
+          bucketName: bucketName ?? undefined,
+          objectKey: fileKey,
+          userEmail,
+          status: 'success'
+        });
       }
 
       return new Response(JSON.stringify({ success: true }), {
@@ -672,6 +722,19 @@ export async function handleFileRoutes(
 
     } catch (err) {
       console.error('[Files] Delete error:', err);
+      
+      // Log failed delete
+      if (db && fileKey !== '') {
+        await logAuditEvent(db, {
+          operationType: 'file_delete',
+          bucketName: bucketName ?? undefined,
+          objectKey: fileKey,
+          userEmail,
+          status: 'failed',
+          metadata: { error: String(err) }
+        });
+      }
+      
       return new Response(JSON.stringify({
         error: 'Delete failed'
       }), { 
@@ -768,6 +831,20 @@ export async function handleFileRoutes(
 
       console.log('[Files] Move completed successfully');
 
+      // Log audit event for file move
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'file_move',
+          bucketName: bucketName ?? undefined,
+          objectKey: sourceKey,
+          userEmail,
+          status: 'success',
+          sizeBytes: fileBuffer.byteLength,
+          destinationBucket: destBucket,
+          destinationKey: destKey
+        });
+      }
+
       return new Response(JSON.stringify({ success: true }), {
         headers: {
           'Content-Type': 'application/json',
@@ -777,6 +854,20 @@ export async function handleFileRoutes(
 
     } catch (err) {
       console.error('[Files] Move error:', err);
+      
+      // Log failed move (we need to get sourceKey from parts again since it may not be in scope)
+      if (db) {
+        const failedSourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
+        await logAuditEvent(db, {
+          operationType: 'file_move',
+          bucketName: bucketName ?? undefined,
+          objectKey: failedSourceKey,
+          userEmail,
+          status: 'failed',
+          metadata: { error: String(err) }
+        });
+      }
+      
       return new Response(JSON.stringify({
         error: 'Move failed'
       }), {
@@ -861,6 +952,20 @@ export async function handleFileRoutes(
 
       console.log('[Files] Copy completed successfully');
 
+      // Log audit event for file copy
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'file_copy',
+          bucketName: bucketName ?? undefined,
+          objectKey: sourceKey,
+          userEmail,
+          status: 'success',
+          sizeBytes: fileBuffer.byteLength,
+          destinationBucket: destBucket,
+          destinationKey: destKey
+        });
+      }
+
       return new Response(JSON.stringify({ success: true }), {
         headers: {
           'Content-Type': 'application/json',
@@ -870,6 +975,20 @@ export async function handleFileRoutes(
 
     } catch (err) {
       console.error('[Files] Copy error:', err);
+      
+      // Log failed copy
+      if (db) {
+        const failedSourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
+        await logAuditEvent(db, {
+          operationType: 'file_copy',
+          bucketName: bucketName ?? undefined,
+          objectKey: failedSourceKey,
+          userEmail,
+          status: 'failed',
+          metadata: { error: String(err) }
+        });
+      }
+      
       return new Response(JSON.stringify({
         error: 'Copy failed'
       }), {
@@ -956,6 +1075,20 @@ export async function handleFileRoutes(
 
       console.log('[Files] File renamed successfully');
 
+      // Log audit event for file rename
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'file_rename',
+          bucketName: bucketName ?? undefined,
+          objectKey: sourceKey,
+          userEmail,
+          status: 'success',
+          sizeBytes: fileBuffer.byteLength,
+          destinationBucket: bucketName ?? undefined,
+          destinationKey: newKey
+        });
+      }
+
       return new Response(JSON.stringify({ success: true, newKey }), {
         headers: {
           'Content-Type': 'application/json',
@@ -965,6 +1098,20 @@ export async function handleFileRoutes(
 
     } catch (err) {
       console.error('[Files] Rename error:', err);
+      
+      // Log failed rename
+      if (db) {
+        const failedSourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
+        await logAuditEvent(db, {
+          operationType: 'file_rename',
+          bucketName: bucketName ?? undefined,
+          objectKey: failedSourceKey,
+          userEmail,
+          status: 'failed',
+          metadata: { error: String(err) }
+        });
+      }
+      
       return new Response(JSON.stringify({
         error: 'Failed to rename file'
       }), {

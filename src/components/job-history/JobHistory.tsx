@@ -87,6 +87,29 @@ const BucketIcon = (): JSX.Element => (
   </svg>
 )
 
+const FolderPlusIcon = (): JSX.Element => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z" />
+    <line x1="12" x2="12" y1="10" y2="16" />
+    <line x1="9" x2="15" y1="13" y2="13" />
+  </svg>
+)
+
+const DatabaseIcon = (): JSX.Element => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <ellipse cx="12" cy="5" rx="9" ry="3" />
+    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+    <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" />
+  </svg>
+)
+
+const EditIcon = (): JSX.Element => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+)
+
 // Operation Icons
 const UploadIcon = (): JSX.Element => (
   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -340,11 +363,15 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
   const getOperationIcon = (operationType: JobOperationType): JSX.Element => {
     switch (operationType) {
       case 'bulk_upload':
+      case 'file_upload':
         return <UploadIcon />
       case 'bulk_download':
+      case 'file_download':
         return <DownloadIcon />
       case 'bulk_delete':
       case 'bucket_delete':
+      case 'file_delete':
+      case 'folder_delete':
         return <TrashIcon />
       case 'file_move':
       case 'folder_move':
@@ -354,6 +381,14 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
         return <CopyIcon />
       case 'ai_search_sync':
         return <AIIcon />
+      case 'bucket_create':
+        return <DatabaseIcon />
+      case 'folder_create':
+        return <FolderPlusIcon />
+      case 'file_rename':
+      case 'folder_rename':
+      case 'bucket_rename':
+        return <EditIcon />
       default:
         return <FileTextIcon />
     }
@@ -367,16 +402,34 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
         return 'Bulk Download'
       case 'bulk_delete':
         return 'Bulk Delete'
-      case 'bucket_delete':
-        return 'Bucket Delete'
+      case 'file_upload':
+        return 'File Upload'
+      case 'file_download':
+        return 'File Download'
+      case 'file_delete':
+        return 'File Delete'
+      case 'file_rename':
+        return 'File Rename'
       case 'file_move':
         return 'File Move'
       case 'file_copy':
         return 'File Copy'
+      case 'folder_create':
+        return 'Folder Create'
+      case 'folder_delete':
+        return 'Folder Delete'
+      case 'folder_rename':
+        return 'Folder Rename'
       case 'folder_move':
         return 'Folder Move'
       case 'folder_copy':
         return 'Folder Copy'
+      case 'bucket_create':
+        return 'Bucket Create'
+      case 'bucket_delete':
+        return 'Bucket Delete'
+      case 'bucket_rename':
+        return 'Bucket Rename'
       case 'ai_search_sync':
         return 'AI Search Sync'
       default:
@@ -435,15 +488,34 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
               onChange={(e) => setOperationFilter(e.target.value)}
             >
               <option value="all">All Operations</option>
-              <option value="bulk_upload">Bulk Upload</option>
-              <option value="bulk_download">Bulk Download</option>
-              <option value="bulk_delete">Bulk Delete</option>
-              <option value="bucket_delete">Bucket Delete</option>
-              <option value="file_move">File Move</option>
-              <option value="file_copy">File Copy</option>
-              <option value="folder_move">Folder Move</option>
-              <option value="folder_copy">Folder Copy</option>
-              <option value="ai_search_sync">AI Search Sync</option>
+              <optgroup label="Bulk Operations">
+                <option value="bulk_upload">Bulk Upload</option>
+                <option value="bulk_download">Bulk Download</option>
+                <option value="bulk_delete">Bulk Delete</option>
+              </optgroup>
+              <optgroup label="File Operations">
+                <option value="file_upload">File Upload</option>
+                <option value="file_download">File Download</option>
+                <option value="file_delete">File Delete</option>
+                <option value="file_rename">File Rename</option>
+                <option value="file_move">File Move</option>
+                <option value="file_copy">File Copy</option>
+              </optgroup>
+              <optgroup label="Folder Operations">
+                <option value="folder_create">Folder Create</option>
+                <option value="folder_delete">Folder Delete</option>
+                <option value="folder_rename">Folder Rename</option>
+                <option value="folder_move">Folder Move</option>
+                <option value="folder_copy">Folder Copy</option>
+              </optgroup>
+              <optgroup label="Bucket Operations">
+                <option value="bucket_create">Bucket Create</option>
+                <option value="bucket_delete">Bucket Delete</option>
+                <option value="bucket_rename">Bucket Rename</option>
+              </optgroup>
+              <optgroup label="AI Search">
+                <option value="ai_search_sync">AI Search Sync</option>
+              </optgroup>
             </select>
           </div>
 

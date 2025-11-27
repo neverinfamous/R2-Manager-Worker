@@ -21,7 +21,7 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
 
 ## ✨ Features
 
-- 📋 **Job History Tracking** - Complete audit trail for bulk operations with filterable job list and event timeline
+- 📋 **Job History & Audit Logging** - Complete audit trail for all operations (bulk and individual) with filterable job list and event timeline
 - 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search and RAG capabilities
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
@@ -183,16 +183,19 @@ Comprehensive client-side filtering for large buckets.
 
 ---
 
-## 📋 Job History
+## 📋 Job History & Audit Logging
 
-Track all bulk operations with a comprehensive audit trail and event timeline.
+Track all operations with a comprehensive audit trail and event timeline.
 
 ### Features
 
-- **Operation Tracking**: Automatically track bulk downloads, uploads, deletions, moves, and copies
-- **Filterable List**: Filter jobs by status (queued, running, completed, failed), operation type, bucket, and date range
-- **Event Timeline**: View detailed progress history for each job in a modal dialog
-- **Real-time Progress**: See percentage completion and item counts during operations
+- **Bulk Operation Tracking**: Automatically track bulk downloads, uploads, deletions, moves, and copies
+- **Individual Action Logging**: Every file upload, download, delete, rename, move, and copy is logged
+- **Folder & Bucket Auditing**: Track folder creation, deletion, renaming, and all bucket operations
+- **Filterable List**: Filter by status (success, failed, running), operation type, bucket, and date range
+- **Grouped Operations**: Operation types organized by category (Bulk, File, Folder, Bucket, AI)
+- **Event Timeline**: View detailed progress history for bulk jobs in a modal dialog
+- **Real-time Progress**: See percentage completion and item counts during bulk operations
 - **Job Search**: Quickly find jobs by ID
 - **Sorting Options**: Sort by date, item count, or error count
 
@@ -413,10 +416,12 @@ The following operations return simulated success responses for UI testing:
 - `POST /api/ai-search/:instanceName/search` - Semantic search (retrieval only)
 - `POST /api/ai-search/:instanceName/ai-search` - AI-powered search with generated response
 
-#### Job History Operations
+#### Job History & Audit Operations
 - `GET /api/jobs` - List jobs with filtering (supports `?status`, `?operation_type`, `?bucket_name`, `?start_date`, `?end_date`, `?job_id`, `?min_errors`, `?limit`, `?offset`, `?sort_by`, `?sort_order`)
 - `GET /api/jobs/:jobId` - Get job status and details
 - `GET /api/jobs/:jobId/events` - Get job event timeline
+- `GET /api/audit` - List audit log entries with filtering (supports `?operation_type`, `?bucket_name`, `?status`, `?start_date`, `?end_date`, `?user_email`, `?limit`, `?offset`, `?sort_by`, `?sort_order`)
+- `GET /api/audit/summary` - Get operation counts grouped by type
 
 ---
 

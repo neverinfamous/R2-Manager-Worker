@@ -7,6 +7,39 @@ All notable changes to R2 Bucket Manager will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Audit Logging for Individual Actions** - Extended Job History to track all user operations, not just bulk jobs
+  - **File Operations:** Upload, download, delete, rename, move, copy - each operation logged individually
+  - **Folder Operations:** Create, delete, rename, move, copy - every folder action tracked
+  - **Bucket Operations:** Create, delete, rename - bucket management fully audited
+  - New `audit_log` database table stores granular operation data
+  - Unified Job History UI displays both bulk jobs and individual actions
+  - Operation type dropdown now organized into logical groups (Bulk, File, Folder, Bucket, AI)
+  - New icons for each operation type (upload, download, trash, folder-plus, edit, database)
+  - API endpoint: `GET /api/audit` for querying audit log entries with filtering
+  - API endpoint: `GET /api/audit/summary` for operation counts by type
+  - Status tracking: success/failed for each operation
+  - Metadata capture: file sizes, destination paths, error details
+  - D1 database schema extended with `audit_log` table and indexes
+
+### Technical Details
+
+- **Audit Logging Implementation:**
+  - New route file: `worker/routes/audit.ts` (~350 lines)
+  - Updated `worker/routes/jobs.ts` to query both `bulk_jobs` and `audit_log` tables
+  - Updated `worker/routes/files.ts` with `logAuditEvent()` calls for all file operations
+  - Updated `worker/routes/buckets.ts` with audit logging for bucket operations
+  - Updated `worker/routes/folders.ts` with audit logging for folder operations
+  - New types: `AuditOperationType`, `LogAuditEventParams`, `AuditLogEntry`
+  - Frontend: Updated `JobHistory.tsx` with grouped operation dropdown and new icons
+  - Frontend: Updated `api.ts` with extended `JobOperationType` union
+  - Schema: New `audit_log` table with indexes on operation_type, bucket_name, user_email, timestamp
+
+---
+
 ## [2.0.0] - 2025-11-27
 
 ### 🎉 Major Release Highlights

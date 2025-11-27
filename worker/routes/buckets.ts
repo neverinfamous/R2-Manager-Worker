@@ -2,14 +2,17 @@ import type { Env, CloudflareApiResponse, BucketsListResult, R2ObjectInfo } from
 import { CF_API } from '../types';
 import { type CorsHeaders } from '../utils/cors';
 import { getBucketSize } from '../utils/helpers';
+import { logAuditEvent } from './audit';
 
 export async function handleBucketRoutes(
   request: Request,
   env: Env,
   url: URL,
   corsHeaders: CorsHeaders,
-  isLocalDev: boolean
+  isLocalDev: boolean,
+  userEmail: string
 ): Promise<Response> {
+  const db = env.METADATA;
    
   console.log('[Buckets] Handling bucket operation');
   
@@ -110,6 +113,17 @@ export async function handleBucketRoutes(
         }
       );
       const data = await response.json() as CloudflareApiResponse;
+      
+      // Log audit event for bucket creation
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'bucket_create',
+          bucketName: body.name,
+          userEmail,
+          status: data.success ? 'success' : 'failed',
+          metadata: data.success ? undefined : { error: data.errors?.[0]?.message }
+        });
+      }
       
       return new Response(JSON.stringify(data), {
         headers: {
@@ -228,6 +242,17 @@ export async function handleBucketRoutes(
           console.log('[Buckets] Delete successful, data:', data);
           
           if (data.success === true || response.status === 204) {
+            // Log audit event for bucket deletion success
+            if (db) {
+              await logAuditEvent(db, {
+                operationType: 'bucket_delete',
+                bucketName,
+                userEmail,
+                status: 'success',
+                metadata: { force }
+              });
+            }
+            
             // Return success response
             return new Response(JSON.stringify({ success: true }), {
               status: 200,
@@ -239,6 +264,18 @@ export async function handleBucketRoutes(
           }
         } catch (parseErr) {
           console.error('[Buckets] Error parsing delete response:', parseErr);
+          
+          // Log audit event for successful deletion (parsing error doesn't mean delete failed)
+          if (db) {
+            await logAuditEvent(db, {
+              operationType: 'bucket_delete',
+              bucketName,
+              userEmail,
+              status: 'success',
+              metadata: { force }
+            });
+          }
+          
           // If we can't parse the response but the HTTP status is OK, consider it a success
           return new Response(JSON.stringify({ success: true }), {
             status: 200,
@@ -259,6 +296,18 @@ export async function handleBucketRoutes(
       }
       
       console.log('[Buckets] Delete failed with status:', response.status, 'error:', errorData);
+      
+      // Log audit event for bucket deletion failure
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'bucket_delete',
+          bucketName,
+          userEmail,
+          status: 'failed',
+          metadata: { error: 'Delete failed', statusCode: response.status, force }
+        });
+      }
+      
       return new Response(JSON.stringify(errorData), {
         status: response.status,
         headers: {
@@ -356,9 +405,35 @@ export async function handleBucketRoutes(
         const deleteResponse = await fetch(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + oldBucketName, { method: 'DELETE', headers: cfHeaders });
         if (!deleteResponse.ok) throw new Error('Failed to delete old bucket');
         console.log('[Buckets] Rename completed');
+        
+        // Log audit event for bucket rename success
+        if (db) {
+          await logAuditEvent(db, {
+            operationType: 'bucket_rename',
+            bucketName: oldBucketName,
+            userEmail,
+            status: 'success',
+            destinationBucket: newBucketName,
+            metadata: { objectsCopied: totalCopied, objectsFailed: totalFailed }
+          });
+        }
+        
         return new Response(JSON.stringify({ success: true, newName: newBucketName }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       } catch (err) {
         console.error('[Buckets] Rename error:', err);
+        
+        // Log audit event for bucket rename failure
+        if (db) {
+          await logAuditEvent(db, {
+            operationType: 'bucket_rename',
+            bucketName: oldBucketName,
+            userEmail,
+            status: 'failed',
+            destinationBucket: newBucketName,
+            metadata: { error: String(err) }
+          });
+        }
+        
         return new Response(JSON.stringify({ error: 'Rename failed' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       }
     }

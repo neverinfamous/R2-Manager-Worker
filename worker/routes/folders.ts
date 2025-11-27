@@ -1,5 +1,6 @@
 import type { Env, CloudflareApiResponse, R2ObjectInfo } from '../types';
 import { CF_API } from '../types';
+import { logAuditEvent } from './audit';
 
 interface CreateFolderBody {
   folderName?: string;
@@ -20,11 +21,13 @@ export async function handleFolderRoutes(
   env: Env,
   url: URL,
   corsHeaders: HeadersInit,
-  isLocalDev: boolean
+  isLocalDev: boolean,
+  userEmail: string
 ): Promise<Response> {
   console.log('[Folders] Handling folder operation');
   const parts = url.pathname.split('/');
   const bucketName = parts[3];
+  const db = env.METADATA;
   
   const cfHeaders = {
     'X-Auth-Email': env.CF_EMAIL,
@@ -97,6 +100,17 @@ export async function handleFolderRoutes(
 
       console.log('[Folders] Created folder:', folderPath);
 
+      // Log audit event for folder creation
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'folder_create',
+          bucketName: bucketName ?? undefined,
+          objectKey: folderPath,
+          userEmail,
+          status: 'success'
+        });
+      }
+
       return new Response(JSON.stringify({ success: true, folderPath }), {
         headers: {
           'Content-Type': 'application/json',
@@ -106,6 +120,18 @@ export async function handleFolderRoutes(
 
     } catch (err) {
       console.error('[Folders] Create error:', err);
+      
+      // Log failed folder creation
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'folder_create',
+          bucketName: bucketName ?? undefined,
+          userEmail,
+          status: 'failed',
+          metadata: { error: String(err) }
+        });
+      }
+      
       return new Response(JSON.stringify({
         error: 'Failed to create folder'
       }), {
@@ -253,6 +279,20 @@ export async function handleFolderRoutes(
 
       console.log('[Folders] Renamed folder, copied:', totalCopied, 'failed:', totalFailed);
 
+      // Log audit event for folder rename
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'folder_rename',
+          bucketName: bucketName ?? undefined,
+          objectKey: oldFolderPath,
+          userEmail,
+          status: 'success',
+          destinationBucket: bucketName ?? undefined,
+          destinationKey: newFolderPath,
+          metadata: { filesCopied: totalCopied, filesFailed: totalFailed }
+        });
+      }
+
       return new Response(JSON.stringify({ 
         success: true, 
         copied: totalCopied, 
@@ -266,6 +306,18 @@ export async function handleFolderRoutes(
 
     } catch (err) {
       console.error('[Folders] Rename error:', err);
+      
+      // Log failed folder rename
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'folder_rename',
+          bucketName: bucketName ?? undefined,
+          userEmail,
+          status: 'failed',
+          metadata: { error: String(err) }
+        });
+      }
+      
       return new Response(JSON.stringify({
         error: 'Failed to rename folder'
       }), {
@@ -376,6 +428,20 @@ export async function handleFolderRoutes(
 
       console.log('[Folders] Copied folder, success:', totalCopied, 'failed:', totalFailed);
 
+      // Log audit event for folder copy
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'folder_copy',
+          bucketName: bucketName ?? undefined,
+          objectKey: sourceFolderPath,
+          userEmail,
+          status: 'success',
+          destinationBucket: destBucket,
+          destinationKey: destFolderPath,
+          metadata: { filesCopied: totalCopied, filesFailed: totalFailed }
+        });
+      }
+
       return new Response(JSON.stringify({ 
         success: true, 
         copied: totalCopied, 
@@ -389,6 +455,20 @@ export async function handleFolderRoutes(
 
     } catch (err) {
       console.error('[Folders] Copy error:', err);
+      
+      // Log failed folder copy
+      if (db) {
+        const failedFolderPath = decodeURIComponent(parts.slice(4, -1).join('/'));
+        await logAuditEvent(db, {
+          operationType: 'folder_copy',
+          bucketName: bucketName ?? undefined,
+          objectKey: failedFolderPath,
+          userEmail,
+          status: 'failed',
+          metadata: { error: String(err) }
+        });
+      }
+      
       return new Response(JSON.stringify({
         error: 'Failed to copy folder'
       }), {
@@ -537,6 +617,20 @@ export async function handleFolderRoutes(
 
       console.log('[Folders] Moved folder, success:', totalMoved, 'failed:', totalFailed);
 
+      // Log audit event for folder move
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'folder_move',
+          bucketName: bucketName ?? undefined,
+          objectKey: sourceFolderPath,
+          userEmail,
+          status: 'success',
+          destinationBucket: destBucket,
+          destinationKey: destFolderPath,
+          metadata: { filesMoved: totalMoved, filesFailed: totalFailed }
+        });
+      }
+
       return new Response(JSON.stringify({ 
         success: true, 
         moved: totalMoved, 
@@ -550,6 +644,20 @@ export async function handleFolderRoutes(
 
     } catch (err) {
       console.error('[Folders] Move error:', err);
+      
+      // Log failed folder move
+      if (db) {
+        const failedFolderPath = decodeURIComponent(parts.slice(4, -1).join('/'));
+        await logAuditEvent(db, {
+          operationType: 'folder_move',
+          bucketName: bucketName ?? undefined,
+          objectKey: failedFolderPath,
+          userEmail,
+          status: 'failed',
+          metadata: { error: String(err) }
+        });
+      }
+      
       return new Response(JSON.stringify({
         error: 'Failed to move folder'
       }), {
@@ -646,6 +754,18 @@ export async function handleFolderRoutes(
 
       console.log('[Folders] Deleted folder, removed:', totalDeleted, 'objects');
 
+      // Log audit event for folder delete
+      if (db) {
+        await logAuditEvent(db, {
+          operationType: 'folder_delete',
+          bucketName: bucketName ?? undefined,
+          objectKey: folderPathWithSlash,
+          userEmail,
+          status: 'success',
+          metadata: { filesDeleted: totalDeleted, force }
+        });
+      }
+
       return new Response(JSON.stringify({ 
         success: true, 
         deleted: totalDeleted 
@@ -658,6 +778,20 @@ export async function handleFolderRoutes(
 
     } catch (err) {
       console.error('[Folders] Delete error:', err);
+      
+      // Log failed folder delete
+      if (db) {
+        const failedFolderPath = decodeURIComponent(parts.slice(4).join('/'));
+        await logAuditEvent(db, {
+          operationType: 'folder_delete',
+          bucketName: bucketName ?? undefined,
+          objectKey: failedFolderPath,
+          userEmail,
+          status: 'failed',
+          metadata: { error: String(err) }
+        });
+      }
+      
       return new Response(JSON.stringify({
         error: 'Failed to delete folder'
       }), {

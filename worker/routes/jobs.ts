@@ -6,13 +6,47 @@ import type {
   CreateJobParams,
   UpdateJobProgressParams,
   CompleteJobParams,
-  LogJobEventParams
+  LogJobEventParams,
+  AuditLogEntry
 } from '../types';
 
 interface APIResponse {
   success: boolean;
   result?: unknown;
   error?: string;
+}
+
+// Operation types that exist in bulk_jobs table
+const BULK_JOB_OPERATIONS = [
+  'bulk_upload', 'bulk_download', 'bulk_delete', 'bucket_delete',
+  'file_move', 'file_copy', 'folder_move', 'folder_copy', 'ai_search_sync'
+] as const;
+
+// Operation types that exist only in audit_log table
+const AUDIT_ONLY_OPERATIONS = [
+  'file_upload', 'file_download', 'file_delete', 'file_rename',
+  'bucket_create', 'bucket_rename',
+  'folder_create', 'folder_delete', 'folder_rename'
+] as const;
+
+/**
+ * Convert an audit_log entry to a BulkJob-like format for unified display
+ */
+function auditEntryToJob(entry: AuditLogEntry): BulkJob {
+  return {
+    job_id: `audit-${entry.id}`,
+    bucket_name: entry.bucket_name ?? 'N/A',
+    operation_type: entry.operation_type as unknown as JobOperationType,
+    status: entry.status === 'success' ? 'completed' : 'failed',
+    total_items: 1,
+    processed_items: entry.status === 'success' ? 1 : 0,
+    error_count: entry.status === 'failed' ? 1 : 0,
+    percentage: entry.status === 'success' ? 100 : 0,
+    started_at: entry.timestamp,
+    completed_at: entry.timestamp,
+    user_email: entry.user_email,
+    metadata: entry.metadata
+  };
 }
 
 /**
@@ -250,107 +284,243 @@ export async function handleJobRoutes(
     }
 
     try {
-      // Build query with filters
-      let query = 'SELECT * FROM bulk_jobs WHERE 1=1';
-      const bindings: (string | number)[] = [];
+      // Determine which tables to query based on operation type filter
+      const isAuditOnlyOperation: boolean = operationType !== null && (AUDIT_ONLY_OPERATIONS as readonly string[]).includes(operationType);
+      const isBulkJobOperation: boolean = operationType !== null && (BULK_JOB_OPERATIONS as readonly string[]).includes(operationType);
+      const queryBoth: boolean = operationType === null; // Query both tables if no operation type filter
+      
+      let allJobs: BulkJob[] = [];
+      let totalBulkJobs = 0;
+      let totalAuditEntries = 0;
 
-      if (status) {
-        query += ' AND status = ?';
-        bindings.push(status);
-      }
+      // Query bulk_jobs table (unless filtering for audit-only operations)
+      if (!isAuditOnlyOperation) {
+        let bulkQuery = 'SELECT * FROM bulk_jobs WHERE 1=1';
+        const bulkBindings: (string | number)[] = [];
 
-      if (operationType) {
-        query += ' AND operation_type = ?';
-        bindings.push(operationType);
-      }
+        if (status) {
+          // Map audit status to bulk_jobs status
+          if (status === 'success') {
+            bulkQuery += ' AND status = ?';
+            bulkBindings.push('completed');
+          } else if (status === 'failed') {
+            bulkQuery += ' AND status = ?';
+            bulkBindings.push('failed');
+          } else {
+            bulkQuery += ' AND status = ?';
+            bulkBindings.push(status);
+          }
+        }
 
-      if (bucketName) {
-        query += ' AND bucket_name = ?';
-        bindings.push(bucketName);
-      }
+        if (operationType) {
+          bulkQuery += ' AND operation_type = ?';
+          bulkBindings.push(operationType);
+        }
 
-      if (startDate) {
-        query += ' AND started_at >= ?';
-        bindings.push(startDate);
-      }
+        if (bucketName) {
+          bulkQuery += ' AND bucket_name = ?';
+          bulkBindings.push(bucketName);
+        }
 
-      if (endDate) {
-        query += ' AND started_at <= ?';
-        bindings.push(endDate);
-      }
+        if (startDate) {
+          bulkQuery += ' AND started_at >= ?';
+          bulkBindings.push(startDate);
+        }
 
-      if (jobId) {
-        query += ' AND job_id LIKE ?';
-        bindings.push(`%${jobId}%`);
-      }
+        if (endDate) {
+          bulkQuery += ' AND started_at <= ?';
+          bulkBindings.push(endDate);
+        }
 
-      if (minErrors) {
-        const minErrorsNum = parseInt(minErrors);
-        if (!isNaN(minErrorsNum)) {
-          query += ' AND error_count >= ?';
-          bindings.push(minErrorsNum);
+        if (jobId) {
+          bulkQuery += ' AND job_id LIKE ?';
+          bulkBindings.push(`%${jobId}%`);
+        }
+
+        if (minErrors) {
+          const minErrorsNum = parseInt(minErrors);
+          if (!isNaN(minErrorsNum)) {
+            bulkQuery += ' AND error_count >= ?';
+            bulkBindings.push(minErrorsNum);
+          }
+        }
+
+        // Validate sort column
+        const validSortColumns = ['started_at', 'completed_at', 'total_items', 'error_count', 'percentage'];
+        const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'started_at';
+        const sortDirection = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+        // Get bulk jobs with adjusted pagination
+        const bulkLimit = queryBoth ? limit * 2 : limit; // Fetch more if querying both
+        bulkQuery += ` ORDER BY ${sortColumn} ${sortDirection} LIMIT ? OFFSET ?`;
+        bulkBindings.push(bulkLimit, queryBoth ? 0 : offset);
+
+        try {
+          const bulkJobs = await db.prepare(bulkQuery).bind(...bulkBindings).all<BulkJob>();
+          allJobs = bulkJobs.results ?? [];
+
+          // Get total count for bulk_jobs
+          let countQuery = 'SELECT COUNT(*) as total FROM bulk_jobs WHERE 1=1';
+          const countBindings: (string | number)[] = [];
+
+          if (status) {
+            if (status === 'success') {
+              countQuery += ' AND status = ?';
+              countBindings.push('completed');
+            } else if (status === 'failed') {
+              countQuery += ' AND status = ?';
+              countBindings.push('failed');
+            } else {
+              countQuery += ' AND status = ?';
+              countBindings.push(status);
+            }
+          }
+          if (operationType) {
+            countQuery += ' AND operation_type = ?';
+            countBindings.push(operationType);
+          }
+          if (bucketName) {
+            countQuery += ' AND bucket_name = ?';
+            countBindings.push(bucketName);
+          }
+          if (startDate) {
+            countQuery += ' AND started_at >= ?';
+            countBindings.push(startDate);
+          }
+          if (endDate) {
+            countQuery += ' AND started_at <= ?';
+            countBindings.push(endDate);
+          }
+          if (jobId) {
+            countQuery += ' AND job_id LIKE ?';
+            countBindings.push(`%${jobId}%`);
+          }
+          if (minErrors) {
+            const minErrorsNum = parseInt(minErrors);
+            if (!isNaN(minErrorsNum)) {
+              countQuery += ' AND error_count >= ?';
+              countBindings.push(minErrorsNum);
+            }
+          }
+
+          const countResult = await db.prepare(countQuery).bind(...countBindings).first<{ total: number }>();
+          totalBulkJobs = countResult?.total ?? 0;
+        } catch (bulkError) {
+          const errorMsg = bulkError instanceof Error ? bulkError.message : String(bulkError);
+          if (!errorMsg.includes('no such table')) {
+            throw bulkError;
+          }
+          // Table doesn't exist yet, continue with empty results
+          console.log('[Jobs] bulk_jobs table does not exist yet');
         }
       }
 
-      // Validate sort column to prevent SQL injection
-      const validSortColumns = ['started_at', 'completed_at', 'total_items', 'error_count', 'percentage'];
-      const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'started_at';
-      const sortDirection = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+      // Query audit_log table (unless filtering for bulk-job-only operations)
+      if (!isBulkJobOperation) {
+        let auditQuery = 'SELECT * FROM audit_log WHERE 1=1';
+        const auditBindings: (string | number)[] = [];
 
-      query += ` ORDER BY ${sortColumn} ${sortDirection} LIMIT ? OFFSET ?`;
-      bindings.push(limit, offset);
+        if (status) {
+          // Map status for audit_log
+          if (status === 'completed') {
+            auditQuery += ' AND status = ?';
+            auditBindings.push('success');
+          } else if (status === 'failed') {
+            auditQuery += ' AND status = ?';
+            auditBindings.push('failed');
+          }
+          // Skip other statuses for audit_log (it only has success/failed)
+        }
 
-      const jobs = await db.prepare(query).bind(...bindings).all();
+        if (operationType) {
+          auditQuery += ' AND operation_type = ?';
+          auditBindings.push(operationType);
+        }
 
-      // Get total count
-      let countQuery = 'SELECT COUNT(*) as total FROM bulk_jobs WHERE 1=1';
-      const countBindings: (string | number)[] = [];
+        if (bucketName) {
+          auditQuery += ' AND bucket_name = ?';
+          auditBindings.push(bucketName);
+        }
 
-      if (status) {
-        countQuery += ' AND status = ?';
-        countBindings.push(status);
-      }
+        if (startDate) {
+          auditQuery += ' AND timestamp >= ?';
+          auditBindings.push(startDate);
+        }
 
-      if (operationType) {
-        countQuery += ' AND operation_type = ?';
-        countBindings.push(operationType);
-      }
+        if (endDate) {
+          auditQuery += ' AND timestamp <= ?';
+          auditBindings.push(endDate);
+        }
 
-      if (bucketName) {
-        countQuery += ' AND bucket_name = ?';
-        countBindings.push(bucketName);
-      }
+        // Note: minErrors doesn't apply to audit_log (each entry is a single operation)
 
-      if (startDate) {
-        countQuery += ' AND started_at >= ?';
-        countBindings.push(startDate);
-      }
+        const sortDirection = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+        const auditLimit = queryBoth ? limit * 2 : limit;
+        auditQuery += ` ORDER BY timestamp ${sortDirection} LIMIT ? OFFSET ?`;
+        auditBindings.push(auditLimit, queryBoth ? 0 : offset);
 
-      if (endDate) {
-        countQuery += ' AND started_at <= ?';
-        countBindings.push(endDate);
-      }
+        try {
+          const auditEntries = await db.prepare(auditQuery).bind(...auditBindings).all<AuditLogEntry>();
+          const convertedEntries = (auditEntries.results ?? []).map(auditEntryToJob);
+          allJobs = [...allJobs, ...convertedEntries];
 
-      if (jobId) {
-        countQuery += ' AND job_id LIKE ?';
-        countBindings.push(`%${jobId}%`);
-      }
+          // Get total count for audit_log
+          let auditCountQuery = 'SELECT COUNT(*) as total FROM audit_log WHERE 1=1';
+          const auditCountBindings: (string | number)[] = [];
 
-      if (minErrors) {
-        const minErrorsNum = parseInt(minErrors);
-        if (!isNaN(minErrorsNum)) {
-          countQuery += ' AND error_count >= ?';
-          countBindings.push(minErrorsNum);
+          if (status) {
+            if (status === 'completed') {
+              auditCountQuery += ' AND status = ?';
+              auditCountBindings.push('success');
+            } else if (status === 'failed') {
+              auditCountQuery += ' AND status = ?';
+              auditCountBindings.push('failed');
+            }
+          }
+          if (operationType) {
+            auditCountQuery += ' AND operation_type = ?';
+            auditCountBindings.push(operationType);
+          }
+          if (bucketName) {
+            auditCountQuery += ' AND bucket_name = ?';
+            auditCountBindings.push(bucketName);
+          }
+          if (startDate) {
+            auditCountQuery += ' AND timestamp >= ?';
+            auditCountBindings.push(startDate);
+          }
+          if (endDate) {
+            auditCountQuery += ' AND timestamp <= ?';
+            auditCountBindings.push(endDate);
+          }
+
+          const auditCountResult = await db.prepare(auditCountQuery).bind(...auditCountBindings).first<{ total: number }>();
+          totalAuditEntries = auditCountResult?.total ?? 0;
+        } catch (auditError) {
+          const errorMsg = auditError instanceof Error ? auditError.message : String(auditError);
+          if (!errorMsg.includes('no such table')) {
+            throw auditError;
+          }
+          // Table doesn't exist yet, continue with existing results
+          console.log('[Jobs] audit_log table does not exist yet');
         }
       }
 
-      const countResult = await db.prepare(countQuery).bind(...countBindings).first<{ total: number }>();
-      const total = countResult?.total ?? 0;
+      // Sort combined results by timestamp
+      allJobs.sort((a, b) => {
+        const aTime = new Date(a.started_at).getTime();
+        const bTime = new Date(b.started_at).getTime();
+        return sortOrder === 'desc' ? bTime - aTime : aTime - bTime;
+      });
+
+      // Apply pagination to combined results
+      const paginatedJobs = allJobs.slice(offset, offset + limit);
+      const total = totalBulkJobs + totalAuditEntries;
 
       const response: APIResponse = {
         success: true,
         result: {
-          jobs: jobs.results ?? [],
+          jobs: paginatedJobs,
           total,
           limit,
           offset

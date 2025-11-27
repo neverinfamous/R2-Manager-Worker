@@ -164,14 +164,28 @@ export interface AISearchResponse {
 export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
 
 export type JobOperationType = 
+  // Bulk operations
   | 'bulk_upload'
   | 'bulk_download'
   | 'bulk_delete'
-  | 'bucket_delete'
+  // File operations (individual)
+  | 'file_upload'
+  | 'file_download'
+  | 'file_delete'
+  | 'file_rename'
   | 'file_move'
   | 'file_copy'
+  // Folder operations
+  | 'folder_create'
+  | 'folder_delete'
+  | 'folder_rename'
   | 'folder_move'
   | 'folder_copy'
+  // Bucket operations
+  | 'bucket_create'
+  | 'bucket_delete'
+  | 'bucket_rename'
+  // AI Search
   | 'ai_search_sync'
 
 export interface JobListItem {
