@@ -37,12 +37,11 @@ name = "RATE_LIMITER_DELETE"
 namespace_id = "1003"
 simple = { limit = 10, period = 60 }
 
-# D1 database binding removed - not needed with Zero Trust authentication
-# All bucket operations use Cloudflare R2 REST API directly
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "r2manager"
-# database_id = "7c4e1036-b1ee-4aaa-b0b2-20ca3fe6e3d9"
+# D1 database for job history metadata
+[[d1_databases]]
+binding = "METADATA"
+database_name = "r2-manager-metadata"
+database_id = "117f108b-f2f0-46c1-9c15-560d11b0a7dd"
 
 [[routes]]
 pattern = "r2.adamic.tech"

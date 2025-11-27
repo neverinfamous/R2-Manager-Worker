@@ -160,6 +160,65 @@ export interface AISearchResponse {
   error?: string
 }
 
+// Job History Types
+export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+
+export type JobOperationType = 
+  | 'bulk_upload'
+  | 'bulk_download'
+  | 'bulk_delete'
+  | 'bucket_delete'
+  | 'file_move'
+  | 'file_copy'
+  | 'folder_move'
+  | 'folder_copy'
+  | 'ai_search_sync'
+
+export interface JobListItem {
+  job_id: string
+  bucket_name: string
+  operation_type: JobOperationType
+  status: JobStatus
+  total_items: number | null
+  processed_items: number | null
+  error_count: number | null
+  percentage: number
+  started_at: string
+  completed_at: string | null
+  user_email: string
+  metadata?: string | null
+}
+
+export interface JobListResponse {
+  jobs: JobListItem[]
+  total: number
+  limit: number
+  offset: number
+}
+
+export interface JobEvent {
+  id: number
+  job_id: string
+  event_type: 'started' | 'progress' | 'completed' | 'failed' | 'cancelled'
+  user_email: string
+  timestamp: string
+  details: string | null
+}
+
+export interface JobEventDetails {
+  total?: number
+  processed?: number
+  errors?: number
+  percentage?: number
+  error_message?: string
+  [key: string]: unknown
+}
+
+export interface JobEventsResponse {
+  job_id: string
+  events: JobEvent[]
+}
+
 interface FileTypeConfig {
   maxSize: number
   description: string
@@ -1537,6 +1596,84 @@ class APIService {
 
   getAISearchDashboardUrl(): string {
     return 'https://dash.cloudflare.com/?to=/:account/ai/ai-search'
+  }
+
+  // Job History Methods
+
+  async getJobList(options?: {
+    limit?: number
+    offset?: number
+    status?: string
+    operation_type?: string
+    bucket_name?: string
+    start_date?: string
+    end_date?: string
+    job_id?: string
+    min_errors?: number
+    sort_by?: string
+    sort_order?: 'asc' | 'desc'
+  }): Promise<JobListResponse> {
+    const params = new URLSearchParams()
+    if (options?.limit) params.set('limit', options.limit.toString())
+    if (options?.offset) params.set('offset', options.offset.toString())
+    if (options?.status) params.set('status', options.status)
+    if (options?.operation_type) params.set('operation_type', options.operation_type)
+    if (options?.bucket_name) params.set('bucket_name', options.bucket_name)
+    if (options?.start_date) params.set('start_date', options.start_date)
+    if (options?.end_date) params.set('end_date', options.end_date)
+    if (options?.job_id) params.set('job_id', options.job_id)
+    if (options?.min_errors !== undefined) params.set('min_errors', options.min_errors.toString())
+    if (options?.sort_by) params.set('sort_by', options.sort_by)
+    if (options?.sort_order) params.set('sort_order', options.sort_order)
+
+    const response = await fetch(
+      `${WORKER_API}/api/jobs?${params.toString()}`,
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
+      throw new Error(error.error ?? `Failed to get job list: ${response.status}`)
+    }
+    
+    const data = await response.json() as { result: JobListResponse; success: boolean }
+    return data.result
+  }
+
+  async getJobEvents(jobId: string): Promise<JobEventsResponse> {
+    const response = await fetch(
+      `${WORKER_API}/api/jobs/${encodeURIComponent(jobId)}/events`,
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
+      throw new Error(error.error ?? `Failed to get job events: ${response.status}`)
+    }
+    
+    const data = await response.json() as { result: JobEventsResponse; success: boolean }
+    return data.result
+  }
+
+  async getJobStatus(jobId: string): Promise<JobListItem> {
+    const response = await fetch(
+      `${WORKER_API}/api/jobs/${encodeURIComponent(jobId)}`,
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
+      throw new Error(error.error ?? `Failed to get job status: ${response.status}`)
+    }
+    
+    const data = await response.json() as { result: JobListItem; success: boolean }
+    return data.result
   }
 
 }

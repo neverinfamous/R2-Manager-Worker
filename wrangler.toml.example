@@ -31,6 +31,17 @@ binding = "ASSETS"
 binding = "R2"
 bucket_name = "your-bucket-name"  # CHANGE THIS
 
+# ============================================
+# D1 METADATA DATABASE CONFIGURATION
+# ============================================
+# This database stores job history for bulk operations
+# Create database: wrangler d1 create r2-manager-metadata
+# Then run: wrangler d1 execute r2-manager-metadata --remote --file=worker/schema.sql
+[[d1_databases]]
+binding = "METADATA"
+database_name = "r2-manager-metadata"  # CHANGE THIS
+database_id = "your-metadata-database-id"  # CHANGE THIS (from wrangler d1 create output)
+
 [observability.logs]
 enabled = true
 

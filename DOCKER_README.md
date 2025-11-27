@@ -1,20 +1,64 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** November 27, 2025 | **Version:** 1.3.0
+**Last Updated:** November 27, 2025 | **Version:** 2.0.0
 
 **Tech Stack:** React 19.2.0 | Vite 7.2.4 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v1.3.0-green)
+![Version](https://img.shields.io/badge/version-v2.0.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 [![Type Safety](https://img.shields.io/badge/TypeScript-Strict-blue.svg)](https://github.com/neverinfamous/R2-Manager-Worker)
 
- R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to manage Cloudflare R2 buckets and objects. Supports drag-and-drop uploads, batch copy/move/delete, multi-file ZIP downloads, signed share links, folder hierarchies, advanced search + filters (extension, size, date), and GitHub SSO via Cloudflare Zero Trust.
+ R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to manage Cloudflare R2 buckets and objects. Supports job history tracking, AI-powered search, drag-and-drop uploads with verification, batch copy/move/delete, multi-file ZIP downloads, signed share links, folder hierarchies, advanced search + filters (extension, size, date), and GitHub SSO via Cloudflare Zero Trust.
 
-**[Live Demo](https://r2.adamic.tech/)** • **[Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki)** • **[GitHub](https://github.com/neverinfamous/R2-Manager-Worker)** • **[Changelog](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Changelog)** • **[Release Article](https://adamic.tech/articles/2025-10-30-r2-bucket-manager-v1-3-0)**
+**[Live Demo](https://r2.adamic.tech/)** • **[Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki)** • **[GitHub](https://github.com/neverinfamous/R2-Manager-Worker)** • **[Changelog](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Changelog)** • **[Release Article](https://adamic.tech/articles/2025-11-27-r2-bucket-manager-v2-0-0)**
+
+---
+
+## ✨ Features
+
+- 📋 **Job History Tracking** - Complete audit trail for bulk operations with filterable job list and event timeline
+- 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search and RAG
+- 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
+- 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
+- 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
+- 📁 **Folder Management** - Create, rename, copy, move, and delete folders
+- 📄 **File Management** - Rename files via context menu
+- 🔍 **Smart Filtering** - Real-time filtering by filename/folder name
+- 🎯 **Advanced Filtering** - Filter by extension, size, and date
+- 📤 **Smart Uploads** - Chunked uploads with retry (up to 500MB)*
+- ✓ **Upload Verification** - MD5 checksum verification ensures uploaded files match stored files exactly
+- 📥 **Bulk Downloads** - Download multiple files as ZIP
+- 🔗 **Shareable Links** - Generate signed URLs
+- 🔄 **Advanced Operations** - Move/copy between buckets
+- 🗑️ **Bulk Bucket Delete** - Select and force delete multiple buckets at once with progress tracking
+- 🧭 **Breadcrumb Navigation** - Easy folder traversal
+- 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access
+- 🛡️ **Rate Limiting** - Tiered API rate limits (100/30/10 requests per minute)
+- 🌓 **Light/Dark Mode** - System, light, or dark themes
+
+**\*Upload Size Limits:** Plan-based (Free: 100MB, Pro: 100MB, Business: 200MB, Enterprise: 500MB)
+
+### Supported File Types
+
+**Accepted file types and size limits:**
+
+- **Archives** (7Z, GZ, RAR, TAR, ZIP) - up to 500MB
+- **Audio** (AAC, FLAC, M4A, MP3, OGG, OPUS, WAV) - up to 100MB
+- **Code** (CSS, GO, HTML, Java, JS, Rust, TS, Python, etc.) - up to 10MB
+- **Config & Metadata** (CONF, ENV, INI, JSON, JSONC, LOCK, TOML, etc.) - up to 10MB
+- **Data Formats** (AVRO, FEATHER, NDJSON) - up to 50MB
+- **Databases** (DB, PARQUET, SQL) - up to 50MB
+- **Dev Environment** (Dockerfile, editorconfig, .gitignore, nvmrc, etc.) - up to 1MB
+- **Documents** (CSV, Excel, Markdown, PDF, PowerPoint, TXT, Word, etc.) - up to 50MB
+- **Documentation** (NFO) - up to 10MB
+- **Fonts** (EOT, OTF, TTF, WOFF, WOFF2) - up to 10MB
+- **Images** (AVIF, BMP, GIF, HEIC, JPG, PNG, PSD, SVG, WebP) - up to 15MB
+- **Jupyter Notebooks** (.ipynb) - up to 10MB
+- **Videos** (3GP, AVI, FLV, M4V, MKV, MOV, MP4, MPEG, OGG, WebM, WMV) - up to 500MB
 
 ---
 
@@ -89,56 +133,14 @@ docker run -p 8787:8787 -v "/path/to/wrangler.toml:/app/wrangler.toml" writenote
 | Tag | Description | Use Case |
 |-----|-------------|----------|
 | `latest` | Latest stable release | **Recommended for testing** |
-| `v1.3.0` | Specific version | Pin to exact version |
+| `v2.0.0` | Specific version | Pin to exact version |
 | `sha-abc1234` | Commit SHA (12-char short) | Development/traceability |
 
 **Pull a specific version:**
 
 ```bash
-docker pull writenotenow/r2-bucket-manager:v1.3.0
+docker pull writenotenow/r2-bucket-manager:v2.0.0
 ```
-
----
-
-## ✨ Features
-
-- 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
-- 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
-- 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
-- 📁 **Folder Management** - Create, rename, copy, move, and delete folders
-- 📄 **File Management** - Rename files via context menu
-- 🔍 **Smart Filtering** - Real-time filtering by filename/folder name
-- 🎯 **Advanced Filtering** - Filter by extension, size, and date
-- 📤 **Smart Uploads** - Chunked uploads with retry (up to 500MB)*
-- ✓ Upload Verification - MD5 checksum verification ensures uploaded files match stored files exactly
-- 📥 **Bulk Downloads** - Download multiple files as ZIP
-- 🔗 **Shareable Links** - Generate signed URLs
-- 🔄 **Advanced Operations** - Move/copy between buckets
-- 🗑️ **Bulk Bucket Delete** - Select and force delete multiple buckets at once with progress tracking
-- 🧭 **Breadcrumb Navigation** - Easy folder traversal
-- 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access
-- 🛡️ **Rate Limiting** - Tiered API rate limits (disabled in local dev)
-- 🌓 **Light/Dark Mode** - System, light, or dark themes
-
-**\*Upload Size Limits:** Plan-based (Free: 100MB, Pro: 100MB, Business: 200MB, Enterprise: 500MB)
-
-### Supported File Types
-
-**Accepted file types and size limits:**
-
-- **Archives** (7Z, GZ, RAR, TAR, ZIP) - up to 500MB
-- **Audio** (AAC, FLAC, M4A, MP3, OGG, OPUS, WAV) - up to 100MB
-- **Code** (CSS, GO, HTML, Java, JS, Rust, TS, Python, etc.) - up to 10MB
-- **Config & Metadata** (CONF, ENV, INI, JSON, JSONC, LOCK, TOML, etc.) - up to 10MB
-- **Data Formats** (AVRO, FEATHER, NDJSON) - up to 50MB
-- **Databases** (DB, PARQUET, SQL) - up to 50MB
-- **Dev Environment** (Dockerfile, editorconfig, .gitignore, nvmrc, etc.) - up to 1MB
-- **Documents** (CSV, Excel, Markdown, PDF, PowerPoint, TXT, Word, etc.) - up to 50MB
-- **Documentation** (NFO) - up to 10MB
-- **Fonts** (EOT, OTF, TTF, WOFF, WOFF2) - up to 10MB
-- **Images** (AVIF, BMP, GIF, HEIC, JPG, PNG, PSD, SVG, WebP) - up to 15MB
-- **Jupyter Notebooks** (.ipynb) - up to 10MB
-- **Videos** (3GP, AVI, FLV, M4V, MKV, MOV, MP4, MPEG, OGG, WebM, WMV) - up to 500MB
 
 ---
 
@@ -286,19 +288,6 @@ docker run -p 8787:8787 r2-manager-local
 4. Set up custom domain (optional)
 
 See the [Installation & Setup Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Installation-&-Setup) for complete production deployment instructions.
-
----
-
-## 📖 Documentation
-
-**Complete documentation:** [GitHub Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki)
-
-**Key Topics:**
-- [Installation & Setup](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Installation-&-Setup) - Production deployment
-- [API Reference](https://github.com/neverinfamous/R2-Manager-Worker/wiki/API-Reference) - Complete endpoints
-- [Configuration Reference](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Configuration-Reference) - Environment settings
-- [Development Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Development-Guide) - Contributing
-- [Troubleshooting](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Troubleshooting) - Common issues
 
 ---
 

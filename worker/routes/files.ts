@@ -1,7 +1,8 @@
 import JSZip from 'jszip';
-import type { Env, CloudflareApiResponse } from '../types';
+import type { Env, CloudflareApiResponse, JobOperationType } from '../types';
 import { CF_API } from '../types';
 import { generateSignature } from '../utils/signing';
+import { generateJobId, createJob, updateJobProgress, completeJob, logJobEvent } from './jobs';
 
 interface MultiBucketDownloadBody {
   buckets: { bucketName: string; files: string[] }[];
@@ -31,11 +32,13 @@ export async function handleFileRoutes(
   env: Env,
   url: URL,
   corsHeaders: HeadersInit,
-  isLocalDev: boolean
+  isLocalDev: boolean,
+  userEmail: string
 ): Promise<Response> {
   console.log('[Files] Handling file operation');
   const parts = url.pathname.split('/');
   const bucketName = parts[3];
+  const db = env.METADATA;
   
   const cfHeaders = {
     'X-Auth-Email': env.CF_EMAIL,
@@ -44,9 +47,31 @@ export async function handleFileRoutes(
 
   // Handle multi-bucket ZIP download
   if (request.method === 'POST' && url.pathname === '/api/files/download-buckets-zip') {
+    const jobId = generateJobId('bulk_download');
+    const operationType: JobOperationType = 'bulk_download';
+    let totalFiles = 0;
+    let processedFiles = 0;
+    let errorCount = 0;
+    
     try {
       console.log('[Files] Processing multi-bucket ZIP download request');
       const { buckets } = await request.json() as MultiBucketDownloadBody;
+      
+      // Calculate total files
+      totalFiles = buckets.reduce((sum, b) => sum + b.files.length, 0);
+      const bucketNames = buckets.map(b => b.bucketName).join(', ');
+      
+      // Create job record
+      if (db) {
+        await createJob(db, {
+          jobId,
+          bucketName: bucketNames,
+          operationType,
+          totalItems: totalFiles,
+          userEmail,
+          metadata: { buckets: buckets.map(b => ({ name: b.bucketName, fileCount: b.files.length })) }
+        });
+      }
       
       const zip = new JSZip();
       
@@ -60,22 +85,66 @@ export async function handleFileRoutes(
         
         for (const fileName of bucket.files) {
           console.log('[Files] Fetching:', fileName, 'from bucket:', bucket.bucketName);
-          const response = await fetch(
-            CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucket.bucketName + '/objects/' + fileName,
-            { headers: cfHeaders }
-          );
-          
-          if (!response.ok) {
-            throw new Error('Failed to fetch file: ' + fileName + ' from bucket: ' + bucket.bucketName);
+          try {
+            const response = await fetch(
+              CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucket.bucketName + '/objects/' + fileName,
+              { headers: cfHeaders }
+            );
+            
+            if (!response.ok) {
+              errorCount++;
+              if (db) {
+                await logJobEvent(db, {
+                  jobId,
+                  eventType: 'error',
+                  userEmail,
+                  details: { file: fileName, bucket: bucket.bucketName, error: 'Failed to fetch file' }
+                });
+              }
+              continue;
+            }
+            
+            const buffer = await response.arrayBuffer();
+            bucketFolder.file(fileName, buffer);
+            processedFiles++;
+            
+            // Update progress every 5 files or on last file
+            if (db && (processedFiles % 5 === 0 || processedFiles === totalFiles)) {
+              await updateJobProgress(db, {
+                jobId,
+                processedItems: processedFiles,
+                totalItems: totalFiles,
+                errorCount
+              });
+            }
+          } catch (fileErr) {
+            errorCount++;
+            console.error('[Files] Error fetching file:', fileName, fileErr);
+            if (db) {
+              await logJobEvent(db, {
+                jobId,
+                eventType: 'error',
+                userEmail,
+                details: { file: fileName, bucket: bucket.bucketName, error: String(fileErr) }
+              });
+            }
           }
-          
-          const buffer = await response.arrayBuffer();
-          bucketFolder.file(fileName, buffer);
         }
       }
       
       console.log('[Files] Creating multi-bucket ZIP');
       const zipContent = await zip.generateAsync({type: "uint8array"});
+      
+      // Complete the job
+      if (db) {
+        await completeJob(db, {
+          jobId,
+          status: errorCount > 0 ? 'completed' : 'completed',
+          processedItems: processedFiles,
+          errorCount,
+          userEmail
+        });
+      }
       
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
       return new Response(zipContent.buffer as ArrayBuffer, {
@@ -88,6 +157,19 @@ export async function handleFileRoutes(
 
     } catch (err) {
       console.error('[Files] Multi-bucket ZIP download error:', err);
+      
+      // Mark job as failed
+      if (db) {
+        await completeJob(db, {
+          jobId,
+          status: 'failed',
+          processedItems: processedFiles,
+          errorCount: errorCount + 1,
+          userEmail,
+          errorMessage: String(err)
+        });
+      }
+      
       return new Response(JSON.stringify({ 
         error: 'Failed to create multi-bucket zip file'
       }), {
@@ -102,30 +184,94 @@ export async function handleFileRoutes(
 
   // Handle ZIP download
   if (request.method === 'POST' && parts[4] === 'download-zip') {
+    const jobId = generateJobId('bulk_download');
+    const operationType: JobOperationType = 'bulk_download';
+    let processedFiles = 0;
+    let errorCount = 0;
+    let totalFiles = 0;
+    const targetBucket = bucketName ?? 'unknown';
+    
     try {
       console.log('[Files] Processing ZIP download request');
       const body = await request.json() as ZipDownloadBody;
       const files = body.files;
+      totalFiles = files.length;
+      
+      // Create job record
+      if (db) {
+        await createJob(db, {
+          jobId,
+          bucketName: targetBucket,
+          operationType,
+          totalItems: totalFiles,
+          userEmail,
+          metadata: { files }
+        });
+      }
       
       const zip = new JSZip();
       
       for (const fileName of files) {
         console.log('[Files] Fetching:', fileName);
-        const response = await fetch(
-          CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + fileName,
-          { headers: cfHeaders }
-        );
-        
-        if (!response.ok) {
-          throw new Error('Failed to fetch file: ' + fileName);
+        try {
+          const response = await fetch(
+            CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + fileName,
+            { headers: cfHeaders }
+          );
+          
+          if (!response.ok) {
+            errorCount++;
+            if (db) {
+              await logJobEvent(db, {
+                jobId,
+                eventType: 'error',
+                userEmail,
+                details: { file: fileName, error: 'Failed to fetch file' }
+              });
+            }
+            continue;
+          }
+          
+          const buffer = await response.arrayBuffer();
+          zip.file(fileName, buffer);
+          processedFiles++;
+          
+          // Update progress every 5 files or on last file
+          if (db && (processedFiles % 5 === 0 || processedFiles === totalFiles)) {
+            await updateJobProgress(db, {
+              jobId,
+              processedItems: processedFiles,
+              totalItems: totalFiles,
+              errorCount
+            });
+          }
+        } catch (fileErr) {
+          errorCount++;
+          console.error('[Files] Error fetching file:', fileName, fileErr);
+          if (db) {
+            await logJobEvent(db, {
+              jobId,
+              eventType: 'error',
+              userEmail,
+              details: { file: fileName, error: String(fileErr) }
+            });
+          }
         }
-        
-        const buffer = await response.arrayBuffer();
-        zip.file(fileName, buffer);
       }
       
       console.log('[Files] Creating ZIP');
       const zipContent = await zip.generateAsync({type: "uint8array"});
+      
+      // Complete the job
+      if (db) {
+        await completeJob(db, {
+          jobId,
+          status: 'completed',
+          processedItems: processedFiles,
+          errorCount,
+          userEmail
+        });
+      }
       
       return new Response(zipContent.buffer as ArrayBuffer, {
         headers: {
@@ -137,6 +283,19 @@ export async function handleFileRoutes(
 
     } catch (err) {
       console.error('[Files] ZIP download error:', err);
+      
+      // Mark job as failed
+      if (db) {
+        await completeJob(db, {
+          jobId,
+          status: 'failed',
+          processedItems: processedFiles,
+          errorCount: errorCount + 1,
+          userEmail,
+          errorMessage: String(err)
+        });
+      }
+      
       return new Response(JSON.stringify({ 
         error: 'Failed to create zip file'
       }), {

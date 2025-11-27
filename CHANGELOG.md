@@ -7,9 +7,26 @@ All notable changes to R2 Bucket Manager will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2025-11-27
+
+### 🎉 Major Release Highlights
+
+Version 2.0.0 is a major release featuring **Job History tracking**, **AI Search integration**, **API rate limiting**, **upload integrity verification**, and **strict TypeScript compliance**. This release represents a significant evolution of the R2 Bucket Manager with enterprise-grade features and code quality improvements.
 
 ### Added
+- **Job History Tracking** - Complete audit trail for bulk operations
+  - Track all bulk operations: downloads, uploads, deletions, file moves/copies
+  - Filterable job list by status, operation type, bucket, date range
+  - Real-time progress tracking with percentage completion
+  - Event timeline modal showing detailed operation history
+  - Job search by ID for quick lookup
+  - Sorting by date, items count, or error count
+  - D1 database storage with `bulk_jobs` and `job_audit_events` tables
+  - New navigation tabs to switch between "Buckets" and "Job History" views
+  - API endpoints: `GET /api/jobs`, `GET /api/jobs/:jobId`, `GET /api/jobs/:jobId/events`
+  - Visual status badges (queued, running, completed, failed, cancelled)
+  - Operation-specific icons (download, upload, delete, move, copy, sync)
+
 - **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search (formerly AutoRAG) for semantic search
   - Bucket compatibility analysis shows which files can be indexed by AI Search
   - Visual donut chart displaying indexable vs non-indexable file ratios
@@ -41,6 +58,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - TypeScript compiles cleanly with `noEmit` flag
   - Only intentional `console.log` statements remain as warnings
   - Codebase now meets strict enterprise-grade type safety standards
+
 - **Upload Integrity Verification** - MD5 checksum verification for all file uploads
   - Client-side MD5 calculation using spark-md5 library
   - Server-side ETag capture from R2 responses
@@ -52,6 +70,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Minimal performance overhead (~2-3% of upload time)
   - Industry-standard data integrity verification
   - Prevents silent upload failures and data corruption
+
 - **API Rate Limiting** - Tiered rate limiting to protect API endpoints from abuse
   - Three-tier rate limiting system based on operation type (READ/WRITE/DELETE)
   - READ operations: 100 requests per 60 seconds (GET endpoints)
@@ -66,6 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Configurable limits via wrangler.toml
   - Uses Cloudflare Workers Rate Limiting API (no KV required)
   - Minimal performance impact with sub-millisecond latency
+
 - **Multi-Bucket Download** - Download multiple selected buckets as a single ZIP archive
   - "Select All" button on main page to quickly select all buckets
   - "Download Selected" button in bulk action toolbar
@@ -77,14 +97,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Works seamlessly with existing bulk selection UI
 
 ### Changed
-- **Architecture Simplification** - Removed D1 database dependency
-  - Removed D1 database binding from all configuration files
-  - Removed D1 operations from worker routes (bucket ownership tracking)
-  - Removed D1 type definitions and interfaces from worker types
-  - All bucket operations now use Cloudflare R2 REST API directly
-  - Simplified deployment process (no database setup required)
-  - Updated all documentation to reflect D1 removal (22 files updated)
-  - Updated 11 wiki pages to remove D1 references and setup steps
+- **Architecture Enhancement** - Added D1 database for job history metadata
+  - New `METADATA` D1 database binding for job tracking
+  - Schema includes `bulk_jobs` and `job_audit_events` tables with proper indexes
+  - Optimized queries for filtering, sorting, and pagination
+  - Previous D1 removal for bucket ownership still applies (simpler auth model)
+  - All bucket operations continue to use Cloudflare R2 REST API directly
 
 ### Fixed
 - **Workers.dev Subdomain** - Fixed subdomain being disabled on every deployment
@@ -94,6 +112,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Now `*.workers.dev` subdomain remains enabled after deployments
 
 ### Technical Details
+- **Job History Implementation:**
+  - New route file: `worker/routes/jobs.ts` (~550 lines)
+  - New frontend components: `src/components/job-history/` (JobHistory.tsx, JobHistoryDialog.tsx)
+  - New CSS: `src/styles/job-history.css` (~400 lines)
+  - D1 schema: `worker/schema.sql` with bulk_jobs and job_audit_events tables
+  - API service methods: `getJobList()`, `getJobEvents()`, `getJobStatus()`
+  - Integrated job tracking in file operations (downloads)
+  - Navigation tabs in app.tsx for view switching
+  - ~1,500 lines of new code across 8 files
+
 - **AI Search Implementation:**
   - New route file: `worker/routes/ai-search.ts` (~600 lines)
   - New frontend components: `src/components/ai-search/` (AISearchPanel, CompatibilityReport, AISearchQuery)
@@ -115,6 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ~150 lines of new code for rate limiting logic
   - Requires Wrangler 4.36.0 or later
   - Requires Cloudflare Workers paid plan
+
 - **Multi-Bucket Download Implementation:**
   - New API method: `downloadMultipleBuckets()` in `src/services/api.ts`
   - New worker endpoint: `POST /api/files/download-buckets-zip` in `worker/routes/files.ts`
@@ -122,26 +151,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Parallel file fetching from multiple buckets
   - Frontend state management with progress tracking
   - ~200 lines of new code across 3 files
+
 - **UI Enhancements:**
+  - Navigation tabs for switching between Buckets and Job History views
   - Green "Select All" button positioned on left side of toolbar
   - Blue "Download Selected" button between "Clear Selection" and "Delete Selected"
   - Toolbar shows/hides buttons based on selection state
   - Visual spacing improvements (3px between checkbox and bucket name)
-- **Removed Files/Sections:**
-  - D1 database binding configuration
-  - D1 type definitions (D1Database, D1PreparedStatement, D1Result, D1ExecResult)
-  - DB binding from Env interface
-  - bucket_owners table operations (INSERT, UPDATE, DELETE)
-  - worker/schema.sql references from documentation
-- **Updated Documentation:**
-  - Main repo: 11 files (code, config, README, release notes, security)
-  - Wiki: 11 pages (installation, config, troubleshooting, architecture, etc.)
-- **Lines Removed:** ~300+ lines of D1-related code and documentation
-- **Architecture Benefits:**
-  - Simpler deployment (2 fewer setup steps)
-  - No database management required
-  - Lower complexity and maintenance burden
-  - Same functionality with Zero Trust authentication
 
 ## [1.2.0] - 2025-10-27
 
@@ -370,6 +386,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## Release Notes
+
+### Version 2.0.0
+This major release brings **Job History tracking**, **AI Search integration**, **API rate limiting**, **upload integrity verification**, and **strict TypeScript compliance** to the R2 Bucket Manager. Version 2.0.0 represents a significant evolution with enterprise-grade features for auditing, AI-powered search, and robust API protection.
+
+**Key Features:**
+- **Job History Tracking:** Complete audit trail for all bulk operations
+  - Track downloads, uploads, deletions, moves, and copies
+  - Filterable job list with status, operation type, bucket, and date filters
+  - Event timeline modal showing detailed operation progress
+  - Real-time progress tracking with percentage completion
+  - New navigation tabs to switch between Buckets and Job History views
+- **AI Search Integration:** Connect R2 buckets to Cloudflare AI Search
+  - Semantic search and AI-powered question answering
+  - Bucket compatibility analysis with visual reports
+  - Two search modes: AI-powered (with LLM) and semantic (retrieval only)
+- **API Rate Limiting:** Tiered protection for API endpoints
+  - READ: 100/min, WRITE: 30/min, DELETE: 10/min
+  - Per-user enforcement with detailed 429 responses
+- **Upload Verification:** MD5 checksum verification for all uploads
+  - Automatic verification with visual feedback
+  - Prevents silent upload failures and data corruption
+- **Multi-Bucket Download:** Download multiple buckets as a single ZIP
+- **Strict TypeScript:** Enterprise-grade type safety (280+ errors fixed)
 
 ### Version 1.2.0
 This minor release adds the highly requested **cross-bucket search** feature, allowing users to search for files across all buckets from the main page. The new search interface includes powerful filtering options (extension, size, date) and displays results in a sortable table with full file operations (download, move, copy, delete). This release also includes **bulk bucket deletion**, major code refactoring for improved maintainability, and several important bug fixes including file transfer path logic and rename operations.

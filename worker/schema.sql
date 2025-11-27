@@ -1,29 +1,57 @@
-﻿-- ============================================
--- R2 Bucket Manager - Database Schema
--- ============================================
--- Authentication: Cloudflare Zero Trust (Cloudflare Access)
--- No user/session tables needed - authentication handled at edge
--- ============================================
+﻿-- R2 Manager Job History Schema
+-- Run this to create the necessary tables in your D1 database:
+-- wrangler d1 execute r2-manager-metadata --remote --file=worker/schema.sql
 
--- Bucket ownership tracking (for future multi-tenant features)
--- Currently not actively used due to Zero Trust authentication
--- All authenticated users can access all buckets
-DROP TABLE IF EXISTS bucket_owners;
-CREATE TABLE bucket_owners (
-  bucket_name TEXT NOT NULL,
-  user_email TEXT NOT NULL,
-  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (bucket_name, user_email)
+-- Jobs table to track bulk operations
+CREATE TABLE IF NOT EXISTS bulk_jobs (
+    job_id TEXT PRIMARY KEY,
+    bucket_name TEXT NOT NULL,
+    operation_type TEXT NOT NULL CHECK (operation_type IN (
+        'bulk_upload',
+        'bulk_download', 
+        'bulk_delete',
+        'bucket_delete',
+        'file_move',
+        'file_copy',
+        'folder_move',
+        'folder_copy',
+        'ai_search_sync'
+    )),
+    status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN (
+        'queued',
+        'running',
+        'completed',
+        'failed',
+        'cancelled'
+    )),
+    total_items INTEGER,
+    processed_items INTEGER DEFAULT 0,
+    error_count INTEGER DEFAULT 0,
+    percentage REAL DEFAULT 0,
+    started_at TEXT NOT NULL,
+    completed_at TEXT,
+    user_email TEXT NOT NULL,
+    metadata TEXT -- JSON string for operation-specific data
 );
 
--- ============================================
--- MIGRATION NOTE:
--- ============================================
--- If you previously had 'users' and 'sessions' tables from an earlier
--- version, they are no longer needed with Cloudflare Zero Trust.
--- The above DROP statements are kept for backward compatibility.
--- 
--- Legacy tables (no longer used):
--- - users: Replaced by Cloudflare Access identity
--- - sessions: Replaced by Cloudflare Access JWT tokens
--- ============================================
+-- Indexes for common queries
+CREATE INDEX IF NOT EXISTS idx_bulk_jobs_bucket ON bulk_jobs(bucket_name);
+CREATE INDEX IF NOT EXISTS idx_bulk_jobs_status ON bulk_jobs(status);
+CREATE INDEX IF NOT EXISTS idx_bulk_jobs_operation ON bulk_jobs(operation_type);
+CREATE INDEX IF NOT EXISTS idx_bulk_jobs_started ON bulk_jobs(started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_bulk_jobs_user ON bulk_jobs(user_email);
+
+-- Job audit events table for detailed operation timeline
+CREATE TABLE IF NOT EXISTS job_audit_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    job_id TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    user_email TEXT NOT NULL,
+    timestamp TEXT DEFAULT (datetime('now')),
+    details TEXT, -- JSON string for event-specific data
+    FOREIGN KEY (job_id) REFERENCES bulk_jobs(job_id) ON DELETE CASCADE
+);
+
+-- Indexes for job events
+CREATE INDEX IF NOT EXISTS idx_job_events_job ON job_audit_events(job_id);
+CREATE INDEX IF NOT EXISTS idx_job_events_timestamp ON job_audit_events(timestamp DESC);

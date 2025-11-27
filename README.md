@@ -1,13 +1,13 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** November 27, 2025 | **Version:** 1.3.0
+**Last Updated:** November 27, 2025 | **Version:** 2.0.0
  
 **Tech Stack:** React 19.2.0 | Vite 7.2.4 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v1.3.0-green)
+![Version](https://img.shields.io/badge/version-v2.0.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
@@ -15,12 +15,13 @@
 
 A modern web application for managing Cloudflare R2 buckets with enterprise-grade authentication via Cloudflare Access (Zero Trust). Deploy to your own Cloudflare account in minutes.
 
-**[Live Demo](https://r2.adamic.tech/)** • **[Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki)** • **[Docker Hub](https://hub.docker.com/r/writenotenow/r2-bucket-manager)** • **[Changelog](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Changelog)** • **[Release Article](https://adamic.tech/articles/2025-10-30-r2-bucket-manager-v1-3-0)**
+**[Live Demo](https://r2.adamic.tech/)** • **[Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki)** • **[Docker Hub](https://hub.docker.com/r/writenotenow/r2-bucket-manager)** • **[Changelog](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Changelog)** • **[Release Article](https://adamic.tech/articles/2025-11-27-r2-bucket-manager-v2-0-0)**
 
 ---
 
 ## ✨ Features
 
+- 📋 **Job History Tracking** - Complete audit trail for bulk operations with filterable job list and event timeline
 - 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search and RAG capabilities
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
@@ -179,6 +180,40 @@ Comprehensive client-side filtering for large buckets.
 * **Smart Filters:** Filter by **File Type** (Images, Code, Docs), **Size** (Presets or custom ranges), and **Date** (Upload time).
 * **Context Aware:** Toggle between "Files Only," "Folders Only," or "All."
 * **Persistent:** Active filters remain applied during batch operations and navigation.
+
+---
+
+## 📋 Job History
+
+Track all bulk operations with a comprehensive audit trail and event timeline.
+
+### Features
+
+- **Operation Tracking**: Automatically track bulk downloads, uploads, deletions, moves, and copies
+- **Filterable List**: Filter jobs by status (queued, running, completed, failed), operation type, bucket, and date range
+- **Event Timeline**: View detailed progress history for each job in a modal dialog
+- **Real-time Progress**: See percentage completion and item counts during operations
+- **Job Search**: Quickly find jobs by ID
+- **Sorting Options**: Sort by date, item count, or error count
+
+### Configuration
+
+Job history requires a D1 database. Add the binding to your `wrangler.toml`:
+
+```toml
+[[d1_databases]]
+binding = "METADATA"
+database_name = "r2-manager-metadata"
+database_id = "your-database-id"
+```
+
+Create the database and run the schema:
+```bash
+npx wrangler d1 create r2-manager-metadata
+npx wrangler d1 execute r2-manager-metadata --remote --file=worker/schema.sql
+```
+
+**📖 See the [Job History Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Job-History) for complete documentation.**
 
 ---
 
@@ -378,6 +413,11 @@ The following operations return simulated success responses for UI testing:
 - `POST /api/ai-search/:instanceName/search` - Semantic search (retrieval only)
 - `POST /api/ai-search/:instanceName/ai-search` - AI-powered search with generated response
 
+#### Job History Operations
+- `GET /api/jobs` - List jobs with filtering (supports `?status`, `?operation_type`, `?bucket_name`, `?start_date`, `?end_date`, `?job_id`, `?min_errors`, `?limit`, `?offset`, `?sort_by`, `?sort_order`)
+- `GET /api/jobs/:jobId` - Get job status and details
+- `GET /api/jobs/:jobId/events` - Get job event timeline
+
 ---
 
 ## 🔐 Security
@@ -395,15 +435,17 @@ The following operations return simulated success responses for UI testing:
 
 ## 📋 Roadmap
 
-### Unreleased Features (In Development)
-- ✅ **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search (completed, pending release)
-- ✅ **Upload Integrity Verification** - MD5 checksum verification for all uploads (completed, pending release)
-- ✅ **API Rate Limiting** - Tiered rate limits using Cloudflare Workers Rate Limiting API (completed, pending release)
+### Recently Released (v2.0.0)
+- ✅ **Job History Tracking** - Complete audit trail for bulk operations
+- ✅ **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search
+- ✅ **Upload Integrity Verification** - MD5 checksum verification for all uploads
+- ✅ **API Rate Limiting** - Tiered rate limits using Cloudflare Workers Rate Limiting API
+- ✅ **Multi-Bucket Download** - Download multiple buckets as a single ZIP archive
 
 ### Planned Features
-- **Audit Logging** - Track all user actions with detailed logs
 - **AWS S3 Migration** - Add support for migrating AWS S3 to R2
 - **Custom Metadata** - User-defined tags and labels
+- **File Versioning** - Track and restore previous file versions
 - **Offline Upload Queue** - Resumable uploads with service workers
 
 **📖 See the full [Roadmap](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Roadmap) for details.**

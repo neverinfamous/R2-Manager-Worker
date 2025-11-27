@@ -7,7 +7,10 @@ import { auth } from './services/auth'
 import { ThemeToggle } from './components/ThemeToggle'
 import { CrossBucketSearch } from './components/search/CrossBucketSearch'
 import { AISearchPanel } from './components/ai-search'
+import { JobHistory } from './components/job-history'
 import type { FileRejection, FileWithPath } from 'react-dropzone'
+
+type ActiveView = 'buckets' | 'job-history'
 
 // API response types
 interface DeleteBucketResponse {
@@ -82,6 +85,7 @@ export default function BucketManager(): JSX.Element {
     error?: string
   } | null>(null)
   const [showAISearch, setShowAISearch] = useState(false)
+  const [activeView, setActiveView] = useState<ActiveView>('buckets')
   
   // Debug: Log currentPath changes
   useEffect(() => {
@@ -107,6 +111,7 @@ export default function BucketManager(): JSX.Element {
     // Just clear selected bucket to return to bucket list (fast React state update)
     setSelectedBucket(null)
     setCurrentPath('')
+    setActiveView('buckets')
   }, [])
 
   const handleBucketNavigate = useCallback((bucketName: string) => {
@@ -575,7 +580,39 @@ export default function BucketManager(): JSX.Element {
         </div>
       </header>
 
+      {/* Navigation Tabs - Show when not viewing a specific bucket */}
       {!selectedBucket && (
+        <div className="nav-tabs">
+          <button
+            className={`nav-tab ${activeView === 'buckets' ? 'active' : ''}`}
+            onClick={() => setActiveView('buckets')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3" />
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+            </svg>
+            Buckets
+          </button>
+          <button
+            className={`nav-tab ${activeView === 'job-history' ? 'active' : ''}`}
+            onClick={() => setActiveView('job-history')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            Job History
+          </button>
+        </div>
+      )}
+
+      {/* Job History View */}
+      {!selectedBucket && activeView === 'job-history' && (
+        <JobHistory buckets={buckets.map(b => ({ name: b.name }))} />
+      )}
+
+      {/* Buckets View */}
+      {!selectedBucket && activeView === 'buckets' && (
         <>
           <form 
             id="createBucketForm" 
@@ -764,6 +801,7 @@ export default function BucketManager(): JSX.Element {
         </>
       )}
 
+      {/* Delete confirmation modal - always render outside view-specific code */}
       {deleteConfirmState && (
         <div className="modal-overlay" onClick={() => !deleteConfirmState.isDeleting && setDeleteConfirmState(null)}>
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>

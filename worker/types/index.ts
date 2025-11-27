@@ -14,6 +14,7 @@ export interface Env {
   RATE_LIMITER_WRITE: RateLimit
   RATE_LIMITER_DELETE: RateLimit
   AI?: Ai
+  METADATA?: D1Database
 }
 
 export const CF_API = 'https://api.cloudflare.com/client/v4';
@@ -169,4 +170,86 @@ export interface AISearchSyncResponse {
   success: boolean;
   message?: string;
   job_id?: string;
+}
+
+// Job History Types
+export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+
+export type JobOperationType = 
+  | 'bulk_upload'
+  | 'bulk_download'
+  | 'bulk_delete'
+  | 'bucket_delete'
+  | 'file_move'
+  | 'file_copy'
+  | 'folder_move'
+  | 'folder_copy'
+  | 'ai_search_sync';
+
+export interface BulkJob {
+  job_id: string;
+  bucket_name: string;
+  operation_type: JobOperationType;
+  status: JobStatus;
+  total_items: number | null;
+  processed_items: number | null;
+  error_count: number | null;
+  percentage: number;
+  started_at: string;
+  completed_at: string | null;
+  user_email: string;
+  metadata: string | null;
+}
+
+export interface JobAuditEvent {
+  id: number;
+  job_id: string;
+  event_type: string;
+  user_email: string;
+  timestamp: string;
+  details: string | null;
+}
+
+export interface JobListResponse {
+  jobs: BulkJob[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface JobEventsResponse {
+  job_id: string;
+  events: JobAuditEvent[];
+}
+
+export interface CreateJobParams {
+  jobId: string;
+  bucketName: string;
+  operationType: JobOperationType;
+  totalItems?: number;
+  userEmail: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface UpdateJobProgressParams {
+  jobId: string;
+  processedItems: number;
+  totalItems?: number;
+  errorCount?: number;
+}
+
+export interface CompleteJobParams {
+  jobId: string;
+  status: 'completed' | 'failed' | 'cancelled';
+  processedItems?: number;
+  errorCount?: number;
+  userEmail: string;
+  errorMessage?: string;
+}
+
+export interface LogJobEventParams {
+  jobId: string;
+  eventType: string;
+  userEmail: string;
+  details?: Record<string, unknown>;
 }

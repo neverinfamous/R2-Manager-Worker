@@ -24,6 +24,12 @@ binding = "R2"
 bucket_name = "r2-bucket"
 preview_bucket_name = "r2-bucket"  # Using same bucket for dev (will be prompted to create preview if needed)
 
+# D1 database for job history (uses local SQLite in dev mode)
+[[d1_databases]]
+binding = "METADATA"
+database_name = "r2-manager-metadata"
+database_id = "local"
+
 [observability.logs]
 enabled = true
 

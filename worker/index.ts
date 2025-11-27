@@ -10,6 +10,7 @@ import { handleFileRoutes } from './routes/files';
 import { handleFolderRoutes } from './routes/folders';
 import { handleSearchRoutes } from './routes/search';
 import { handleAISearchRoutes } from './routes/ai-search';
+import { handleJobRoutes } from './routes/jobs';
 
 async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
@@ -154,6 +155,13 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     return await handleAISearchRoutes(request, env, url, corsHeaders, isLocalDev);
   }
 
+  if (url.pathname.startsWith('/api/jobs')) {
+    const jobResponse = await handleJobRoutes(request, env, url, corsHeaders, isLocalDev, userEmail);
+    if (jobResponse) {
+      return jobResponse;
+    }
+  }
+
   if (url.pathname.startsWith('/api/search')) {
     return await handleSearchRoutes(request, env, url, corsHeaders, isLocalDev);
   }
@@ -163,7 +171,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   }
 
   if (url.pathname.startsWith('/api/files/')) {
-    return await handleFileRoutes(request, env, url, corsHeaders, isLocalDev);
+    return await handleFileRoutes(request, env, url, corsHeaders, isLocalDev, userEmail);
   }
 
   if (url.pathname.startsWith('/api/folders/')) {
