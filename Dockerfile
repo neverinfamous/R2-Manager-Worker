@@ -16,17 +16,20 @@ WORKDIR /app
 RUN npm install -g npm@latest
 
 # Patch npm's own dependencies to fix CVE-2025-64756 (glob) and CVE-2025-64118 (tar)
-# npm@11.6.2 bundles vulnerable versions glob@11.0.3, glob@10.4.5 (in node-gyp), and tar@7.5.1
-# We download patched versions first, then replace all vulnerable ones
+# npm bundles vulnerable versions of glob and tar - we replace them with patched versions
+# Note: node-gyp/node_modules/glob path may not exist in newer npm versions (handled with conditional)
 RUN cd /tmp && \
     npm pack glob@11.1.0 && \
     npm pack tar@7.5.2 && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/glob && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/tar && \
-    rm -rf /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob && \
+    rm -rf /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob 2>/dev/null || true && \
     tar -xzf glob-11.1.0.tgz && \
     cp -r package /usr/local/lib/node_modules/npm/node_modules/glob && \
-    cp -r package /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob && \
+    if [ -d /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules ]; then \
+        cp -r package /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob; \
+    fi && \
+    rm -rf package && \
     tar -xzf tar-7.5.2.tgz && \
     mv package /usr/local/lib/node_modules/npm/node_modules/tar && \
     rm -rf /tmp/*
@@ -60,17 +63,20 @@ WORKDIR /app
 RUN npm install -g npm@latest
 
 # Patch npm's own dependencies to fix CVE-2025-64756 (glob) and CVE-2025-64118 (tar)
-# npm@11.6.2 bundles vulnerable versions glob@11.0.3, glob@10.4.5 (in node-gyp), and tar@7.5.1
-# We download patched versions first, then replace all vulnerable ones
+# npm bundles vulnerable versions of glob and tar - we replace them with patched versions
+# Note: node-gyp/node_modules/glob path may not exist in newer npm versions (handled with conditional)
 RUN cd /tmp && \
     npm pack glob@11.1.0 && \
     npm pack tar@7.5.2 && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/glob && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/tar && \
-    rm -rf /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob && \
+    rm -rf /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob 2>/dev/null || true && \
     tar -xzf glob-11.1.0.tgz && \
     cp -r package /usr/local/lib/node_modules/npm/node_modules/glob && \
-    cp -r package /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob && \
+    if [ -d /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules ]; then \
+        cp -r package /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob; \
+    fi && \
+    rm -rf package && \
     tar -xzf tar-7.5.2.tgz && \
     mv package /usr/local/lib/node_modules/npm/node_modules/tar && \
     rm -rf /tmp/*
