@@ -25,6 +25,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Metadata capture: file sizes, destination paths, error details
   - D1 database schema extended with `audit_log` table and indexes
 
+- **Centralized Logger Service** - Replaced all direct `console.*` calls with proper logging abstraction
+  - New `src/services/logger.ts` provides environment-aware logging
+  - Log levels: debug, info, warn, error with configurable minimum level
+  - Development mode: All logs output to console
+  - Production mode: Only warn/error levels output (configurable)
+  - Context tagging for organized logs (e.g., `[API]`, `[FileGrid]`, `[Auth]`)
+  - Extensible `onLog` callback for future remote logging integration
+  - Passes strict ESLint `no-console` rule without file-level suppressions
+  - 39 console statements replaced across 8 source files
+
 ### Technical Details
 
 - **Audit Logging Implementation:**
@@ -37,6 +47,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Frontend: Updated `JobHistory.tsx` with grouped operation dropdown and new icons
   - Frontend: Updated `api.ts` with extended `JobOperationType` union
   - Schema: New `audit_log` table with indexes on operation_type, bucket_name, user_email, timestamp
+
+- **Logger Service Implementation:**
+  - New file: `src/services/logger.ts` (~190 lines)
+  - Updated files: `api.ts`, `auth.ts`, `app.tsx`, `filegrid.tsx`, `JobHistory.tsx`, `SearchResultsTable.tsx`, `useSearch.ts`
+  - TypeScript: Clean compilation with strict mode
+  - ESLint: 0 errors, 0 warnings (console statements properly abstracted)
 
 ---
 

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { api } from '../services/api'
+import { logger } from '../services/logger'
 import type { SearchResult, SearchFilters, SortColumn, SortDirection } from '../types/search'
 
 interface UseSearchReturn {
@@ -113,7 +114,7 @@ export function useSearch(): UseSearchReturn {
       setTotal(response.pagination?.total ?? 0)
       setHasMore(response.pagination?.hasMore ?? false)
     } catch (err) {
-      console.error('Search error:', err)
+      logger.error('useSearch', 'Search error', err)
       setError(err instanceof Error ? err.message : 'Search failed')
       setResults([])
       setTotal(0)

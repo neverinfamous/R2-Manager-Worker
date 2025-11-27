@@ -1,5 +1,6 @@
 import { useCallback, useState, useEffect, useRef, type JSX } from 'react'
 import { api } from './services/api'
+import { logger } from './services/logger'
 import { ExtensionFilter } from './components/filters/ExtensionFilter'
 import { SizeFilter } from './components/filters/SizeFilter'
 import { DateFilter } from './components/filters/DateFilter'
@@ -315,9 +316,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         let newFolders: FolderObject[]
         
         if (reset) {
-          console.log('[FileGrid] Reset load - currentPath:', currentPath);
-          console.log('[FileGrid] API returned objects:', response.objects.length);
-          console.log('[FileGrid] API returned folders:', response.folders);
+          logger.debug('FileGrid', 'Reset load', { currentPath, objectCount: response.objects.length, folders: response.folders })
           
           newObjects = response.objects
           // Convert folder paths to FolderObject format
@@ -328,14 +327,14 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
               ? folderPath.substring(currentPath.length)
               : folderPath
             const folderName = relativePath.split('/').find(Boolean) ?? relativePath
-            console.log('[FileGrid] Processing folder:', { folderPath, currentPath, relativePath, folderName });
+            logger.debug('FileGrid', 'Processing folder', { folderPath, currentPath, relativePath, folderName })
             return {
               name: folderName,
               path: folderPath
             }
           })
           
-          console.log('[FileGrid] Processed folders:', newFolders);
+          logger.debug('FileGrid', 'Processed folders', { newFolders })
         } else {
           const existingKeys = new Set(prev.objects.map(obj => obj.key))
           const uniqueNewObjects = response.objects.filter(obj => !existingKeys.has(obj.key))
@@ -364,7 +363,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         setShouldRefresh(false)
       }
     } catch (err) {
-      console.error('[FileGrid] Error loading files:', err)
+      logger.error('FileGrid', 'Error loading files', err)
       if (mountedRef.current) {
         setError('Failed to load files')
         setPaginationState(prev => ({
@@ -539,7 +538,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       setShouldRefresh(true)
       onFilesChange?.()
     } catch (err) {
-      console.error('Failed to delete selected items:', err)
+      logger.error('FileGrid', 'Failed to delete selected items', err)
       setError('Failed to delete one or more items')
     }
   }, [bucketName, selectedFiles, selectedFolders, onFilesChange])
@@ -570,7 +569,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       }, 2000)
 
     } catch (err) {
-      console.error('Download error:', err)
+      logger.error('FileGrid', 'Download error', err)
       setError(err instanceof Error ? err.message : 'Failed to download files')
       setDownloadProgress({
         progress: 0,
@@ -599,7 +598,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       }, 2000)
 
     } catch (err) {
-      console.error('Bucket download error:', err)
+      logger.error('FileGrid', 'Bucket download error', err)
       setError(err instanceof Error ? err.message : 'Failed to download bucket')
       setDownloadProgress({
         progress: 0,
@@ -668,7 +667,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       
       onFilesChange?.()
     } catch (err) {
-      console.error('Transfer failed:', err)
+      logger.error('FileGrid', 'Transfer failed', err)
       setError(`Failed to ${transferState.mode} one or more items`)
       setInfoMessage('')
     } finally {
@@ -747,12 +746,12 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   const handleFolderNavigation = useCallback((folderPath: string) => {
     // Ensure the folder path ends with / for proper prefix filtering
     const pathWithSlash = folderPath.endsWith('/') ? folderPath : folderPath + '/'
-    console.log('[FileGrid] handleFolderNavigation - navigating to:', pathWithSlash)
+    logger.debug('FileGrid', 'handleFolderNavigation - navigating to', { pathWithSlash })
     setCurrentPath(pathWithSlash)
     setSelectedFiles([])
     setSelectedFolders([])
     setShouldRefresh(true)
-    console.log('[FileGrid] Calling onPathChange with:', pathWithSlash)
+    logger.debug('FileGrid', 'Calling onPathChange', { pathWithSlash })
     onPathChange?.(pathWithSlash)
   }, [onPathChange])
 
@@ -787,7 +786,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       setTimeout(() => setInfoMessage(''), 3000)
       onFilesChange?.()
     } catch (err) {
-      console.error('Failed to create folder:', err)
+      logger.error('FileGrid', 'Failed to create folder', err)
       setError(err instanceof Error ? err.message : 'Failed to create folder')
     } finally {
       setIsCreatingFolder(false)
@@ -813,7 +812,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         setInfoMessage('')
       }, 3000)
     } catch (err) {
-      console.error('Failed to copy signed URL:', err)
+      logger.error('FileGrid', 'Failed to copy signed URL', err)
       setError('Failed to copy link')
     } finally {
       setCopyingUrl(null)
@@ -875,7 +874,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       setInfoMessage(`${renameState.itemType === 'file' ? 'File' : 'Folder'} renamed successfully`)
       setTimeout(() => setInfoMessage(''), 3000)
     } catch (err) {
-      console.error('Rename error:', err)
+      logger.error('FileGrid', 'Rename error', err)
       setRenameState(prev => prev ? {
         ...prev,
         isRenaming: false,

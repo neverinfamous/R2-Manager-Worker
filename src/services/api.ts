@@ -1,4 +1,5 @@
 import SparkMD5 from 'spark-md5'
+import { logger } from './logger'
 
 const WORKER_API = (import.meta.env['VITE_WORKER_API'] as string | undefined) ?? window.location.origin
 
@@ -566,7 +567,7 @@ class APIService {
   private async handleResponse(response: Response): Promise<Response> {
     // Check for authentication errors
     if (response.status === 401 || response.status === 403) {
-      console.error('[API] Authentication error:', response.status);
+      logger.error('API', 'Authentication error', { status: response.status })
       // Clear any cached data
       localStorage.clear();
       sessionStorage.clear();
@@ -683,7 +684,7 @@ class APIService {
 
     // Prepend path to filename if provided (but not if path is empty string)
     const fileName = path && path.length > 0 ? `${path}${file.name}` : file.name
-    console.log('[API] uploadFile - path:', path, 'file.name:', file.name, 'final fileName:', fileName)
+    logger.debug('API', 'uploadFile', { path, fileName: file.name, finalFileName: fileName })
 
     const totalChunks = Math.ceil(file.size / this.CHUNK_SIZE)
     const uploadedChunks = new Set<number>()
@@ -766,7 +767,7 @@ class APIService {
       const failedChunks = Array.from({ length: totalChunks }, (_, i) => i)
         .filter(i => !uploadedChunks.has(i))
 
-      console.error('Upload failed:', {
+      logger.error('API', 'Upload failed', {
         fileName: file.name,
         totalChunks,
         uploadedChunks: Array.from(uploadedChunks),
@@ -796,11 +797,11 @@ class APIService {
       const cleanMD5 = expectedMD5.toLowerCase()
       
       if (cleanEtag !== cleanMD5) {
-        console.error('[Verification] ETag mismatch:', { etag: cleanEtag, expected: cleanMD5 })
+        logger.error('Verification', 'ETag mismatch', { etag: cleanEtag, expected: cleanMD5 })
         throw new Error('Verification failed: Checksum mismatch')
       }
       
-      console.log('[Verification] Upload verified successfully')
+      logger.debug('Verification', 'Upload verified successfully')
     }
     // For multipart uploads, we just verify ETags exist for all chunks (done in caller)
   }
@@ -1072,7 +1073,7 @@ class APIService {
       window.URL.revokeObjectURL(url)
       onProgress?.(100)
     } catch (error) {
-      console.error('Bucket download failed:', error)
+      logger.error('API', 'Bucket download failed', error)
       throw new Error('Failed to download bucket')
     }
   }
@@ -1133,7 +1134,7 @@ class APIService {
       window.URL.revokeObjectURL(url)
       onProgress?.(100)
     } catch (error) {
-      console.error('Multi-bucket download failed:', error)
+      logger.error('API', 'Multi-bucket download failed', error)
       throw new Error('Failed to download buckets')
     }
   }

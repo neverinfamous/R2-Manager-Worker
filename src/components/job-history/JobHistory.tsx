@@ -4,6 +4,7 @@ import {
   type JobListItem, 
   type JobOperationType 
 } from '../../services/api'
+import { logger } from '../../services/logger'
 import { JobHistoryDialog } from './JobHistoryDialog'
 import '../../styles/job-history.css'
 
@@ -270,7 +271,7 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
 
       setTotal(data.total)
     } catch (err) {
-      console.error('Failed to load job history:', err)
+      logger.error('JobHistory', 'Failed to load job history', err)
       setError(err instanceof Error ? err.message : 'Failed to load job history')
     } finally {
       setLoading(false)

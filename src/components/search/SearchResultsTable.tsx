@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, type JSX } from 'react'
 import type { SearchResult, SortColumn, SortDirection } from '../../types/search'
 import { formatFileSize } from '../../utils/fileUtils'
 import { api } from '../../services/api'
+import { logger } from '../../services/logger'
 
 interface Bucket {
   name: string
@@ -61,7 +62,7 @@ export function SearchResultsTable({
         const buckets: Bucket[] = await api.listBuckets()
         setAvailableBuckets(buckets.map((b) => b.name))
       } catch (err) {
-        console.error('Failed to load buckets:', err)
+        logger.error('SearchResultsTable', 'Failed to load buckets', err)
       }
     }
     void loadBuckets()
@@ -72,7 +73,7 @@ export function SearchResultsTable({
       const url = await api.getSignedUrl(bucket, key)
       window.open(url, '_blank')
     } catch (err) {
-      console.error('Download error:', err)
+      logger.error('SearchResultsTable', 'Download error', err)
       alert('Failed to download file: ' + (err instanceof Error ? err.message : 'Unknown error'))
     }
   }, [])
@@ -86,7 +87,7 @@ export function SearchResultsTable({
         onRefresh()
       }
     } catch (err) {
-      console.error('Delete error:', err)
+      logger.error('SearchResultsTable', 'Delete error', err)
       alert('Failed to delete file: ' + (err instanceof Error ? err.message : 'Unknown error'))
     } finally {
       setIsDeleting(false)
@@ -154,7 +155,7 @@ export function SearchResultsTable({
         onRefresh()
       }
     } catch (err) {
-      console.error('Transfer error:', err)
+      logger.error('SearchResultsTable', 'Transfer error', err)
       setTransferModalState(prev => prev ? {
         ...prev,
         isTransferring: false,

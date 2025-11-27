@@ -4,6 +4,7 @@ import './app.css'
 import { FileGrid } from './filegrid'
 import { api } from './services/api'
 import { auth } from './services/auth'
+import { logger } from './services/logger'
 import { ThemeToggle } from './components/ThemeToggle'
 import { CrossBucketSearch } from './components/search/CrossBucketSearch'
 import { AISearchPanel } from './components/ai-search'
@@ -89,12 +90,12 @@ export default function BucketManager(): JSX.Element {
   
   // Debug: Log currentPath changes
   useEffect(() => {
-    console.log('[App] currentPath changed to:', currentPath)
+    logger.debug('App', 'currentPath changed', { currentPath })
   }, [currentPath])
   
   // Create a stable callback for path changes
   const handlePathChange = useCallback((newPath: string) => {
-    console.log('[App] handlePathChange called with:', newPath)
+    logger.debug('App', 'handlePathChange called', { newPath })
     setCurrentPath(newPath)
   }, [])
   
@@ -132,7 +133,7 @@ export default function BucketManager(): JSX.Element {
       const bucketList: BucketListItem[] = await api.listBuckets()
       setBuckets(bucketList.map(b => ({ name: b.name, created: b.creation_date, size: b.size })))
     } catch (err) {
-      console.error('Error loading buckets:', err)
+      logger.error('App', 'Error loading buckets', err)
       setError('Failed to load buckets')
       setBuckets([])
       if ((err as Error).message.includes('401')) {
@@ -210,7 +211,7 @@ export default function BucketManager(): JSX.Element {
           try {
             updateProgress(file.name, 0)
             
-            console.log('[Upload] Uploading file:', file.name, 'to path:', currentPath || '(root)')
+            logger.debug('Upload', 'Uploading file', { fileName: file.name, path: currentPath || '(root)' })
             
             await api.uploadFile(
               selectedBucket,
@@ -248,7 +249,7 @@ export default function BucketManager(): JSX.Element {
             updateProgress(file.name, 100, 'completed')
             setRefreshTrigger(prev => prev + 1)
           } catch (err) {
-            console.error(`Failed to upload ${file.name}:`, err)
+            logger.error('Upload', `Failed to upload ${file.name}`, err)
             updateProgress(
               file.name,
               0,
@@ -266,7 +267,7 @@ export default function BucketManager(): JSX.Element {
           }
         }
       } catch (err) {
-        console.error('Upload error:', err)
+        logger.error('Upload', 'Upload error', err)
         setError('Failed to upload one or more files')
       } finally {
         setIsUploading(false)
@@ -325,7 +326,7 @@ export default function BucketManager(): JSX.Element {
     setError('')
     try {
       const response: DeleteBucketResponse = await api.deleteBucket(name)
-      console.log('[DeleteBucket] Response:', response)
+      logger.debug('DeleteBucket', 'Response received', response)
       
       // Check if deletion failed because bucket isn't empty
       // Cloudflare returns 409 Conflict (success: false, errors array) for non-empty buckets
@@ -367,7 +368,7 @@ export default function BucketManager(): JSX.Element {
       }
     } catch (err) {
       setError('Failed to delete bucket.')
-      console.error('[DeleteBucket] Error:', err)
+      logger.error('DeleteBucket', 'Error deleting bucket', err)
       if ((err as Error).message.includes('401')) {
         void handleLogout()
       }
@@ -404,7 +405,7 @@ export default function BucketManager(): JSX.Element {
       })
     } catch (err) {
       setError('Failed to prepare bulk delete')
-      console.error('Bulk delete preparation error:', err)
+      logger.error('App', 'Bulk delete preparation error', err)
     } finally {
       setIsBulkDeleting(false)
     }
@@ -433,7 +434,7 @@ export default function BucketManager(): JSX.Element {
         setBulkDownloadProgress(null)
       }, 2000)
     } catch (err) {
-      console.error('Bulk download error:', err)
+      logger.error('App', 'Bulk download error', err)
       setError(err instanceof Error ? err.message : 'Failed to download buckets')
       setBulkDownloadProgress({
         progress: 0,
@@ -476,7 +477,7 @@ export default function BucketManager(): JSX.Element {
           }
         } catch (err) {
           errors.push(`${bucketName}: ${err instanceof Error ? err.message : 'Unknown error'}`)
-          console.error(`Force delete error for ${bucketName}:`, err)
+          logger.error('App', `Force delete error for ${bucketName}`, err)
         }
       }
 
@@ -495,7 +496,7 @@ export default function BucketManager(): JSX.Element {
       setDeleteConfirmState(null)
     } catch (err) {
       setError('Failed to delete buckets')
-      console.error('Force delete error:', err)
+      logger.error('App', 'Force delete error', err)
       setDeleteConfirmState(prev => prev ? { ...prev, isDeleting: false } : null)
     }
   }
@@ -550,7 +551,7 @@ export default function BucketManager(): JSX.Element {
       setIsRenamingBucket(false)
       const errorMessage = err instanceof Error ? err.message : 'Failed to rename bucket'
       setEditError(errorMessage)
-      console.error('Rename error:', err)
+      logger.error('App', 'Rename error', err)
     }
   }
 

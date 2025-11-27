@@ -209,6 +209,21 @@ New files:
 
 ---
 
+## 🔜 Unreleased Improvements
+
+The following improvements have been made since v2.0.0:
+
+### 🪵 Centralized Logger Service
+- **New `logger.ts` Service** - Replaced all direct `console.*` calls with a centralized logging abstraction
+  - Environment-aware logging (debug output in development only)
+  - Configurable log levels: debug, info, warn, error
+  - Supports context tagging for better log organization (e.g., `[API]`, `[FileGrid]`, `[Auth]`)
+  - Extensible for future remote logging integration
+  - Passes strict ESLint `no-console` rule without suppressions
+  - 39 console statements replaced across 8 files
+
+---
+
 ## 🎬 What's Next?
 
 Looking ahead to v2.1.0 and beyond:
