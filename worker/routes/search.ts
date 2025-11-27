@@ -1,5 +1,11 @@
-import type { Env } from '../types';
+import type { Env, CloudflareApiResponse, BucketsListResult } from '../types';
 import { CF_API } from '../types';
+
+interface R2ObjectResult {
+  key: string;
+  size: number;
+  uploaded?: string;
+}
 
 interface SearchResult {
   key: string;
@@ -38,14 +44,18 @@ export async function handleSearchRoutes(
 
   try {
     // Extract search parameters
-    const query = url.searchParams.get('q')?.toLowerCase() || '';
+    const query = url.searchParams.get('q')?.toLowerCase() ?? '';
     const extensionsParam = url.searchParams.get('extensions');
-    const extensions = extensionsParam ? extensionsParam.split(',').filter(e => e) : [];
-    const minSize = url.searchParams.get('minSize') ? parseInt(url.searchParams.get('minSize')!) : null;
-    const maxSize = url.searchParams.get('maxSize') ? parseInt(url.searchParams.get('maxSize')!) : null;
-    const startDate = url.searchParams.get('startDate') ? new Date(url.searchParams.get('startDate')!) : null;
-    const endDate = url.searchParams.get('endDate') ? new Date(url.searchParams.get('endDate')!) : null;
-    const limit = parseInt(url.searchParams.get('limit') || '100');
+    const extensions = extensionsParam !== null ? extensionsParam.split(',').filter(e => e !== '') : [];
+    const minSizeParam = url.searchParams.get('minSize');
+    const maxSizeParam = url.searchParams.get('maxSize');
+    const startDateParam = url.searchParams.get('startDate');
+    const endDateParam = url.searchParams.get('endDate');
+    const minSize = minSizeParam !== null ? parseInt(minSizeParam) : null;
+    const maxSize = maxSizeParam !== null ? parseInt(maxSizeParam) : null;
+    const startDate = startDateParam !== null ? new Date(startDateParam) : null;
+    const endDate = endDateParam !== null ? new Date(endDateParam) : null;
+    const limit = parseInt(url.searchParams.get('limit') ?? '100');
 
     console.log('[Search] Parameters:', { query, extensions, minSize, maxSize, startDate, endDate, limit });
 
@@ -58,7 +68,7 @@ export async function handleSearchRoutes(
           total: 0,
           hasMore: false
         }
-      } as SearchResponse), {
+      } satisfies SearchResponse), {
         headers: {
           'Content-Type': 'application/json',
           ...corsHeaders
@@ -71,11 +81,11 @@ export async function handleSearchRoutes(
       CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets',
       { headers: cfHeaders }
     );
-    const bucketsData = await bucketsResponse.json();
+    const bucketsData = await bucketsResponse.json() as CloudflareApiResponse<BucketsListResult>;
     
     // Filter out system buckets
     const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki', 'kv-manager-backups'];
-    const buckets = (bucketsData.result.buckets || [])
+    const buckets = (bucketsData.result?.buckets ?? [])
       .filter((b: { name: string }) => !systemBuckets.includes(b.name))
       .map((b: { name: string }) => b.name);
 
@@ -95,15 +105,15 @@ export async function handleSearchRoutes(
           return [];
         }
 
-        const data = await response.json();
-        const objects = Array.isArray(data.result) ? data.result : [];
+        const data = await response.json() as CloudflareApiResponse<R2ObjectResult[]>;
+        const objects: R2ObjectResult[] = Array.isArray(data.result) ? data.result : [];
         
         // Map files with bucket name
-        return objects.map((obj: { key: string; size?: number; uploaded?: string }) => ({
+        return objects.map((obj: R2ObjectResult) => ({
           key: obj.key,
           bucket: bucketName,
-          size: obj.size || 0,
-          uploaded: obj.uploaded || new Date().toISOString(),
+          size: obj.size,
+          uploaded: obj.uploaded ?? new Date().toISOString(),
           url: `https://${env.ACCOUNT_ID}.r2.cloudflarestorage.com/${bucketName}/${obj.key}`
         }));
       } catch (err) {
@@ -120,15 +130,15 @@ export async function handleSearchRoutes(
     // Filter files based on search criteria
     const filteredFiles = allFiles.filter((file) => {
       // Filename filter
-      const fileName = file.key.split('/').pop() || file.key;
-      if (query && !fileName.toLowerCase().includes(query)) {
+      const fileName = file.key.split('/').pop() ?? file.key;
+      if (query !== '' && !fileName.toLowerCase().includes(query)) {
         return false;
       }
 
       // Extension filter
       if (extensions.length > 0) {
         const fileExt = fileName.includes('.') 
-          ? '.' + fileName.split('.').pop()!.toLowerCase() 
+          ? '.' + (fileName.split('.').pop() ?? '').toLowerCase() 
           : '';
         if (!extensions.includes(fileExt)) {
           return false;
@@ -144,12 +154,12 @@ export async function handleSearchRoutes(
       }
 
       // Date filter
-      if (startDate || endDate) {
+      if (startDate !== null || endDate !== null) {
         const fileDate = new Date(file.uploaded);
-        if (startDate && fileDate < startDate) {
+        if (startDate !== null && fileDate < startDate) {
           return false;
         }
-        if (endDate && fileDate > endDate) {
+        if (endDate !== null && fileDate > endDate) {
           return false;
         }
       }
@@ -196,4 +206,3 @@ export async function handleSearchRoutes(
     });
   }
 }
-

@@ -1,3 +1,5 @@
+import { type JSX } from 'react'
+
 interface ContextMenuProps {
   show: boolean
   x: number
@@ -5,7 +7,7 @@ interface ContextMenuProps {
   itemType: 'file' | 'folder'
   onClose: () => void
   onRename: () => void
-  onCopyLink?: () => void
+  onCopyLink?: (() => void) | undefined
 }
 
 export const ContextMenu = ({
@@ -16,7 +18,7 @@ export const ContextMenu = ({
   onClose,
   onRename,
   onCopyLink
-}: ContextMenuProps) => {
+}: ContextMenuProps): JSX.Element | null => {
   if (!show) return null
 
   return (

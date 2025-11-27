@@ -1,5 +1,19 @@
-import type { Env } from '../types';
+import type { Env, CloudflareApiResponse, R2ObjectInfo } from '../types';
 import { CF_API } from '../types';
+
+interface CreateFolderBody {
+  folderName?: string;
+}
+
+interface RenameFolderBody {
+  oldPath?: string;
+  newPath?: string;
+}
+
+interface TransferBody {
+  destinationBucket: string;
+  destinationPath?: string;
+}
 
 export async function handleFolderRoutes(
   request: Request,
@@ -20,10 +34,10 @@ export async function handleFolderRoutes(
   // Create folder
   if (request.method === 'POST' && parts[4] === 'create') {
     try {
-      const body = await request.json();
+      const body = await request.json() as CreateFolderBody;
       const folderName = body.folderName?.trim();
       
-      if (!folderName) {
+      if (folderName === undefined || folderName === '') {
         return new Response(JSON.stringify({ error: 'Folder name is required' }), {
           status: 400,
           headers: {
@@ -78,7 +92,7 @@ export async function handleFolderRoutes(
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create folder: ' + response.status);
+        throw new Error('Failed to create folder: ' + String(response.status));
       }
 
       console.log('[Folders] Created folder:', folderPath);
@@ -107,11 +121,11 @@ export async function handleFolderRoutes(
   // Rename folder
   if (request.method === 'PATCH' && parts[4] === 'rename') {
     try {
-      const body = await request.json();
+      const body = await request.json() as RenameFolderBody;
       const oldPath = body.oldPath?.trim();
       const newPath = body.newPath?.trim();
       
-      if (!oldPath || !newPath) {
+      if (oldPath === undefined || oldPath === '' || newPath === undefined || newPath === '') {
         return new Response(JSON.stringify({ error: 'Both old and new paths are required' }), {
           status: 400,
           headers: {
@@ -137,17 +151,17 @@ export async function handleFolderRoutes(
         const listUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects');
         listUrl.searchParams.set('prefix', oldFolderPath);
         listUrl.searchParams.set('per_page', '100');
-        if (cursor) {
+        if (cursor !== undefined) {
           listUrl.searchParams.set('cursor', cursor);
         }
 
         const listResponse = await fetch(listUrl.toString(), { headers: cfHeaders });
         if (!listResponse.ok) {
-          throw new Error('Failed to list objects: ' + listResponse.status);
+          throw new Error('Failed to list objects: ' + String(listResponse.status));
         }
 
-        const listData = await listResponse.json();
-        const objects = Array.isArray(listData.result) ? listData.result : [];
+        const listData = await listResponse.json() as CloudflareApiResponse<R2ObjectInfo[]>;
+        const objects: R2ObjectInfo[] = Array.isArray(listData.result) ? listData.result : [];
         
         if (objects.length === 0) {
           hasMore = false;
@@ -169,7 +183,7 @@ export async function handleFolderRoutes(
             }
 
             const fileBuffer = await getResponse.arrayBuffer();
-            const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
+            const contentType = getResponse.headers.get('Content-Type') ?? 'application/octet-stream';
 
             // Put to new location
             const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(newKey);
@@ -192,8 +206,8 @@ export async function handleFolderRoutes(
           }
         }
 
-        cursor = listData.cursor;
-        hasMore = !!cursor && objects.length > 0;
+        cursor = listData.result_info?.cursor as string | undefined;
+        hasMore = cursor !== undefined && objects.length > 0;
         
         if (hasMore) {
           await new Promise(resolve => setTimeout(resolve, 300));
@@ -208,15 +222,15 @@ export async function handleFolderRoutes(
         const listUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects');
         listUrl.searchParams.set('prefix', oldFolderPath);
         listUrl.searchParams.set('per_page', '100');
-        if (cursor) {
+        if (cursor !== undefined) {
           listUrl.searchParams.set('cursor', cursor);
         }
 
         const listResponse = await fetch(listUrl.toString(), { headers: cfHeaders });
         if (!listResponse.ok) break;
 
-        const listData = await listResponse.json();
-        const objects = Array.isArray(listData.result) ? listData.result : [];
+        const listData = await listResponse.json() as CloudflareApiResponse<R2ObjectInfo[]>;
+        const objects: R2ObjectInfo[] = Array.isArray(listData.result) ? listData.result : [];
         
         if (objects.length === 0) break;
 
@@ -229,8 +243,8 @@ export async function handleFolderRoutes(
           }
         }
 
-        cursor = listData.cursor;
-        hasMore = !!cursor && objects.length > 0;
+        cursor = listData.result_info?.cursor as string | undefined;
+        hasMore = cursor !== undefined && objects.length > 0;
         
         if (hasMore) {
           await new Promise(resolve => setTimeout(resolve, 300));
@@ -268,11 +282,11 @@ export async function handleFolderRoutes(
   if (request.method === 'POST' && parts[parts.length - 1] === 'copy') {
     try {
       const folderPath = decodeURIComponent(parts.slice(4, -1).join('/'));
-      const body = await request.json();
+      const body = await request.json() as TransferBody;
       const destBucket = body.destinationBucket;
-      const destPath = body.destinationPath || folderPath;
+      const destPath = body.destinationPath ?? folderPath;
       
-      if (!destBucket) {
+      if (destBucket === undefined || destBucket === '') {
         return new Response(JSON.stringify({ error: 'Destination bucket is required' }), {
           status: 400,
           headers: {
@@ -297,17 +311,17 @@ export async function handleFolderRoutes(
         const listUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects');
         listUrl.searchParams.set('prefix', sourceFolderPath);
         listUrl.searchParams.set('per_page', '100');
-        if (cursor) {
+        if (cursor !== undefined) {
           listUrl.searchParams.set('cursor', cursor);
         }
 
         const listResponse = await fetch(listUrl.toString(), { headers: cfHeaders });
         if (!listResponse.ok) {
-          throw new Error('Failed to list objects: ' + listResponse.status);
+          throw new Error('Failed to list objects: ' + String(listResponse.status));
         }
 
-        const listData = await listResponse.json();
-        const objects = Array.isArray(listData.result) ? listData.result : [];
+        const listData = await listResponse.json() as CloudflareApiResponse<R2ObjectInfo[]>;
+        const objects: R2ObjectInfo[] = Array.isArray(listData.result) ? listData.result : [];
         
         if (objects.length === 0) {
           hasMore = false;
@@ -329,7 +343,7 @@ export async function handleFolderRoutes(
             }
 
             const fileBuffer = await getResponse.arrayBuffer();
-            const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
+            const contentType = getResponse.headers.get('Content-Type') ?? 'application/octet-stream';
 
             // Put to destination
             const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + encodeURIComponent(destKey);
@@ -352,8 +366,8 @@ export async function handleFolderRoutes(
           }
         }
 
-        cursor = listData.cursor;
-        hasMore = !!cursor && objects.length > 0;
+        cursor = listData.result_info?.cursor as string | undefined;
+        hasMore = cursor !== undefined && objects.length > 0;
         
         if (hasMore) {
           await new Promise(resolve => setTimeout(resolve, 300));
@@ -391,11 +405,11 @@ export async function handleFolderRoutes(
   if (request.method === 'POST' && parts[parts.length - 1] === 'move') {
     try {
       const folderPath = decodeURIComponent(parts.slice(4, -1).join('/'));
-      const body = await request.json();
+      const body = await request.json() as TransferBody;
       const destBucket = body.destinationBucket;
-      const destPath = body.destinationPath || folderPath;
+      const destPath = body.destinationPath ?? folderPath;
       
-      if (!destBucket) {
+      if (destBucket === undefined || destBucket === '') {
         return new Response(JSON.stringify({ error: 'Destination bucket is required' }), {
           status: 400,
           headers: {
@@ -421,17 +435,17 @@ export async function handleFolderRoutes(
         const listUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects');
         listUrl.searchParams.set('prefix', sourceFolderPath);
         listUrl.searchParams.set('per_page', '100');
-        if (cursor) {
+        if (cursor !== undefined) {
           listUrl.searchParams.set('cursor', cursor);
         }
 
         const listResponse = await fetch(listUrl.toString(), { headers: cfHeaders });
         if (!listResponse.ok) {
-          throw new Error('Failed to list objects: ' + listResponse.status);
+          throw new Error('Failed to list objects: ' + String(listResponse.status));
         }
 
-        const listData = await listResponse.json();
-        const objects = Array.isArray(listData.result) ? listData.result : [];
+        const listData = await listResponse.json() as CloudflareApiResponse<R2ObjectInfo[]>;
+        const objects: R2ObjectInfo[] = Array.isArray(listData.result) ? listData.result : [];
         
         if (objects.length === 0) {
           hasMore = false;
@@ -453,7 +467,7 @@ export async function handleFolderRoutes(
             }
 
             const fileBuffer = await getResponse.arrayBuffer();
-            const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
+            const contentType = getResponse.headers.get('Content-Type') ?? 'application/octet-stream';
 
             // Put to destination
             const putUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + destBucket + '/objects/' + encodeURIComponent(destKey);
@@ -476,8 +490,8 @@ export async function handleFolderRoutes(
           }
         }
 
-        cursor = listData.cursor;
-        hasMore = !!cursor && objects.length > 0;
+        cursor = listData.result_info?.cursor as string | undefined;
+        hasMore = cursor !== undefined && objects.length > 0;
         
         if (hasMore) {
           await new Promise(resolve => setTimeout(resolve, 300));
@@ -492,15 +506,15 @@ export async function handleFolderRoutes(
         const listUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects');
         listUrl.searchParams.set('prefix', sourceFolderPath);
         listUrl.searchParams.set('per_page', '100');
-        if (cursor) {
+        if (cursor !== undefined) {
           listUrl.searchParams.set('cursor', cursor);
         }
 
         const listResponse = await fetch(listUrl.toString(), { headers: cfHeaders });
         if (!listResponse.ok) break;
 
-        const listData = await listResponse.json();
-        const objects = Array.isArray(listData.result) ? listData.result : [];
+        const listData = await listResponse.json() as CloudflareApiResponse<R2ObjectInfo[]>;
+        const objects: R2ObjectInfo[] = Array.isArray(listData.result) ? listData.result : [];
         
         if (objects.length === 0) break;
 
@@ -513,8 +527,8 @@ export async function handleFolderRoutes(
           }
         }
 
-        cursor = listData.cursor;
-        hasMore = !!cursor && objects.length > 0;
+        cursor = listData.result_info?.cursor as string | undefined;
+        hasMore = cursor !== undefined && objects.length > 0;
         
         if (hasMore) {
           await new Promise(resolve => setTimeout(resolve, 300));
@@ -566,12 +580,12 @@ export async function handleFolderRoutes(
       
       const listResponse = await fetch(listUrl.toString(), { headers: cfHeaders });
       if (!listResponse.ok) {
-        throw new Error('Failed to list objects: ' + listResponse.status);
+        throw new Error('Failed to list objects: ' + String(listResponse.status));
       }
 
-      const listData = await listResponse.json();
-      const objects = Array.isArray(listData.result) ? listData.result : [];
-      const fileCount = objects.length;
+      const listData = await listResponse.json() as CloudflareApiResponse<R2ObjectInfo[]>;
+      const countObjects: R2ObjectInfo[] = Array.isArray(listData.result) ? listData.result : [];
+      const fileCount = countObjects.length;
 
       // If not force mode, return count for confirmation
       if (!force && fileCount > 0) {
@@ -594,22 +608,22 @@ export async function handleFolderRoutes(
       let hasMore = true;
 
       while (hasMore) {
-        const listUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects');
-        listUrl.searchParams.set('prefix', folderPathWithSlash);
-        listUrl.searchParams.set('per_page', '100');
-        if (cursor) {
-          listUrl.searchParams.set('cursor', cursor);
+        const deleteListUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects');
+        deleteListUrl.searchParams.set('prefix', folderPathWithSlash);
+        deleteListUrl.searchParams.set('per_page', '100');
+        if (cursor !== undefined) {
+          deleteListUrl.searchParams.set('cursor', cursor);
         }
 
-        const listResponse = await fetch(listUrl.toString(), { headers: cfHeaders });
-        if (!listResponse.ok) break;
+        const deleteListResponse = await fetch(deleteListUrl.toString(), { headers: cfHeaders });
+        if (!deleteListResponse.ok) break;
 
-        const listData = await listResponse.json();
-        const objects = Array.isArray(listData.result) ? listData.result : [];
+        const deleteListData = await deleteListResponse.json() as CloudflareApiResponse<R2ObjectInfo[]>;
+        const deleteObjects: R2ObjectInfo[] = Array.isArray(deleteListData.result) ? deleteListData.result : [];
         
-        if (objects.length === 0) break;
+        if (deleteObjects.length === 0) break;
 
-        for (const obj of objects) {
+        for (const obj of deleteObjects) {
           try {
             const deleteUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(obj.key);
             const deleteResponse = await fetch(deleteUrl, { method: 'DELETE', headers: cfHeaders });
@@ -622,8 +636,8 @@ export async function handleFolderRoutes(
           }
         }
 
-        cursor = listData.cursor;
-        hasMore = !!cursor && objects.length > 0;
+        cursor = deleteListData.result_info?.cursor as string | undefined;
+        hasMore = cursor !== undefined && deleteObjects.length > 0;
         
         if (hasMore) {
           await new Promise(resolve => setTimeout(resolve, 300));
@@ -661,4 +675,3 @@ export async function handleFolderRoutes(
     headers: corsHeaders
   });
 }
-

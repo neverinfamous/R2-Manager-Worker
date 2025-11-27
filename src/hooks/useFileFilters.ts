@@ -140,7 +140,7 @@ export function useFileFilters({ files, folders }: UseFileFiltersParams): UseFil
   }, [])
 
   const handleExtensionGroupSelect = useCallback((groupName: string) => {
-    const groupExtensions = EXTENSION_GROUPS[groupName as keyof typeof EXTENSION_GROUPS] || []
+    const groupExtensions = EXTENSION_GROUPS[groupName as keyof typeof EXTENSION_GROUPS] ?? []
     const availableInGroup = groupExtensions.filter(ext => availableExtensions.has(ext))
     
     // Toggle: if all are selected, deselect; otherwise select all
@@ -163,8 +163,8 @@ export function useFileFilters({ files, folders }: UseFileFiltersParams): UseFil
       // Custom is handled by handleCustomSizeRange
       return
     } else {
-      const presetValues = SIZE_PRESETS[preset as keyof typeof SIZE_PRESETS]
-      if (presetValues) {
+      const presetValues: { min: number | null; max: number | null } | undefined = SIZE_PRESETS[preset as keyof typeof SIZE_PRESETS]
+      if (presetValues !== undefined) {
         setSizeFilter({
           min: presetValues.min,
           max: presetValues.max,
@@ -190,7 +190,7 @@ export function useFileFilters({ files, folders }: UseFileFiltersParams): UseFil
       return
     } else {
       const presetFn = DATE_PRESETS[preset as keyof typeof DATE_PRESETS]
-      if (presetFn) {
+      if (presetFn !== undefined) {
         const range = typeof presetFn === 'function' ? presetFn() : presetFn
         setDateFilter({
           start: range.start,

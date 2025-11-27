@@ -1,4 +1,4 @@
-import { RefObject } from 'react'
+import { type RefObject, type JSX } from 'react'
 
 interface BucketDropdownProps {
   isOpen: boolean
@@ -18,7 +18,7 @@ export const BucketDropdown = ({
   buttonRef,
   onToggle,
   onSelect
-}: BucketDropdownProps) => {
+}: BucketDropdownProps): JSX.Element => {
   return (
     <div className={`bucket-nav-dropdown-container ${isOpen ? 'open' : ''}`}>
       <button 

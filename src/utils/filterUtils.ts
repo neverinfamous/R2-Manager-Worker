@@ -79,7 +79,7 @@ export const formatFileSize = (bytes: number): string => {
 export const formatDateRange = (start: Date | null, end: Date | null): string => {
   if (!start || !end) return 'All dates'
   
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date): string => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
   
@@ -90,12 +90,12 @@ export const formatDateRange = (start: Date | null, end: Date | null): string =>
   return `${formatDate(start)} - ${formatDate(end)}`
 }
 
-export const calculateFilterStats = (files: FileObject[]) => {
+export const calculateFilterStats = (files: FileObject[]): { totalSize: number; dateRange: { earliest: Date | null; latest: Date | null } } => {
   const totalSize = files.reduce((sum, file) => sum + file.size, 0)
   
   const dates = files.map(f => new Date(f.uploaded)).sort((a, b) => a.getTime() - b.getTime())
-  const earliest = dates.length > 0 ? dates[0] : null
-  const latest = dates.length > 0 ? dates[dates.length - 1] : null
+  const earliest = dates.length > 0 ? (dates[0] ?? null) : null
+  const latest = dates.length > 0 ? (dates[dates.length - 1] ?? null) : null
   
   return {
     totalSize,

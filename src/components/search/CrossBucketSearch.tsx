@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, type JSX } from 'react'
 import { useSearch } from '../../hooks/useSearch'
 import { SearchResultsTable } from './SearchResultsTable'
 import { ExtensionFilter } from '../filters/ExtensionFilter'
@@ -11,7 +11,7 @@ interface CrossBucketSearchProps {
   onNavigateToBucket?: (bucketName: string) => void
 }
 
-export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps) {
+export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps): JSX.Element {
   const [isExpanded, setIsExpanded] = useState(false)
   const [extensionDropdownOpen, setExtensionDropdownOpen] = useState(false)
   const [sizeDropdownOpen, setSizeDropdownOpen] = useState(false)
@@ -59,7 +59,8 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
   }, [filters.extensions, setExtensions])
 
   const handleExtensionGroupSelect = useCallback((groupName: string) => {
-    const groupExtensions = EXTENSION_GROUPS[groupName as keyof typeof EXTENSION_GROUPS] || []
+    const groupExtensions = EXTENSION_GROUPS[groupName as keyof typeof EXTENSION_GROUPS]
+    if (groupExtensions === undefined) return
     const availableInGroup = groupExtensions.filter(ext => availableExtensions.has(ext))
     
     // Toggle: if all are selected, deselect; otherwise select all
@@ -78,7 +79,7 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
       setSizeRange(null, null)
     } else if (preset !== 'custom') {
       const presetValues = SIZE_PRESETS[preset as keyof typeof SIZE_PRESETS]
-      if (presetValues) {
+      if (presetValues !== undefined) {
         setSizeRange(presetValues.min, presetValues.max)
       }
     }
@@ -96,7 +97,7 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
       setDateRange(null, null)
     } else if (preset !== 'custom') {
       const presetFn = DATE_PRESETS[preset as keyof typeof DATE_PRESETS]
-      if (presetFn) {
+      if (presetFn !== undefined) {
         const range = typeof presetFn === 'function' ? presetFn() : presetFn
         setDateRange(range.start, range.end)
       }

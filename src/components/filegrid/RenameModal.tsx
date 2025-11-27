@@ -1,3 +1,5 @@
+import { type JSX } from 'react'
+
 interface RenameModalProps {
   show: boolean
   itemType: 'file' | 'folder'
@@ -20,7 +22,7 @@ export const RenameModal = ({
   onClose,
   onNewNameChange,
   onSubmit
-}: RenameModalProps) => {
+}: RenameModalProps): JSX.Element | null => {
   if (!show) return null
 
   return (

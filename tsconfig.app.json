@@ -15,12 +15,34 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
+    /* Strict Type-Checking Options */
     "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitThis": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+    "exactOptionalPropertyTypes": true,
+
+    /* Additional Checks */
     "noUnusedLocals": true,
     "noUnusedParameters": true,
+    "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    "noUncheckedSideEffectImports": true,
+
+    /* Module Resolution */
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
   "include": ["src"]
 }

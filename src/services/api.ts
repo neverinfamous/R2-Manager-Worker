@@ -1,6 +1,6 @@
 import SparkMD5 from 'spark-md5'
 
-const WORKER_API = import.meta.env.VITE_WORKER_API || window.location.origin
+const WORKER_API = (import.meta.env['VITE_WORKER_API'] as string | undefined) ?? window.location.origin
 
 type ProgressCallback = (progress: number) => void
 type RetryCallback = (attempt: number, chunk: number, error: Error) => void
@@ -25,8 +25,8 @@ interface FileListResponse {
 }
 
 interface ListFilesOptions {
-  skipCache?: boolean
-  prefix?: string
+  skipCache?: boolean | undefined
+  prefix?: string | undefined
 }
 
 interface CloudflareBucket {
@@ -47,6 +47,27 @@ interface UploadOptions {
   onVerification?: VerificationCallback
   maxRetries?: number
   retryDelay?: number
+}
+
+// API Response types
+interface UploadChunkResponse {
+  etag?: string
+  success?: boolean
+}
+
+interface ApiErrorResponse {
+  error?: string
+}
+
+interface TransferResponse {
+  success?: boolean
+  copied?: number
+  moved?: number
+  failed?: number
+}
+
+interface SignedUrlResponse {
+  url: string
 }
 
 interface FileTypeConfig {
@@ -304,7 +325,7 @@ class APIService {
   }
 
   private getConfigByExtension(ext: string | undefined): FileTypeConfig | null {
-    if (!ext) return null
+    if (ext === undefined || ext === '') return null
     
     const extensionMap: Record<string, string> = {
       // Images
@@ -341,7 +362,9 @@ class APIService {
     }
     
     const category = extensionMap[ext]
-    return category ? this.FILE_TYPES[category] : null
+    if (category === undefined) return null
+    const config = this.FILE_TYPES[category]
+    return config ?? null
   }
 
   private formatSize(bytes: number): string {
@@ -406,7 +429,7 @@ class APIService {
       const spark = new SparkMD5.ArrayBuffer()
 
       reader.onload = (e) => {
-        if (e.target?.result) {
+        if (e.target?.result !== undefined && e.target.result !== null) {
           spark.append(e.target.result as ArrayBuffer)
           resolve(spark.end())
         } else {
@@ -463,9 +486,9 @@ class APIService {
           throw new Error(`Upload failed with status: ${response.status}`)
         }
 
-        const result = await response.json()
+        const result = await response.json() as UploadChunkResponse
         return {
-          etag: result.etag || '',
+          etag: result.etag ?? '',
           md5: chunkMD5
         }
       } catch (error) {
@@ -511,7 +534,11 @@ class APIService {
           file,
           0,
           1,
-          { maxRetries, retryDelay, onRetry },
+          { 
+            maxRetries: maxRetries ?? this.DEFAULT_MAX_RETRIES, 
+            retryDelay: retryDelay ?? this.DEFAULT_RETRY_DELAY, 
+            onRetry: onRetry ?? (() => { /* no-op */ })
+          },
           fileName
         )
         onProgress?.(99)
@@ -539,7 +566,11 @@ class APIService {
           chunk,
           chunkIndex,
           totalChunks,
-          { maxRetries, retryDelay, onRetry },
+          { 
+            maxRetries: maxRetries ?? this.DEFAULT_MAX_RETRIES, 
+            retryDelay: retryDelay ?? this.DEFAULT_RETRY_DELAY, 
+            onRetry: onRetry ?? (() => { /* no-op */ })
+          },
           fileName
         )
 
@@ -611,7 +642,7 @@ class APIService {
     // For multipart uploads, we just verify ETags exist for all chunks (done in caller)
   }
 
-  async listBuckets() {
+  async listBuckets(): Promise<{ name: string; creation_date: string; size?: number }[]> {
     const response = await fetch(`${WORKER_API}/api/buckets`, 
       this.getFetchOptions({
         headers: this.getHeaders()
@@ -620,15 +651,15 @@ class APIService {
     
     await this.handleResponse(response);
 
-    const data = await response.json()
+    const data = await response.json() as { result: { buckets: CloudflareBucket[] } }
     return data.result.buckets.map((bucket: CloudflareBucket) => ({
       name: bucket.name,
-      created: bucket.creation_date,
-      size: bucket.size || 0
+      creation_date: bucket.creation_date,
+      size: bucket.size ?? 0
     }))
   }
 
-  async createBucket(name: string) {
+  async createBucket(name: string): Promise<{ name: string; creation_date: string }> {
     const response = await fetch(`${WORKER_API}/api/buckets`, 
       this.getFetchOptions({
         method: 'POST',
@@ -644,13 +675,13 @@ class APIService {
       throw new Error(`API error: ${response.status}`)
     }
     
-    const data = await response.json()
+    const data = await response.json() as { result: { name: string; creation_date: string } }
     return data.result
   }
 
-  async deleteBucket(name: string, options: { force?: boolean } = {}) {
+  async deleteBucket(name: string, options: { force?: boolean } = {}): Promise<{ success?: boolean; error?: string; errors?: { message: string }[] }> {
     const url = new URL(`${WORKER_API}/api/buckets/${name}`)
-    if (options.force) {
+    if (options.force === true) {
       url.searchParams.set('force', 'true')
     }
     
@@ -662,9 +693,9 @@ class APIService {
     )
     
     // Parse the response regardless of status code
-    let data
+    let data: { success?: boolean; error?: string; errors?: { message: string }[] }
     try {
-      data = await response.json()
+      data = await response.json() as { success?: boolean; error?: string; errors?: { message: string }[] }
     } catch {
       // If response can't be parsed as JSON, return a generic error
       data = { error: `Failed to delete bucket (HTTP ${response.status})` }
@@ -692,7 +723,7 @@ class APIService {
     return { valid: true }
   }
 
-  async renameBucket(oldName: string, newName: string) {
+  async renameBucket(oldName: string, newName: string): Promise<{ success: boolean; newName?: string }> {
     const validation = this.validateBucketName(newName)
     if (!validation.valid) {
       throw new Error(validation.error)
@@ -707,16 +738,16 @@ class APIService {
       })
     )
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
-      throw new Error(error.error || 'Failed to rename bucket')
+      const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` })) as { error?: string }
+      throw new Error(error.error ?? 'Failed to rename bucket')
     }
-    return response.json()
+    return response.json() as Promise<{ success: boolean; newName?: string }>
   }
 
   async listFiles(
     bucketName: string,
     cursor?: string,
-    limit: number = 20,
+    limit = 20,
     options: ListFilesOptions = {}
   ): Promise<FileListResponse> {
     const url = new URL(`${WORKER_API}/api/files/${bucketName}`)
@@ -743,10 +774,10 @@ class APIService {
       throw new Error(`API error: ${response.status}`)
     }
     
-    return response.json()
+    return response.json() as Promise<FileListResponse>
   }
 
-  async deleteFile(bucketName: string, fileName: string) {
+  async deleteFile(bucketName: string, fileName: string): Promise<{ success: boolean }> {
     const response = await fetch(
       `${WORKER_API}/api/files/${bucketName}/delete/${encodeURIComponent(fileName)}`,
       this.getFetchOptions({
@@ -760,10 +791,14 @@ class APIService {
     }
   }
 
-  async downloadFiles(bucketName: string, files: FileObject[], options: DownloadOptions = {}) {
+  async downloadFiles(bucketName: string, files: FileObject[], options: DownloadOptions = {}): Promise<void> {
     const { asZip = false, onProgress } = options
     const totalSize = files.reduce((total, file) => total + file.size, 0)
-    const config = this.FILE_TYPES.archive
+    const config = this.FILE_TYPES['archive']
+
+    if (config === undefined) {
+      throw new Error('Archive file type configuration not found')
+    }
 
     if (asZip && totalSize > config.maxSize) {
       throw new Error(`Total size exceeds the limit of ${this.formatSize(config.maxSize)} for zip downloads`)
@@ -771,6 +806,9 @@ class APIService {
 
     if (!asZip || files.length === 1) {
       const file = files[0]
+      if (file === undefined) {
+        throw new Error('No files to download')
+      }
       const url = this.getFileUrl(bucketName, file.key, file)
       const link = document.createElement('a')
       link.href = url
@@ -833,7 +871,11 @@ class APIService {
       } while (cursor)
 
       const totalSize = allFiles.reduce((total, file) => total + file.size, 0)
-      const config = this.FILE_TYPES.archive
+      const config = this.FILE_TYPES['archive']
+
+      if (config === undefined) {
+        throw new Error('Archive file type configuration not found')
+      }
 
       if (totalSize > config.maxSize) {
         throw new Error(`Total size exceeds the limit of ${this.formatSize(config.maxSize)} for bucket downloads`)
@@ -948,8 +990,8 @@ class APIService {
     )
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: `Failed to move file: ${response.status}` }))
-      throw new Error(error.error || 'Failed to move file')
+      const errorData = await response.json().catch(() => ({ error: `Failed to move file: ${response.status}` })) as ApiErrorResponse
+      throw new Error(errorData.error ?? 'Failed to move file')
     }
   }
 
@@ -961,7 +1003,9 @@ class APIService {
     onProgress?: (completed: number, total: number) => void
   ): Promise<void> {
     for (let i = 0; i < fileKeys.length; i++) {
-      await this.moveFile(sourceBucket, fileKeys[i], destBucket, destPath)
+      const fileKey = fileKeys[i]
+      if (fileKey === undefined) continue
+      await this.moveFile(sourceBucket, fileKey, destBucket, destPath)
       onProgress?.(i + 1, fileKeys.length)
     }
   }
@@ -983,8 +1027,8 @@ class APIService {
     )
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: `Failed to copy file: ${response.status}` }))
-      throw new Error(error.error || 'Failed to copy file')
+      const errorData = await response.json().catch(() => ({ error: `Failed to copy file: ${response.status}` })) as ApiErrorResponse
+      throw new Error(errorData.error ?? 'Failed to copy file')
     }
   }
 
@@ -996,7 +1040,9 @@ class APIService {
     onProgress?: (completed: number, total: number) => void
   ): Promise<void> {
     for (let i = 0; i < fileKeys.length; i++) {
-      await this.copyFile(sourceBucket, fileKeys[i], destBucket, destPath)
+      const fileKey = fileKeys[i]
+      if (fileKey === undefined) continue
+      await this.copyFile(sourceBucket, fileKey, destBucket, destPath)
       onProgress?.(i + 1, fileKeys.length)
     }
   }
@@ -1029,10 +1075,10 @@ class APIService {
     )
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ 
+      const errorData = await response.json().catch(() => ({ 
         error: `Failed to rename file: ${response.status}` 
-      }))
-      throw new Error(error.error || 'Failed to rename file')
+      })) as ApiErrorResponse
+      throw new Error(errorData.error ?? 'Failed to rename file')
     }
   }
 
@@ -1069,11 +1115,11 @@ class APIService {
     )
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: `Failed to generate signed URL: ${response.status}` }))
-      throw new Error(error.error || 'Failed to generate signed URL')
+      const errorData = await response.json().catch(() => ({ error: `Failed to generate signed URL: ${response.status}` })) as ApiErrorResponse
+      throw new Error(errorData.error ?? 'Failed to generate signed URL')
     }
 
-    const data = await response.json()
+    const data = await response.json() as SignedUrlResponse
     return data.url
   }
 
@@ -1116,8 +1162,8 @@ class APIService {
     )
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: `Failed to create folder: ${response.status}` }))
-      throw new Error(error.error || 'Failed to create folder')
+      const errorData = await response.json().catch(() => ({ error: `Failed to create folder: ${response.status}` })) as ApiErrorResponse
+      throw new Error(errorData.error ?? 'Failed to create folder')
     }
   }
 
@@ -1140,13 +1186,13 @@ class APIService {
     )
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: `Failed to rename folder: ${response.status}` }))
-      throw new Error(error.error || 'Failed to rename folder')
+      const errorData = await response.json().catch(() => ({ error: `Failed to rename folder: ${response.status}` })) as ApiErrorResponse
+      throw new Error(errorData.error ?? 'Failed to rename folder')
     }
 
-    const data = await response.json()
-    if (onProgress && data.copied) {
-      onProgress(data.copied, data.copied + (data.failed || 0))
+    const data = await response.json() as TransferResponse
+    if (onProgress && data.copied !== undefined) {
+      onProgress(data.copied, data.copied + (data.failed ?? 0))
     }
   }
 
@@ -1170,13 +1216,13 @@ class APIService {
     )
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: `Failed to copy folder: ${response.status}` }))
-      throw new Error(error.error || 'Failed to copy folder')
+      const errorData = await response.json().catch(() => ({ error: `Failed to copy folder: ${response.status}` })) as ApiErrorResponse
+      throw new Error(errorData.error ?? 'Failed to copy folder')
     }
 
-    const data = await response.json()
-    if (onProgress && data.copied) {
-      onProgress(data.copied, data.copied + (data.failed || 0))
+    const data = await response.json() as TransferResponse
+    if (onProgress && data.copied !== undefined) {
+      onProgress(data.copied, data.copied + (data.failed ?? 0))
     }
   }
 
@@ -1200,17 +1246,17 @@ class APIService {
     )
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: `Failed to move folder: ${response.status}` }))
-      throw new Error(error.error || 'Failed to move folder')
+      const errorData = await response.json().catch(() => ({ error: `Failed to move folder: ${response.status}` })) as ApiErrorResponse
+      throw new Error(errorData.error ?? 'Failed to move folder')
     }
 
-    const data = await response.json()
-    if (onProgress && data.moved) {
-      onProgress(data.moved, data.moved + (data.failed || 0))
+    const data = await response.json() as TransferResponse
+    if (onProgress && data.moved !== undefined) {
+      onProgress(data.moved, data.moved + (data.failed ?? 0))
     }
   }
 
-  async deleteFolder(bucketName: string, folderPath: string, force: boolean = false): Promise<{ success: boolean, fileCount?: number, message?: string }> {
+  async deleteFolder(bucketName: string, folderPath: string, force = false): Promise<{ success: boolean, fileCount?: number, message?: string }> {
     const url = new URL(`${WORKER_API}/api/folders/${bucketName}/${encodeURIComponent(folderPath)}`)
     if (force) {
       url.searchParams.set('force', 'true')
@@ -1225,11 +1271,11 @@ class APIService {
     )
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: `Failed to delete folder: ${response.status}` }))
-      throw new Error(error.error || 'Failed to delete folder')
+      const errorData = await response.json().catch(() => ({ error: `Failed to delete folder: ${response.status}` })) as ApiErrorResponse
+      throw new Error(errorData.error ?? 'Failed to delete folder')
     }
 
-    return response.json()
+    return response.json() as Promise<{ success: boolean, fileCount?: number, message?: string }>
   }
 
   async searchAcrossBuckets(params: {
@@ -1240,7 +1286,7 @@ class APIService {
     startDate?: Date | null;
     endDate?: Date | null;
     limit?: number;
-  }) {
+  }): Promise<{ results: unknown[]; pagination?: { total?: number; hasMore?: boolean } }> {
     const url = new URL(`${WORKER_API}/api/search`)
     
     if (params.query) {
@@ -1276,7 +1322,7 @@ class APIService {
       throw new Error(`Search failed: ${response.status}`)
     }
 
-    return response.json()
+    return response.json() as Promise<{ results: unknown[]; pagination?: { total?: number; hasMore?: boolean } }>
   }
 
 }

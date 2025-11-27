@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef } from 'react'
+import { useCallback, useState, useEffect, useRef, type JSX } from 'react'
 import { api } from './services/api'
 import { ExtensionFilter } from './components/filters/ExtensionFilter'
 import { SizeFilter } from './components/filters/SizeFilter'
@@ -51,7 +51,7 @@ interface DownloadProgress {
 interface PaginatedFiles {
   objects: FileObject[]
   folders: FolderObject[]
-  cursor?: string
+  cursor?: string | undefined
   hasMore: boolean
 }
 
@@ -63,7 +63,7 @@ interface PaginationState {
 
 interface LoadingState {
   isLoading: boolean
-  lastRequestTime?: number
+  lastRequestTime?: number | undefined
 }
 
 enum ViewMode {
@@ -75,7 +75,7 @@ const ITEMS_PER_PAGE = 1000 // Fetch all files in one request (R2 API supports u
 const INTERSECTION_THRESHOLD = 0.5
 const DEBOUNCE_DELAY = 250
 
-export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0, availableBuckets, onBucketNavigate, onPathChange }: FileGridProps) {
+export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0, availableBuckets, onBucketNavigate, onPathChange }: FileGridProps): JSX.Element {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([])
   const [selectedFolders, setSelectedFolders] = useState<string[]>([])
   const [currentPath, setCurrentPath] = useState<string>('')
@@ -204,64 +204,66 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent): void => {
       const target = event.target as HTMLElement
-      if (transferDropdownOpen && !target.closest('.transfer-dropdown-container')) {
+      if (transferDropdownOpen && target.closest('.transfer-dropdown-container') === null) {
         setTransferDropdownOpen(false)
       }
-      if (sortDropdownOpen && !target.closest('.sort-dropdown-container')) {
+      if (sortDropdownOpen && target.closest('.sort-dropdown-container') === null) {
         setSortDropdownOpen(false)
       }
-      if (bucketDropdownOpen && !target.closest('.bucket-nav-dropdown-container')) {
+      if (bucketDropdownOpen && target.closest('.bucket-nav-dropdown-container') === null) {
         setBucketDropdownOpen(false)
       }
     }
 
     if (transferDropdownOpen || sortDropdownOpen || bucketDropdownOpen) {
       document.addEventListener('click', handleClickOutside)
-      return () => document.removeEventListener('click', handleClickOutside)
+      return (): void => { document.removeEventListener('click', handleClickOutside) }
     }
+    return undefined
   }, [transferDropdownOpen, sortDropdownOpen, bucketDropdownOpen, setSortDropdownOpen, setTransferDropdownOpen, setBucketDropdownOpen])
 
   // Close context menu when clicking outside or pressing Escape
   useEffect(() => {
-    const handleClickOutside = () => {
-      if (contextMenu) {
+    const handleClickOutside = (): void => {
+      if (contextMenu !== null) {
         setContextMenu(null)
       }
     }
 
-    const handleEscape = (event: KeyboardEvent) => {
+    const handleEscape = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') {
-        if (contextMenu) {
+        if (contextMenu !== null) {
           setContextMenu(null)
         }
-        if (renameState) {
+        if (renameState !== null) {
           setRenameState(null)
         }
       }
     }
 
-    if (contextMenu) {
+    if (contextMenu !== null) {
       document.addEventListener('click', handleClickOutside)
       document.addEventListener('keydown', handleEscape)
-      return () => {
+      return (): void => {
         document.removeEventListener('click', handleClickOutside)
         document.removeEventListener('keydown', handleEscape)
       }
     }
     
-    if (renameState) {
+    if (renameState !== null) {
       document.addEventListener('keydown', handleEscape)
-      return () => document.removeEventListener('keydown', handleEscape)
+      return (): void => { document.removeEventListener('keydown', handleEscape) }
     }
+    return undefined
   }, [contextMenu, renameState, setContextMenu, setRenameState])
 
   // Prevent browser context menu on file grid items
   useEffect(() => {
-    const handleContextMenu = (event: MouseEvent) => {
+    const handleContextMenu = (event: MouseEvent): void => {
       const target = event.target as HTMLElement
-      const fileItem = target.closest('.file-item') || target.closest('.folder-item')
+      const fileItem = target.closest('.file-item') ?? target.closest('.folder-item')
       const customContextMenu = target.closest('.context-menu')
       
       // Don't prevent default on our custom context menu - let it work normally
@@ -287,7 +289,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     setFailedImages(prev => new Set(prev).add(fileName))
   }, [])
 
-  const loadFiles = useCallback(async (reset: boolean = false) => {
+  const loadFiles = useCallback(async (reset = false) => {
     if (!bucketName || loadingRef.current.isLoading) return
     
     const now = Date.now()
@@ -320,12 +322,12 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           newObjects = response.objects
           // Convert folder paths to FolderObject format
           // Only include folders that belong to the current path level
-          newFolders = (response.folders || []).map((folderPath: string) => {
+          newFolders = (response.folders ?? []).map((folderPath: string) => {
             // Remove the currentPath prefix if present to get the relative folder name
-            const relativePath = currentPath && folderPath.startsWith(currentPath) 
+            const relativePath = currentPath.length > 0 && folderPath.startsWith(currentPath) 
               ? folderPath.substring(currentPath.length)
               : folderPath
-            const folderName = relativePath.split('/').filter(Boolean)[0] || relativePath
+            const folderName = relativePath.split('/').find(Boolean) ?? relativePath
             console.log('[FileGrid] Processing folder:', { folderPath, currentPath, relativePath, folderName });
             return {
               name: folderName,
@@ -379,7 +381,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
   useEffect(() => {
     if (shouldRefresh) {
-      loadFiles(true)
+      void loadFiles(true)
     }
   }, [shouldRefresh, loadFiles])
 
@@ -390,14 +392,14 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       threshold: INTERSECTION_THRESHOLD
     }
 
-    const handleObserver = (entries: IntersectionObserverEntry[]) => {
+    const handleObserver = (entries: IntersectionObserverEntry[]): void => {
       const target = entries[0]
-      if (target.isIntersecting && paginatedFiles.hasMore && !paginationState.isLoading && !shouldRefresh) {
+      if (target !== undefined && target.isIntersecting && paginatedFiles.hasMore && !paginationState.isLoading && !shouldRefresh) {
         if (debounceTimerRef.current) {
           window.clearTimeout(debounceTimerRef.current)
         }
         debounceTimerRef.current = window.setTimeout(() => {
-          loadFiles(false)
+          void loadFiles(false)
         }, DEBOUNCE_DELAY)
       }
     }
@@ -462,11 +464,11 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   const handleSelection = useCallback((key: string, event: React.MouseEvent | React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation()
     
-    const isShiftClick = 'shiftKey' in event && event.shiftKey && lastSelectedRef.current
+    const isShiftClick = 'shiftKey' in event && event.shiftKey && lastSelectedRef.current !== null
     const isCtrlClick = 'ctrlKey' in event && (event.ctrlKey || event.metaKey)
     const lastSelected = lastSelectedRef.current
 
-    if (isShiftClick && lastSelected) {
+    if (isShiftClick && lastSelected !== null) {
       // Shift-click: Select range from last selected to current
       const fileKeys = sortedFilesRef.current.map(f => f.key)
       const currentIndex = fileKeys.indexOf(key)
@@ -639,16 +641,16 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       if (selectedFolders.length > 0) {
         const folderMethod = transferState.mode === 'move' ? api.moveFolder.bind(api) : api.copyFolder.bind(api)
         
-        for (let i = 0; i < selectedFolders.length; i++) {
+        for (const folder of selectedFolders) {
           // Extract just the folder name (not the full path)
-          const folderName = selectedFolders[i].split('/').filter(p => p).pop() || selectedFolders[i]
+          const folderName = folder.split('/').filter(p => p !== '').pop() ?? folder
           
           // If destination path is specified, append folder name to it; otherwise use just folder name
-          const destPath = transferState.targetPath 
+          const destPath = transferState.targetPath !== '' 
             ? `${transferState.targetPath}${transferState.targetPath.endsWith('/') ? '' : '/'}${folderName}`
             : folderName
           
-          await folderMethod(bucketName, selectedFolders[i], transferState.targetBucket, destPath)
+          await folderMethod(bucketName, folder, transferState.targetBucket, destPath)
           completed++
           const action = transferState.mode === 'move' ? 'Moving' : 'Copying'
           setInfoMessage(`${action} items: ${completed}/${totalItems}...`)
@@ -1524,7 +1526,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           bucketName={bucketName}
           currentPath={currentPath}
           selectedCount={selectedFiles.length + selectedFolders.length}
-          availableBuckets={availableBuckets || []}
+          availableBuckets={availableBuckets ?? []}
           targetBucket={transferState.targetBucket}
           targetPath={transferState.targetPath}
           isTransferring={isTransferring}
@@ -1537,14 +1539,14 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       )}
 
       <ContextMenu 
-        show={contextMenu?.show || false}
-        x={contextMenu?.x || 0}
-        y={contextMenu?.y || 0}
-        itemType={contextMenu?.itemType || 'file'}
-        onClose={() => setContextMenu(null)}
-        onRename={() => startRename(contextMenu!.itemType, contextMenu!.itemKey)}
-        onCopyLink={contextMenu?.itemType === 'file' ? (e?: React.MouseEvent) => {
-          handleCopySignedUrl(contextMenu!.itemKey, e)
+        show={contextMenu?.show ?? false}
+        x={contextMenu?.x ?? 0}
+        y={contextMenu?.y ?? 0}
+        itemType={contextMenu?.itemType ?? 'file'}
+        onClose={() => { setContextMenu(null) }}
+        onRename={() => { if (contextMenu !== null) startRename(contextMenu.itemType, contextMenu.itemKey) }}
+        onCopyLink={contextMenu?.itemType === 'file' ? () => {
+          if (contextMenu !== null) void handleCopySignedUrl(contextMenu.itemKey)
           setContextMenu(null)
         } : undefined}
       />
@@ -1565,7 +1567,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         />
       )}
 
-      {process.env.NODE_ENV === 'development' && (
+      {process.env['NODE_ENV'] === 'development' && (
         <div style={{ 
           position: 'fixed', 
           bottom: 10, 

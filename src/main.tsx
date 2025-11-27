@@ -6,7 +6,11 @@ import './styles/filters.css'
 import FileManager from './app.tsx'
 import { ThemeProvider } from './contexts/ThemeContext'
 
-createRoot(document.getElementById('root')!).render(
+const rootElement = document.getElementById('root')
+if (rootElement === null) {
+  throw new Error('Root element not found')
+}
+createRoot(rootElement).render(
   <StrictMode>
     <ThemeProvider>
       <FileManager />

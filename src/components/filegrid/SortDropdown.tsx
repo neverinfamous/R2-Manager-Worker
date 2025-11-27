@@ -1,4 +1,4 @@
-import { RefObject } from 'react'
+import { type RefObject, type JSX } from 'react'
 
 type SortField = 'name' | 'size' | 'type' | 'uploaded'
 type SortDirection = 'asc' | 'desc'
@@ -23,7 +23,7 @@ export const SortDropdown = ({
   onToggle,
   onSortChange,
   getSortLabel
-}: SortDropdownProps) => {
+}: SortDropdownProps): JSX.Element => {
   return (
     <div className={`sort-dropdown-container ${isOpen ? 'open' : ''}`}>
       <button 

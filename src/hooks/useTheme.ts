@@ -1,7 +1,7 @@
 import { useContext } from 'react'
-import { ThemeContext } from '../contexts/ThemeContext'
+import { ThemeContext, type ThemeMode } from '../contexts/ThemeContext'
 
-export function useTheme() {
+export function useTheme(): { theme: ThemeMode; resolvedTheme: 'light' | 'dark'; setTheme: (theme: ThemeMode) => void } {
   const context = useContext(ThemeContext)
   
   if (context === undefined) {

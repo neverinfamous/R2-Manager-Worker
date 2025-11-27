@@ -1,3 +1,4 @@
+import { type JSX } from 'react'
 import type { SizeFilter, DateFilter } from '../../types/filters'
 import { formatFileSize, formatDateRange } from '../../utils/filterUtils'
 
@@ -23,8 +24,8 @@ export function ActiveFilterBadges({
   onClearSize,
   onClearDate,
   onClearAll
-}: ActiveFilterBadgesProps) {
-  const hasFilters = filterText || 
+}: ActiveFilterBadgesProps): JSX.Element | null {
+  const hasFilters = filterText !== '' || 
                      selectedExtensions.length > 0 || 
                      sizeFilter.preset !== 'all' || 
                      dateFilter.preset !== 'all'

@@ -1,6 +1,7 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** November 24, 2025 | **Version:** 1.3.0
+**Last Updated:** November 27, 2025 | **Version:** 1.3.0
+
 **Tech Stack:** React 19.2.6 | Vite 7.2.4 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
@@ -9,14 +10,11 @@
 ![Version](https://img.shields.io/badge/version-v1.3.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
+[![Type Safety](https://img.shields.io/badge/TypeScript-Strict-blue.svg)](https://github.com/neverinfamous/R2-Manager-Worker)
 
  R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to manage Cloudflare R2 buckets and objects. Supports drag-and-drop uploads, batch copy/move/delete, multi-file ZIP downloads, signed share links, folder hierarchies, advanced search + filters (extension, size, date), and GitHub SSO via Cloudflare Zero Trust.
 
-**🎯 [Try the Live Demo](https://r2.adamic.tech/)** - See R2 Bucket Manager in action
- 
-**🚀 Docker Deployment:** Run the development server in a containerized environment for testing and local development.
-
-**📰 [Read the v1.3.0 Release Article](https://adamic.tech/articles/2025-10-30-r2-bucket-manager-v1-3-0)** - Learn more about features, architecture, and deployment
+**[Live Demo](https://r2.adamic.tech/)** • **[Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki)** • **[GitHub](https://github.com/neverinfamous/R2-Manager-Worker)** • **[Changelog](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Changelog)** • **[Release Article](https://adamic.tech/articles/2025-10-30-r2-bucket-manager-v1-3-0)**
 
 ---
 

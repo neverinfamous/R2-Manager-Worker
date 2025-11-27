@@ -1,10 +1,15 @@
 import type { Env } from '../types';
 
+interface JWTPayload {
+  email?: string;
+  [key: string]: unknown;
+}
+
 // JWT validation for Cloudflare Access
 export async function validateAccessJWT(request: Request, env: Env): Promise<string | null> {
   const token = request.headers.get('cf-access-jwt-assertion');
   
-  if (!token) {
+  if (token === null) {
     console.log('[Auth] No JWT token found in request headers');
     return null;
   }
@@ -21,8 +26,9 @@ export async function validateAccessJWT(request: Request, env: Env): Promise<str
     });
 
     // Extract email from JWT payload
-    const email = payload.email as string;
-    if (!email) {
+    const typedPayload = payload as JWTPayload;
+    const email = typedPayload.email;
+    if (email === undefined || typeof email !== 'string') {
       console.log('[Auth] JWT payload missing email');
       return null;
     }
@@ -34,4 +40,3 @@ export async function validateAccessJWT(request: Request, env: Env): Promise<str
     return null;
   }
 }
-

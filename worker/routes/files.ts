@@ -1,7 +1,30 @@
 import JSZip from 'jszip';
-import type { Env } from '../types';
+import type { Env, CloudflareApiResponse } from '../types';
 import { CF_API } from '../types';
 import { generateSignature } from '../utils/signing';
+
+interface MultiBucketDownloadBody {
+  buckets: { bucketName: string; files: string[] }[];
+}
+
+interface ZipDownloadBody {
+  files: string[];
+}
+
+interface TransferBody {
+  destinationBucket: string;
+  destinationPath?: string;
+}
+
+interface RenameFileBody {
+  newKey?: string;
+}
+
+interface ListFilesResponseResult {
+  objects: { key: string; size?: number; uploaded?: string; etag?: string; httpEtag?: string; version?: string; checksums?: Record<string, string>; httpMetadata?: Record<string, string>; customMetadata?: Record<string, string> }[];
+  delimited?: string[];
+}
+
 
 export async function handleFileRoutes(
   request: Request,
@@ -23,7 +46,7 @@ export async function handleFileRoutes(
   if (request.method === 'POST' && url.pathname === '/api/files/download-buckets-zip') {
     try {
       console.log('[Files] Processing multi-bucket ZIP download request');
-      const { buckets } = await request.json() as { buckets: { bucketName: string; files: string[] }[] };
+      const { buckets } = await request.json() as MultiBucketDownloadBody;
       
       const zip = new JSZip();
       
@@ -31,7 +54,7 @@ export async function handleFileRoutes(
         console.log('[Files] Processing bucket:', bucket.bucketName);
         const bucketFolder = zip.folder(bucket.bucketName);
         
-        if (!bucketFolder) {
+        if (bucketFolder === null) {
           throw new Error('Failed to create folder for bucket: ' + bucket.bucketName);
         }
         
@@ -81,7 +104,8 @@ export async function handleFileRoutes(
   if (request.method === 'POST' && parts[4] === 'download-zip') {
     try {
       console.log('[Files] Processing ZIP download request');
-      const { files } = await request.json();
+      const body = await request.json() as ZipDownloadBody;
+      const files = body.files;
       
       const zip = new JSZip();
       
@@ -130,7 +154,7 @@ export async function handleFileRoutes(
     try {
       console.log('[Files] Listing files in bucket:', bucketName);
       const cursor = url.searchParams.get('cursor');
-      const limit = parseInt(url.searchParams.get('limit') || '20');
+      const limit = parseInt(url.searchParams.get('limit') ?? '20');
       const skipCache = url.searchParams.get('skipCache') === 'true';
       const prefix = url.searchParams.get('prefix');
       
@@ -155,24 +179,24 @@ export async function handleFileRoutes(
       
       let apiUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects'
         + '?include=customMetadata,httpMetadata'
-        + '&per_page=' + limit
+        + '&per_page=' + String(limit)
         + '&delimiter=/'
         + '&order=desc'
         + '&sort_by=last_modified';
       
-      if (cursor) {
+      if (cursor !== null && cursor !== '') {
         apiUrl += '&cursor=' + cursor;
       }
       
       // Add prefix parameter for folder navigation
-      if (prefix) {
+      if (prefix !== null && prefix !== '') {
         apiUrl += '&prefix=' + encodeURIComponent(prefix);
         console.log('[Files] Using prefix filter:', prefix);
       }
 
       // Add cache-busting parameter if requested
       if (skipCache) {
-        apiUrl += '&_t=' + Date.now();
+        apiUrl += '&_t=' + String(Date.now());
       }
       
       console.log('[Files] List request URL:', apiUrl);
@@ -184,43 +208,37 @@ export async function handleFileRoutes(
       });
       
       if (!response.ok) {
-        throw new Error('Failed to list files: ' + response.status);
+        throw new Error('Failed to list files: ' + String(response.status));
       }
 
-      const data = await response.json();
+      const data = await response.json() as CloudflareApiResponse<ListFilesResponseResult['objects']>;
       console.log('[Files] List response:', {
         url: apiUrl,
-        objects: data.result?.objects?.slice(0, 3),
-        total: data.result?.objects?.length || 0,
+        objects: data.result?.slice(0, 3),
+        total: data.result?.length ?? 0,
         pagination: data.result_info,
         sorting: 'desc by last_modified'
       });
 
       // Filter out assets folder, .keep files, and process objects
-      interface R2ObjectInfo {
-        key: string;
-        size?: number;
-        last_modified?: string;
-      }
-      
-      const fileList = Array.isArray(data.result) ? data.result : (data.result?.objects || []);
+      const fileList: ListFilesResponseResult['objects'] = Array.isArray(data.result) ? data.result : [];
       const objectPromises = fileList
-        .filter((obj: R2ObjectInfo) => 
+        .filter((obj: ListFilesResponseResult['objects'][0]) => 
           !obj.key.startsWith('assets/') && 
           !obj.key.endsWith('/.keep') &&
           obj.key !== '.keep'
         )
-        .map(async (obj: R2ObjectInfo) => {
+        .map(async (obj: ListFilesResponseResult['objects'][0]) => {
           const downloadPath = '/api/files/' + bucketName + '/download/' + obj.key;
-          const version = obj.last_modified ? new Date(obj.last_modified).getTime() : Date.now();
-          const versionedPath = downloadPath + '?ts=' + version;
+          const version = obj.uploaded !== undefined ? new Date(obj.uploaded).getTime() : Date.now();
+          const versionedPath = downloadPath + '?ts=' + String(version);
           const signature = await generateSignature(versionedPath, env);
           const signedUrl = versionedPath + '&sig=' + signature;
 
           return {
             key: obj.key,
-            size: obj.size || 0,
-            uploaded: obj.last_modified || new Date().toISOString(),
+            size: obj.size,
+            uploaded: obj.uploaded ?? new Date().toISOString(),
             url: signedUrl
           };
         });
@@ -228,11 +246,11 @@ export async function handleFileRoutes(
       const objects = await Promise.all(objectPromises);
 
       // Sort objects by upload date
-      objects.sort((a, b) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime());
+      objects.sort((a: { uploaded: string }, b: { uploaded: string }) => new Date(b.uploaded).getTime() - new Date(a.uploaded).getTime());
 
       // Extract folders from the API response
       // The Cloudflare REST API returns folders in data.result_info.delimited
-      const rawPrefixes = data.result_info?.delimited || [];
+      const rawPrefixes: string[] = data.result_info?.delimited ?? [];
       console.log('[Files] Found folders in result_info.delimited:', rawPrefixes);
       
       const folders = rawPrefixes
@@ -242,8 +260,8 @@ export async function handleFileRoutes(
 
       // Determine if there are more results
       // hasMore should be true only if the API indicates truncation AND we have a cursor for the next page
-      const apiHasMore = data.result_info?.is_truncated || false;
-      const hasValidCursor = !!data.result_info?.cursor;
+      const apiHasMore = data.result_info?.is_truncated ?? false;
+      const hasValidCursor = data.result_info?.cursor !== undefined && data.result_info.cursor !== '';
       const hasMore = apiHasMore && hasValidCursor;
 
       console.log('[Files] Pagination info:', {
@@ -287,14 +305,14 @@ export async function handleFileRoutes(
   // Upload file
   if (request.method === 'POST' && parts[4] === 'upload') {
     const formData = await request.formData();
-    const file = formData.get('file') as File;
+    const file = formData.get('file') as File | null;
     const fileName = request.headers.get('X-File-Name');
-    const chunkIndex = parseInt(request.headers.get('X-Chunk-Index') || '0');
-    const totalChunks = parseInt(request.headers.get('X-Total-Chunks') || '1');
+    const chunkIndex = parseInt(request.headers.get('X-Chunk-Index') ?? '0');
+    const totalChunks = parseInt(request.headers.get('X-Total-Chunks') ?? '1');
     
-    if (!fileName) {
-      console.log('[Files] Missing filename in upload request');
-      return new Response('Missing file name', { 
+    if (fileName === null || file === null) {
+      console.log('[Files] Missing filename or file in upload request');
+      return new Response('Missing file or file name', { 
         status: 400,
         headers: corsHeaders
       });
@@ -304,7 +322,7 @@ export async function handleFileRoutes(
       console.log('[Files] Processing upload:',
         'bucket=' + bucketName,
         'file=' + fileName,
-        'chunk=' + (chunkIndex + 1) + '/' + totalChunks
+        'chunk=' + String(chunkIndex + 1) + '/' + String(totalChunks)
       );
 
       // Mock response for local development
@@ -334,7 +352,7 @@ export async function handleFileRoutes(
         method: 'PUT',
         headers: { 
           ...cfHeaders, 
-          'Content-Type': file.type || 'application/octet-stream',
+          'Content-Type': file.type !== '' ? file.type : 'application/octet-stream',
           'X-Upload-Created': uploadTimestamp,
           'Cache-Control': 'no-cache'
         },
@@ -342,7 +360,7 @@ export async function handleFileRoutes(
       });
 
       if (!uploadResponse.ok) {
-        throw new Error('Upload failed: ' + uploadResponse.status);
+        throw new Error('Upload failed: ' + String(uploadResponse.status));
       }
 
       // R2 REST API doesn't return ETag in PUT response headers
@@ -353,13 +371,13 @@ export async function handleFileRoutes(
       });
 
       if (headResponse.ok) {
-        etag = headResponse.headers.get('etag') || headResponse.headers.get('ETag') || '';
+        etag = headResponse.headers.get('etag') ?? headResponse.headers.get('ETag') ?? '';
       }
       
       if (totalChunks === 1) {
         console.log('[Files] Upload completed:', decodedFileName, 'ETag:', etag);
       } else {
-        const chunkId = decodedFileName + '-' + chunkIndex;
+        const chunkId = decodedFileName + '-' + String(chunkIndex);
         console.log('[Files] Chunk uploaded:', chunkId, 'ETag:', etag);
       }
 
@@ -401,13 +419,20 @@ export async function handleFileRoutes(
   // Get signed URL for file
   if (request.method === 'GET' && parts[4] === 'signed-url') {
     try {
-      const key = decodeURIComponent(parts[5]);
+      const keyPart = parts[5];
+      if (keyPart === undefined) {
+        return new Response(JSON.stringify({ error: 'Missing file key' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+      const key = decodeURIComponent(keyPart);
       console.log('[Files] Generating signed URL for:', key);
       
       // Create the download path
       const downloadPath = '/api/files/' + bucketName + '/download/' + key;
       const version = Date.now();
-      const versionedPath = downloadPath + '?ts=' + version;
+      const versionedPath = downloadPath + '?ts=' + String(version);
       const signature = await generateSignature(versionedPath, env);
       const signedUrl = versionedPath + '&sig=' + signature;
       
@@ -441,7 +466,14 @@ export async function handleFileRoutes(
   // Delete file
   if (request.method === 'DELETE' && parts[4] === 'delete') {
     try {
-      const key = decodeURIComponent(parts[5]);
+      const keyPart = parts[5];
+      if (keyPart === undefined) {
+        return new Response(JSON.stringify({ error: 'Missing file key' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+      const key = decodeURIComponent(keyPart);
       console.log('[Files] Deleting file:', key);
       
       const response = await fetch(
@@ -453,7 +485,7 @@ export async function handleFileRoutes(
       );
 
       if (!response.ok) {
-        throw new Error('Delete failed: ' + response.status);
+        throw new Error('Delete failed: ' + String(response.status));
       }
 
       return new Response(JSON.stringify({ success: true }), {
@@ -481,11 +513,11 @@ export async function handleFileRoutes(
   if (request.method === 'POST' && parts[parts.length - 1] === 'move') {
     try {
       const sourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
-      const body = await request.json();
+      const body = await request.json() as TransferBody;
       const destBucket = body.destinationBucket;
-      const destPath = body.destinationPath || '';
+      const destPath = body.destinationPath ?? '';
       
-      if (!destBucket) {
+      if (destBucket === undefined || destBucket === '') {
         return new Response(JSON.stringify({ error: 'Missing destination bucket' }), {
           status: 400,
           headers: {
@@ -496,8 +528,8 @@ export async function handleFileRoutes(
       }
 
       // Allow same-bucket operations if destination path is different
-      const fileName = sourceKey.split('/').pop() || sourceKey;
-      const destKey = destPath ? `${destPath}${destPath.endsWith('/') ? '' : '/'}${fileName}` : fileName;
+      const fileName = sourceKey.split('/').pop() ?? sourceKey;
+      const destKey = destPath !== '' ? `${destPath}${destPath.endsWith('/') ? '' : '/'}${fileName}` : fileName;
       
       if (bucketName === destBucket && sourceKey === destKey) {
         return new Response(JSON.stringify({ error: 'Source and destination must be different' }), {
@@ -525,11 +557,11 @@ export async function handleFileRoutes(
             }
           });
         }
-        throw new Error('Failed to fetch file: ' + getResponse.status);
+        throw new Error('Failed to fetch file: ' + String(getResponse.status));
       }
 
       // 2. Preserve metadata from source
-      const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
+      const contentType = getResponse.headers.get('Content-Type') ?? 'application/octet-stream';
       const fileBuffer = await getResponse.arrayBuffer();
 
       // 3. Upload to destination bucket with destination path
@@ -544,7 +576,7 @@ export async function handleFileRoutes(
       });
 
       if (!putResponse.ok) {
-        throw new Error('Failed to upload to destination: ' + putResponse.status);
+        throw new Error('Failed to upload to destination: ' + String(putResponse.status));
       }
 
       // 4. Delete from source bucket
@@ -586,11 +618,11 @@ export async function handleFileRoutes(
   if (request.method === 'POST' && parts[parts.length - 1] === 'copy') {
     try {
       const sourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
-      const body = await request.json();
+      const body = await request.json() as TransferBody;
       const destBucket = body.destinationBucket;
-      const destPath = body.destinationPath || '';
+      const destPath = body.destinationPath ?? '';
       
-      if (!destBucket) {
+      if (destBucket === undefined || destBucket === '') {
         return new Response(JSON.stringify({ error: 'Missing destination bucket' }), {
           status: 400,
           headers: {
@@ -601,8 +633,8 @@ export async function handleFileRoutes(
       }
 
       // Allow same-bucket operations if destination path is different
-      const fileName = sourceKey.split('/').pop() || sourceKey;
-      const destKey = destPath ? `${destPath}${destPath.endsWith('/') ? '' : '/'}${fileName}` : fileName;
+      const fileName = sourceKey.split('/').pop() ?? sourceKey;
+      const destKey = destPath !== '' ? `${destPath}${destPath.endsWith('/') ? '' : '/'}${fileName}` : fileName;
       
       if (bucketName === destBucket && sourceKey === destKey) {
         return new Response(JSON.stringify({ error: 'Source and destination must be different' }), {
@@ -630,11 +662,11 @@ export async function handleFileRoutes(
             }
           });
         }
-        throw new Error('Failed to fetch file: ' + getResponse.status);
+        throw new Error('Failed to fetch file: ' + String(getResponse.status));
       }
 
       // 2. Preserve metadata from source (same as move)
-      const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
+      const contentType = getResponse.headers.get('Content-Type') ?? 'application/octet-stream';
       const fileBuffer = await getResponse.arrayBuffer();
 
       // 3. Upload to destination bucket with destination path
@@ -649,7 +681,7 @@ export async function handleFileRoutes(
       });
 
       if (!putResponse.ok) {
-        throw new Error('Failed to upload to destination: ' + putResponse.status);
+        throw new Error('Failed to upload to destination: ' + String(putResponse.status));
       }
 
       console.log('[Files] Copy completed successfully');
@@ -679,10 +711,10 @@ export async function handleFileRoutes(
   if (request.method === 'PATCH' && parts[parts.length - 1] === 'rename') {
     try {
       const sourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
-      const body = await request.json();
+      const body = await request.json() as RenameFileBody;
       const newKey = body.newKey?.trim();
       
-      if (!newKey) {
+      if (newKey === undefined || newKey === '') {
         return new Response(JSON.stringify({ error: 'New key is required' }), {
           status: 400,
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -713,11 +745,11 @@ export async function handleFileRoutes(
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
           });
         }
-        throw new Error('Failed to fetch file: ' + getResponse.status);
+        throw new Error('Failed to fetch file: ' + String(getResponse.status));
       }
 
       // 2. Preserve metadata
-      const contentType = getResponse.headers.get('Content-Type') || 'application/octet-stream';
+      const contentType = getResponse.headers.get('Content-Type') ?? 'application/octet-stream';
       const fileBuffer = await getResponse.arrayBuffer();
 
       // 3. Create file with new key
@@ -732,7 +764,7 @@ export async function handleFileRoutes(
       });
 
       if (!putResponse.ok) {
-        throw new Error('Failed to create renamed file: ' + putResponse.status);
+        throw new Error('Failed to create renamed file: ' + String(putResponse.status));
       }
 
       // 4. Delete original file
@@ -775,4 +807,3 @@ export async function handleFileRoutes(
     headers: corsHeaders
   });
 }
-

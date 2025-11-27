@@ -1,7 +1,11 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, type JSX } from 'react'
 import type { SearchResult, SortColumn, SortDirection } from '../../types/search'
 import { formatFileSize } from '../../utils/fileUtils'
 import { api } from '../../services/api'
+
+interface Bucket {
+  name: string
+}
 
 interface SearchResultsTableProps {
   results: SearchResult[]
@@ -9,8 +13,8 @@ interface SearchResultsTableProps {
   sortColumn: SortColumn
   sortDirection: SortDirection
   onSort: (column: SortColumn) => void
-  onRefresh?: () => void
-  onNavigateToBucket?: (bucketName: string) => void
+  onRefresh?: (() => void) | undefined
+  onNavigateToBucket?: ((bucketName: string) => void) | undefined
 }
 
 export function SearchResultsTable({
@@ -21,7 +25,7 @@ export function SearchResultsTable({
   onSort,
   onRefresh,
   onNavigateToBucket
-}: SearchResultsTableProps) {
+}: SearchResultsTableProps): JSX.Element {
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
   const [transferModalState, setTransferModalState] = useState<{
     show: boolean
@@ -52,15 +56,15 @@ export function SearchResultsTable({
 
   // Load available buckets for transfer
   useEffect(() => {
-    const loadBuckets = async () => {
+    const loadBuckets = async (): Promise<void> => {
       try {
-        const buckets = await api.listBuckets()
-        setAvailableBuckets(buckets.map((b: { name: string }) => b.name))
+        const buckets: Bucket[] = await api.listBuckets()
+        setAvailableBuckets(buckets.map((b) => b.name))
       } catch (err) {
         console.error('Failed to load buckets:', err)
       }
     }
-    loadBuckets()
+    void loadBuckets()
   }, [])
 
   const handleDownload = useCallback(async (bucket: string, key: string) => {
@@ -116,7 +120,7 @@ export function SearchResultsTable({
   }, [])
 
   const handleTransferSubmit = useCallback(async () => {
-    if (!transferModalState || !transferModalState.targetBucket) return
+    if (!transferModalState?.targetBucket) return
 
     setTransferModalState(prev => prev ? { ...prev, isTransferring: true, infoMessage: 'Transferring...' } : null)
 
@@ -159,13 +163,13 @@ export function SearchResultsTable({
     }
   }, [transferModalState, onRefresh])
 
-  const getSortIcon = (column: SortColumn) => {
+  const getSortIcon = (column: SortColumn): string => {
     if (sortColumn !== column) return '⇅'
     return sortDirection === 'asc' ? '↑' : '↓'
   }
 
-  const getFileName = (key: string) => {
-    return key.split('/').pop() || key
+  const getFileName = (key: string): string => {
+    return key.split('/').pop() ?? key
   }
 
   if (isSearching) {

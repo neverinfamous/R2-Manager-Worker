@@ -1,14 +1,16 @@
-import type { Env } from '../types';
+import type { Env, CloudflareApiResponse, BucketsListResult, R2ObjectInfo } from '../types';
 import { CF_API } from '../types';
+import { type CorsHeaders } from '../utils/cors';
 import { getBucketSize } from '../utils/helpers';
 
 export async function handleBucketRoutes(
   request: Request,
   env: Env,
   url: URL,
-  corsHeaders: HeadersInit,
+  corsHeaders: CorsHeaders,
   isLocalDev: boolean
 ): Promise<Response> {
+   
   console.log('[Buckets] Handling bucket operation');
   
   const cfHeaders = {
@@ -47,18 +49,19 @@ export async function handleBucketRoutes(
         CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets',
         { headers: cfHeaders }
       );
-      const data = await response.json();
+      const data = await response.json() as CloudflareApiResponse<BucketsListResult>;
       
       // With Zero Trust auth, show all R2 buckets to authenticated users
       // Exclude system/internal buckets
       const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki', 'kv-manager-backups'];
-      const filteredBuckets = (data.result.buckets || []).filter((b: { name: string }) =>
+      const buckets = data.result?.buckets ?? [];
+      const filteredBuckets = buckets.filter((b) =>
         !systemBuckets.includes(b.name)
       );
       
       // Add size information to each bucket
       const bucketsWithSize = await Promise.all(
-        filteredBuckets.map(async (bucket: { name: string; creation_date: string }) => {
+        filteredBuckets.map(async (bucket) => {
           const size = await getBucketSize(bucket.name, env);
           return {
             ...bucket,
@@ -79,7 +82,7 @@ export async function handleBucketRoutes(
 
     // Create bucket
     if (request.method === 'POST' && url.pathname === '/api/buckets') {
-      const body = await request.json();
+      const body = await request.json() as { name: string };
       console.log('[Buckets] Creating bucket:', body.name);
       
       // Mock response for local development
@@ -106,7 +109,7 @@ export async function handleBucketRoutes(
           body: JSON.stringify({ name: body.name })
         }
       );
-      const data = await response.json();
+      const data = await response.json() as CloudflareApiResponse;
       
       return new Response(JSON.stringify(data), {
         headers: {
@@ -135,22 +138,22 @@ export async function handleBucketRoutes(
           
           while (hasMoreObjects) {
             const listUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects');
-            if (cursor) {
+            if (cursor !== undefined) {
               listUrl.searchParams.set('cursor', cursor);
             }
             listUrl.searchParams.set('per_page', '100');
             
-            console.log('[Buckets] Listing objects with cursor:', cursor || 'none');
+            console.log('[Buckets] Listing objects with cursor:', cursor ?? 'none');
             const listResponse = await fetch(listUrl.toString(), {
               headers: cfHeaders
             });
             
             if (!listResponse.ok) {
-              throw new Error('Failed to list objects: ' + listResponse.status);
+              throw new Error('Failed to list objects: ' + String(listResponse.status));
             }
             
-            const listData = await listResponse.json();
-            const objects = Array.isArray(listData.result) ? listData.result : [];
+            const listData = await listResponse.json() as CloudflareApiResponse<R2ObjectInfo[]>;
+            const objects: R2ObjectInfo[] = Array.isArray(listData.result) ? listData.result : [];
             console.log('[Buckets] Found', objects.length, 'objects to delete');
             
             if (objects.length === 0) {
@@ -181,10 +184,10 @@ export async function handleBucketRoutes(
             }
             
             // Get cursor for next page
-            cursor = listData.cursor;
+            cursor = listData.result_info?.cursor as string | undefined;
             
             // Add small delay between batches to avoid rate limiting
-            if (objects.length > 0 && cursor) {
+            if (objects.length > 0 && cursor !== undefined) {
               console.log('[Buckets] Waiting before next batch...');
               await new Promise(resolve => setTimeout(resolve, 500));
             } else {
@@ -221,10 +224,10 @@ export async function handleBucketRoutes(
       // Cloudflare R2 API returns 204 No Content on successful deletion, or 200 with { "success": true }
       if (response.ok && (response.status === 204 || response.status === 200)) {
         try {
-          const data = response.status === 204 ? { success: true } : await response.json();
+          const data = response.status === 204 ? { success: true } : await response.json() as { success?: boolean };
           console.log('[Buckets] Delete successful, data:', data);
           
-          if (data.success || response.status === 204) {
+          if (data.success === true || response.status === 204) {
             // Return success response
             return new Response(JSON.stringify({ success: true }), {
               status: 200,
@@ -268,7 +271,7 @@ export async function handleBucketRoutes(
     // Rename bucket (create new, copy objects, delete old)
     if (request.method === 'PATCH' && url.pathname.startsWith('/api/buckets/')) {
       const oldBucketName = decodeURIComponent(url.pathname.slice(12)).replace(/^\/+/, '');
-      const body = await request.json();
+      const body = await request.json() as { newName?: string };
       const newBucketName = body.newName?.trim();
       console.log('[Buckets] Rename request:', oldBucketName, '->', newBucketName);
       
@@ -292,8 +295,8 @@ export async function handleBucketRoutes(
         console.log('[Buckets] Creating new bucket:', newBucketName);
         const createResponse = await fetch(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets', { method: 'POST', headers: cfHeaders, body: JSON.stringify({ name: newBucketName }) });
         if (!createResponse.ok) {
-          const createError = await createResponse.json();
-          return new Response(JSON.stringify({ error: createError.errors?.[0]?.message || 'Failed to create new bucket' }), { status: createResponse.status, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+          const createError = await createResponse.json() as CloudflareApiResponse;
+          return new Response(JSON.stringify({ error: createError.errors?.[0]?.message ?? 'Failed to create new bucket' }), { status: createResponse.status, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
         }
         console.log('[Buckets] New bucket created, copying objects...');
         let cursor: string | undefined;
@@ -302,12 +305,12 @@ export async function handleBucketRoutes(
         let hasMoreObjects = true;
         while (hasMoreObjects) {
           const listUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + oldBucketName + '/objects');
-          if (cursor) listUrl.searchParams.set('cursor', cursor);
+          if (cursor !== undefined) listUrl.searchParams.set('cursor', cursor);
           listUrl.searchParams.set('per_page', '100');
           const listResponse = await fetch(listUrl.toString(), { headers: cfHeaders });
-          if (!listResponse.ok) throw new Error('Failed to list objects: ' + listResponse.status);
-          const listData = await listResponse.json();
-          const objects = Array.isArray(listData.result) ? listData.result : [];
+          if (!listResponse.ok) throw new Error('Failed to list objects: ' + String(listResponse.status));
+          const listData = await listResponse.json() as CloudflareApiResponse<R2ObjectInfo[]>;
+          const objects: R2ObjectInfo[] = Array.isArray(listData.result) ? listData.result : [];
           console.log('[Buckets] Copying', objects.length, 'objects');
           if (objects.length === 0) hasMoreObjects = false;
           for (const obj of objects) {
@@ -321,8 +324,8 @@ export async function handleBucketRoutes(
               totalFailed++;
             }
           }
-          cursor = listData.cursor;
-          if (objects.length > 0 && cursor) await new Promise(resolve => setTimeout(resolve, 500));
+          cursor = listData.result_info?.cursor as string | undefined;
+          if (objects.length > 0 && cursor !== undefined) await new Promise(resolve => setTimeout(resolve, 500));
           else hasMoreObjects = false;
         }
         console.log('[Buckets] Copied', totalCopied, 'objects, failed:', totalFailed);
@@ -331,14 +334,14 @@ export async function handleBucketRoutes(
         let deleteHasMore = true;
         while (deleteHasMore) {
           const listUrl = new URL(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + oldBucketName + '/objects');
-          if (deleteCursor) listUrl.searchParams.set('cursor', deleteCursor);
+          if (deleteCursor !== undefined) listUrl.searchParams.set('cursor', deleteCursor);
           listUrl.searchParams.set('per_page', '100');
           const listResponse = await fetch(listUrl.toString(), { headers: cfHeaders });
           if (!listResponse.ok) throw new Error('Failed to list objects for deletion');
-          const listData = await listResponse.json();
-          const objects = Array.isArray(listData.result) ? listData.result : [];
-          if (objects.length === 0) deleteHasMore = false;
-          for (const obj of objects) {
+          const listData2 = await listResponse.json() as CloudflareApiResponse<R2ObjectInfo[]>;
+          const deleteObjects: R2ObjectInfo[] = Array.isArray(listData2.result) ? listData2.result : [];
+          if (deleteObjects.length === 0) deleteHasMore = false;
+          for (const obj of deleteObjects) {
             try {
               const deleteUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + oldBucketName + '/objects/' + encodeURIComponent(obj.key);
               await fetch(deleteUrl, { method: 'DELETE', headers: cfHeaders });
@@ -346,8 +349,8 @@ export async function handleBucketRoutes(
               // Silently continue on delete failure
             }
           }
-          deleteCursor = listData.cursor;
-          if (objects.length > 0 && deleteCursor) await new Promise(resolve => setTimeout(resolve, 300));
+          deleteCursor = listData2.result_info?.cursor as string | undefined;
+          if (deleteObjects.length > 0 && deleteCursor !== undefined) await new Promise(resolve => setTimeout(resolve, 300));
           else deleteHasMore = false;
         }
         const deleteResponse = await fetch(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + oldBucketName, { method: 'DELETE', headers: cfHeaders });
@@ -372,4 +375,3 @@ export async function handleBucketRoutes(
 
   return new Response('Not Found', { status: 404, headers: corsHeaders });
 }
-

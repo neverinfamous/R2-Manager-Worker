@@ -1,6 +1,8 @@
-export function getCorsHeaders(request: Request): HeadersInit {
+export type CorsHeaders = Record<string, string>;
+
+export function getCorsHeaders(request: Request): CorsHeaders {
   const url = new URL(request.url);
-  const origin = request.headers.get('Origin') || '';
+  const origin = request.headers.get('Origin') ?? '';
   
   // Detect localhost for development
   const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
@@ -9,25 +11,25 @@ export function getCorsHeaders(request: Request): HeadersInit {
   // For production with Cloudflare Access, we need to:
   // 1. Use the specific origin (not wildcard) to support credentials
   // 2. Allow credentials so cookies (CF_Authorization) can be sent
-  const allowCredentials = true; // Always allow credentials for Cloudflare Access to work
   
   return {
-    'Access-Control-Allow-Origin': (isLocalhost || isLocalhostOrigin) ? origin : (origin || url.origin),
+    'Access-Control-Allow-Origin': (isLocalhost || isLocalhostOrigin) ? origin : (origin !== '' ? origin : url.origin),
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS, PATCH',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Name, X-Chunk-Index, X-Total-Chunks, cf-access-jwt-assertion',
-    'Access-Control-Allow-Credentials': allowCredentials ? 'true' : 'false',
+    'Access-Control-Allow-Credentials': 'true',
     'Vary': 'Origin' // Important for caching with different origins
   };
 }
 
-export function handleCorsPreflightRequest(corsHeaders: HeadersInit): Response {
+export function handleCorsPreflightRequest(corsHeaders: CorsHeaders): Response {
+   
   console.log('[CORS] Handling preflight request');
   return new Response(null, { headers: corsHeaders });
 }
 
 export function isLocalDevelopment(request: Request): boolean {
   const url = new URL(request.url);
-  const origin = request.headers.get('Origin') || '';
+  const origin = request.headers.get('Origin') ?? '';
   const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
   const isLocalhostOrigin = origin.includes('localhost') || origin.includes('127.0.0.1');
   

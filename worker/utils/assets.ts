@@ -23,7 +23,7 @@ export async function handleStaticAsset(request: Request, env: Env, corsHeaders:
   
   // Serve other static assets (only in production with ASSETS binding)
   if (url.pathname.startsWith('/manifest.json') || url.pathname.startsWith('/favicon.ico')) {
-    if (env.ASSETS) {
+    if (env.ASSETS !== undefined) {
       try {
         return await env.ASSETS.fetch(request);
       } catch (e) {
@@ -41,7 +41,7 @@ export async function handleStaticAsset(request: Request, env: Env, corsHeaders:
 export async function serveFrontendAssets(request: Request, env: Env, isLocalhost: boolean): Promise<Response> {
   // Serve frontend assets (only in production)
   // In development, frontend is served by Vite on port 5173
-  if (env.ASSETS) {
+  if (env.ASSETS !== undefined) {
     try {
       console.log('[Assets] Serving frontend asset');
       return await env.ASSETS.fetch(request);

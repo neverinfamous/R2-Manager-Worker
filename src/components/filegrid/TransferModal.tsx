@@ -1,3 +1,5 @@
+import { type JSX } from 'react'
+
 interface TransferModalProps {
   show: boolean
   mode: 'move' | 'copy'
@@ -30,7 +32,7 @@ export const TransferModal = ({
   onTargetBucketChange,
   onTargetPathChange,
   onSubmit
-}: TransferModalProps) => {
+}: TransferModalProps): JSX.Element | null => {
   if (!show) return null
 
   return (

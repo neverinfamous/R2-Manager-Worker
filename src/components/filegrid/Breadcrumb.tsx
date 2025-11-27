@@ -1,3 +1,5 @@
+import { type JSX } from 'react'
+
 interface BreadcrumbItem {
   name: string
   path: string
@@ -8,7 +10,7 @@ interface BreadcrumbProps {
   onNavigate: (path: string) => void
 }
 
-export const Breadcrumb = ({ currentPath, onNavigate }: BreadcrumbProps) => {
+export const Breadcrumb = ({ currentPath, onNavigate }: BreadcrumbProps): JSX.Element | null => {
   const getBreadcrumbs = (): BreadcrumbItem[] => {
     if (!currentPath) return []
     const parts = currentPath.split('/').filter(Boolean)

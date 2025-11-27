@@ -1,3 +1,5 @@
+import { type JSX } from 'react'
+
 interface CreateFolderModalProps {
   show: boolean
   bucketName: string
@@ -18,7 +20,7 @@ export const CreateFolderModal = ({
   onClose,
   onFolderNameChange,
   onSubmit
-}: CreateFolderModalProps) => {
+}: CreateFolderModalProps): JSX.Element | null => {
   if (!show) return null
 
   return (

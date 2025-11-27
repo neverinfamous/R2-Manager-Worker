@@ -1,4 +1,4 @@
-import { RefObject } from 'react'
+import { type RefObject, type JSX } from 'react'
 
 interface TransferDropdownProps {
   isOpen: boolean
@@ -16,7 +16,7 @@ export const TransferDropdown = ({
   onToggle,
   onCopy,
   onMove
-}: TransferDropdownProps) => {
+}: TransferDropdownProps): JSX.Element => {
   return (
     <div className={`transfer-dropdown-container ${isOpen ? 'open' : ''}`}>
       <button 

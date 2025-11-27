@@ -1,11 +1,12 @@
+import { type JSX } from 'react'
 import { Sun, Moon, Monitor } from 'lucide-react'
 import { useTheme } from '../hooks/useTheme'
 import '../styles/ThemeToggle.css'
 
-export function ThemeToggle() {
+export function ThemeToggle(): JSX.Element {
   const { theme, setTheme } = useTheme()
 
-  const cycleTheme = () => {
+  const cycleTheme = (): void => {
     // Cycle through: system → light → dark → system
     if (theme === 'system') {
       setTheme('light')
@@ -16,7 +17,7 @@ export function ThemeToggle() {
     }
   }
 
-  const getIcon = () => {
+  const getIcon = (): JSX.Element => {
     switch (theme) {
       case 'light':
         return <Sun className="theme-icon" />
@@ -27,7 +28,7 @@ export function ThemeToggle() {
     }
   }
 
-  const getLabel = () => {
+  const getLabel = (): string => {
     switch (theme) {
       case 'light':
         return 'Light'

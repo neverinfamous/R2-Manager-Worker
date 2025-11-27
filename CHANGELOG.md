@@ -1,6 +1,6 @@
 # Changelog
 
-*Last Updated November 6, 2025*
+*Last Updated November 27, 2025*
 
 All notable changes to R2 Bucket Manager will be documented in this file.
 
@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Strict TypeScript & ESLint Compliance** - Achieved full strict type safety across the codebase
+  - Fixed 280+ ESLint errors and 55 type safety warnings
+  - Enabled `strictTypeChecked` and `stylisticTypeChecked` ESLint rule sets
+  - All `no-unsafe-*` rules now enforced as errors (not warnings)
+  - Added explicit return types to all functions
+  - Added proper type assertions for all API responses (no `any` types)
+  - Fixed all floating promises with `void` operator
+  - Replaced all `||` with `??` for nullish coalescing where appropriate
+  - Fixed all strict boolean expression violations
+  - Created typed interfaces for all API request/response bodies
+  - TypeScript compiles cleanly with `noEmit` flag
+  - Only intentional `console.log` statements remain as warnings
+  - Codebase now meets strict enterprise-grade type safety standards
 - **Upload Integrity Verification** - MD5 checksum verification for all file uploads
   - Client-side MD5 calculation using spark-md5 library
   - Server-side ETag capture from R2 responses

@@ -1,5 +1,10 @@
-import type { Env } from '../types';
+import type { Env, CloudflareApiResponse } from '../types';
 import { CF_API } from '../types';
+
+interface R2ObjectWithSize {
+  key: string;
+  size: number;
+}
 
 export async function getBucketSize(bucketName: string, env: Env): Promise<number> {
   const cfHeaders = {
@@ -14,7 +19,7 @@ export async function getBucketSize(bucketName: string, env: Env): Promise<numbe
   while (hasMore) {
     let apiUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects?limit=100';
     
-    if (cursor) {
+    if (cursor !== undefined) {
       apiUrl += '&cursor=' + cursor;
     }
 
@@ -26,15 +31,15 @@ export async function getBucketSize(bucketName: string, env: Env): Promise<numbe
         return 0;
       }
 
-      const data = await response.json();
-      const fileList = Array.isArray(data.result) ? data.result : (data.result?.objects || []);
+      const data = await response.json() as CloudflareApiResponse<R2ObjectWithSize[]>;
+      const fileList: R2ObjectWithSize[] = Array.isArray(data.result) ? data.result : [];
       
       for (const obj of fileList) {
-        totalSize += obj.size || 0;
+        totalSize += obj.size;
       }
 
-      cursor = data.result_info?.cursor;
-      hasMore = data.result_info?.is_truncated || false;
+      cursor = data.result_info?.cursor as string | undefined;
+      hasMore = data.result_info?.is_truncated ?? false;
 
       // Add small delay to avoid rate limiting
       if (hasMore) {
@@ -48,4 +53,3 @@ export async function getBucketSize(bucketName: string, env: Env): Promise<numbe
 
   return totalSize;
 }
-

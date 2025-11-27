@@ -70,7 +70,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
 
         return new Response(response.body, {
           headers: {
-            'Content-Type': response.headers.get('Content-Type') || 'application/octet-stream',
+            'Content-Type': response.headers.get('Content-Type') ?? 'application/octet-stream',
             'Content-Disposition': 'attachment; filename="' + fileName + '"',
             'Cache-Control': 'no-store, max-age=0, must-revalidate',
             'Pragma': 'no-cache',
@@ -124,7 +124,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   }
 
   // Check rate limits for API requests (skip for localhost and if rate limiters not configured)
-  if (!isLocalhost && url.pathname.startsWith('/api/') && env.RATE_LIMITER_READ) {
+  if (!isLocalhost && url.pathname.startsWith('/api/') && env.RATE_LIMITER_READ !== undefined) {
     try {
       const rateLimitResult = await checkRateLimit(env, request.method, url.pathname, userEmail);
       
@@ -170,7 +170,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
 }
 
 export default {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+   
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     try {
       return await handleApiRequest(request, env);

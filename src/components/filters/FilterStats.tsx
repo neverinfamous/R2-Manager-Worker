@@ -1,3 +1,4 @@
+import { type JSX } from 'react'
 import { formatFileSize, formatDateRange } from '../../utils/filterUtils'
 import type { FilterStats as FilterStatsType } from '../../types/filters'
 
@@ -11,7 +12,7 @@ export function FilterStats({
   filteredCount,
   totalCount,
   stats
-}: FilterStatsProps) {
+}: FilterStatsProps): JSX.Element | null {
   if (filteredCount === totalCount) return null
 
   return (

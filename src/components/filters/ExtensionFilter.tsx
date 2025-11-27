@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef } from 'react'
-import { EXTENSION_GROUPS } from '../../utils/filterUtils'
+import { useCallback, useEffect, useRef, type JSX } from 'react'
+import { type EXTENSION_GROUPS } from '../../utils/filterUtils'
 
 interface ExtensionFilterProps {
   selectedExtensions: string[]
@@ -19,15 +19,15 @@ export function ExtensionFilter({
   onExtensionToggle,
   onGroupSelect,
   onClear
-}: ExtensionFilterProps) {
+}: ExtensionFilterProps): JSX.Element {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent): void => {
       if (isOpen && 
-          dropdownRef.current && 
-          buttonRef.current &&
+          dropdownRef.current !== null && 
+          buttonRef.current !== null &&
           !dropdownRef.current.contains(event.target as Node) &&
           !buttonRef.current.contains(event.target as Node)) {
         onToggle()
@@ -36,8 +36,9 @@ export function ExtensionFilter({
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      return (): void => { document.removeEventListener('mousedown', handleClickOutside) }
     }
+    return undefined
   }, [isOpen, onToggle])
 
   const sortedExtensions = Array.from(availableExtensions.entries())

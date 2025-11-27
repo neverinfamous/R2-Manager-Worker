@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useEffect, useState, ReactNode, useMemo } from 'react'
+import { createContext, useEffect, useState, type ReactNode, useMemo } from 'react'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 export type ResolvedTheme = 'light' | 'dark'
@@ -42,7 +42,7 @@ interface ThemeProviderProps {
   children: ReactNode
 }
 
-export function ThemeProvider({ children }: ThemeProviderProps) {
+export function ThemeProvider({ children }: ThemeProviderProps): JSX.Element {
   const [theme, setThemeState] = useState<ThemeMode>(getStoredTheme)
   
   // Compute resolved theme based on current theme
@@ -67,29 +67,23 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   // Listen for system theme changes when in 'system' mode
   useEffect(() => {
-    if (theme !== 'system') return
+    if (theme !== 'system') {
+      return undefined
+    }
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     
-    const handleChange = () => {
+    const handleChange = (): void => {
       // Trigger a re-render by updating the theme state
       // This will cause resolvedTheme to recalculate
       setThemeState('system')
     }
 
-    // Modern browsers
-    if (mediaQuery.addEventListener) {
-      mediaQuery.addEventListener('change', handleChange)
-      return () => mediaQuery.removeEventListener('change', handleChange)
-    }
-    // Fallback for older browsers
-    else if (mediaQuery.addListener) {
-      mediaQuery.addListener(handleChange)
-      return () => mediaQuery.removeListener(handleChange)
-    }
+    mediaQuery.addEventListener('change', handleChange)
+    return (): void => { mediaQuery.removeEventListener('change', handleChange) }
   }, [theme])
 
-  const setTheme = (newTheme: ThemeMode) => {
+  const setTheme = (newTheme: ThemeMode): void => {
     setThemeState(newTheme)
     localStorage.setItem(STORAGE_KEY, newTheme)
   }

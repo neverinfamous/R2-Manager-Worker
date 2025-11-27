@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type JSX } from 'react'
 import { formatDateRange } from '../../utils/filterUtils'
 import type { DateFilter as DateFilterType } from '../../types/filters'
 
@@ -18,17 +18,17 @@ export function DateFilter({
   onPresetChange,
   onCustomRange,
   onClear
-}: DateFilterProps) {
+}: DateFilterProps): JSX.Element {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const [customStart, setCustomStart] = useState<string>('')
   const [customEnd, setCustomEnd] = useState<string>('')
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent): void => {
       if (isOpen && 
-          dropdownRef.current && 
-          buttonRef.current &&
+          dropdownRef.current !== null && 
+          buttonRef.current !== null &&
           !dropdownRef.current.contains(event.target as Node) &&
           !buttonRef.current.contains(event.target as Node)) {
         onToggle()
@@ -37,8 +37,9 @@ export function DateFilter({
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      return (): void => { document.removeEventListener('mousedown', handleClickOutside) }
     }
+    return undefined
   }, [isOpen, onToggle])
 
   const handlePresetClick = useCallback((preset: DateFilterType['preset']) => {

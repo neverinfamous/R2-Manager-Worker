@@ -86,19 +86,32 @@ export function useSearch(): UseSearchReturn {
     setError(null)
 
     try {
-      const response = await api.searchAcrossBuckets({
-        query: filters.query || undefined,
-        extensions: filters.extensions.length > 0 ? filters.extensions : undefined,
+      const searchParams: {
+        query?: string
+        extensions?: string[]
+        minSize?: number | null
+        maxSize?: number | null
+        startDate?: Date | null
+        endDate?: Date | null
+        limit?: number
+      } = {
         minSize: filters.minSize,
         maxSize: filters.maxSize,
         startDate: filters.startDate,
         endDate: filters.endDate,
         limit: 100
-      })
+      }
+      if (filters.query !== '') {
+        searchParams.query = filters.query
+      }
+      if (filters.extensions.length > 0) {
+        searchParams.extensions = filters.extensions
+      }
+      const response = await api.searchAcrossBuckets(searchParams) as { results?: SearchResult[]; pagination?: { total?: number; hasMore?: boolean } }
 
-      setResults(response.results || [])
-      setTotal(response.pagination?.total || 0)
-      setHasMore(response.pagination?.hasMore || false)
+      setResults(response.results ?? [])
+      setTotal(response.pagination?.total ?? 0)
+      setHasMore(response.pagination?.hasMore ?? false)
     } catch (err) {
       console.error('Search error:', err)
       setError(err instanceof Error ? err.message : 'Search failed')
@@ -193,7 +206,7 @@ export function useSearch(): UseSearchReturn {
     if (hasFilters) {
       // Set new timer for debounced search
       debounceTimer.current = window.setTimeout(() => {
-        executeSearch()
+        void executeSearch()
       }, 300)
     } else {
       // Clear results if no filters

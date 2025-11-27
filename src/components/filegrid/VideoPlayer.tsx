@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect, useRef } from 'react'
+import { useCallback, useState, useEffect, useRef, type JSX } from 'react'
 
 interface VideoPlayerProps {
   src: string
@@ -6,16 +6,16 @@ interface VideoPlayerProps {
   onClick?: (e: React.MouseEvent) => void
 }
 
-export const VideoPlayer = ({ src, className, onClick }: VideoPlayerProps) => {
+export const VideoPlayer = ({ src, className, onClick }: VideoPlayerProps): JSX.Element => {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isPlaying, setIsPlaying] = useState(false)
 
-  const togglePlay = useCallback((e: React.MouseEvent) => {
+  const togglePlay = useCallback((e: React.MouseEvent): void => {
     e.stopPropagation()
     if (!videoRef.current) return
 
     if (videoRef.current.paused) {
-      videoRef.current.play()
+      void videoRef.current.play()
     } else {
       videoRef.current.pause()
     }
@@ -25,8 +25,8 @@ export const VideoPlayer = ({ src, className, onClick }: VideoPlayerProps) => {
     const video = videoRef.current
     if (!video) return
 
-    const handlePlay = () => setIsPlaying(true)
-    const handlePause = () => setIsPlaying(false)
+    const handlePlay = (): void => { setIsPlaying(true) }
+    const handlePause = (): void => { setIsPlaying(false) }
 
     video.addEventListener('play', handlePlay)
     video.addEventListener('pause', handlePause)

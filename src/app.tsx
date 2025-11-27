@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useMemo } from 'react'
+import { useCallback, useEffect, useState, type JSX } from 'react'
 import { useDropzone } from 'react-dropzone'
 import './app.css'
 import { FileGrid } from './filegrid'
@@ -7,6 +7,19 @@ import { auth } from './services/auth'
 import { ThemeToggle } from './components/ThemeToggle'
 import { CrossBucketSearch } from './components/search/CrossBucketSearch'
 import type { FileRejection, FileWithPath } from 'react-dropzone'
+
+// API response types
+interface DeleteBucketResponse {
+  success?: boolean
+  error?: string
+  errors?: { message: string }[]
+}
+
+interface BucketListItem {
+  name: string
+  creation_date: string
+  size?: number
+}
 
 const formatFileSize = (bytes: number): string => {
   const units = ['B', 'KB', 'MB', 'GB']
@@ -31,11 +44,11 @@ interface UploadProgress {
   fileName: string
   progress: number
   status: 'uploading' | 'retrying' | 'verifying' | 'verified' | 'completed' | 'error'
-  error?: string
-  currentChunk?: number
-  totalChunks?: number
-  retryAttempt?: number
-  verificationStatus?: 'verifying' | 'verified' | 'failed'
+  error?: string | undefined
+  currentChunk?: number | undefined
+  totalChunks?: number | undefined
+  retryAttempt?: number | undefined
+  verificationStatus?: 'verifying' | 'verified' | 'failed' | undefined
 }
 
 interface RejectedFile {
@@ -43,7 +56,7 @@ interface RejectedFile {
   error: string
 }
 
-export default function BucketManager() {
+export default function BucketManager(): JSX.Element {
   const [buckets, setBuckets] = useState<BucketObject[]>([])
   const [selectedBucket, setSelectedBucket] = useState<string | null>(null)
   const [newBucketName, setNewBucketName] = useState('')
@@ -87,9 +100,6 @@ export default function BucketManager() {
   // Don't use react-dropzone's built-in accept filter since it's too strict
   // Many file types (especially code files) don't have reliable MIME types
   // Instead, we use a custom validator that checks both MIME type and extension
-  const acceptedFileTypes = useMemo(() => {
-    return undefined // Accept all files, validate in custom validator
-  }, [])
 
   const handleNavigateHome = useCallback(() => {
     // Just clear selected bucket to return to bucket list (fast React state update)
@@ -109,17 +119,17 @@ export default function BucketManager() {
     setBuckets([])
   }, [])
 
-  const loadBuckets = useCallback(async () => {
+  const loadBuckets = useCallback(async (): Promise<void> => {
     try {
       setError('')
-      const bucketList = await api.listBuckets()
-      setBuckets(bucketList || [])
+      const bucketList: BucketListItem[] = await api.listBuckets()
+      setBuckets(bucketList.map(b => ({ name: b.name, created: b.creation_date, size: b.size })))
     } catch (err) {
       console.error('Error loading buckets:', err)
       setError('Failed to load buckets')
       setBuckets([])
       if ((err as Error).message.includes('401')) {
-        handleLogout()
+        void handleLogout()
       }
     }
   }, [handleLogout])
@@ -243,7 +253,7 @@ export default function BucketManager() {
             )
             
             if ((err as Error).message.includes('401')) {
-              handleLogout()
+              void handleLogout()
               return
             }
           }
@@ -259,13 +269,14 @@ export default function BucketManager() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: acceptedFileTypes,
+    // Do not pass accept at all since acceptedFileTypes is undefined
+    // This lets all files through, and we validate with our custom validator
     validator: (file) => {
       const validation = api.validateFile(file)
       if (!validation.valid) {
         return {
           code: "file-invalid-type",
-          message: validation.error || 'Invalid file'
+          message: validation.error ?? 'Invalid file'
         }
       }
       return null
@@ -273,10 +284,10 @@ export default function BucketManager() {
   })
 
   useEffect(() => {
-    loadBuckets()
+    void loadBuckets()
   }, [loadBuckets])
 
-  const createBucket = async () => {
+  const createBucket = async (): Promise<void> => {
     if (!newBucketName.trim()) return
     
     setIsCreatingBucket(true)
@@ -289,29 +300,29 @@ export default function BucketManager() {
     } catch (err) {
       setError('Failed to create bucket')
       if ((err as Error).message.includes('401')) {
-        handleLogout()
+        void handleLogout()
       }
     } finally {
       setIsCreatingBucket(false)
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
     if (!isCreatingBucket) {
       await createBucket()
     }
   }
 
-  const deleteBucket = async (name: string) => {
+  const deleteBucket = async (name: string): Promise<void> => {
     setError('')
     try {
-      const response = await api.deleteBucket(name)
+      const response: DeleteBucketResponse = await api.deleteBucket(name)
       console.log('[DeleteBucket] Response:', response)
       
       // Check if deletion failed because bucket isn't empty
       // Cloudflare returns 409 Conflict (success: false, errors array) for non-empty buckets
-      if (response.success === false && response.errors?.length > 0) {
+      if (response.success === false && (response.errors?.length ?? 0) > 0) {
         // Bucket isn't empty - show confirmation dialog
         try {
           const files = await api.listFiles(name, undefined, 1000)
@@ -338,7 +349,7 @@ export default function BucketManager() {
         return
       }
       
-      if (!response.success) {
+      if (response.success !== true) {
         setError('Failed to delete bucket.')
         return
       }
@@ -351,12 +362,12 @@ export default function BucketManager() {
       setError('Failed to delete bucket.')
       console.error('[DeleteBucket] Error:', err)
       if ((err as Error).message.includes('401')) {
-        handleLogout()
+        void handleLogout()
       }
     }
   }
 
-  const handleBulkDelete = async () => {
+  const handleBulkDelete = async (): Promise<void> => {
     if (selectedBuckets.length === 0) return
     
     setIsBulkDeleting(true)
@@ -365,7 +376,7 @@ export default function BucketManager() {
     try {
       // Get file counts for all selected buckets
       let totalFiles = 0
-      const fileCounts: { [key: string]: number } = {}
+      const fileCounts: Record<string, number> = {}
       
       for (const bucketName of selectedBuckets) {
         try {
@@ -392,7 +403,7 @@ export default function BucketManager() {
     }
   }
 
-  const handleBulkDownload = async () => {
+  const handleBulkDownload = async (): Promise<void> => {
     if (selectedBuckets.length === 0) return
     
     setError('')
@@ -425,7 +436,7 @@ export default function BucketManager() {
     }
   }
 
-  const confirmForceBucketDelete = async () => {
+  const confirmForceBucketDelete = async (): Promise<void> => {
     if (!deleteConfirmState?.bucketNames || deleteConfirmState.bucketNames.length === 0) return
 
     const bucketNames = deleteConfirmState.bucketNames
@@ -437,15 +448,16 @@ export default function BucketManager() {
       
       for (let i = 0; i < bucketNames.length; i++) {
         const bucketName = bucketNames[i]
+        if (bucketName === undefined) continue
         
         // Update progress
-        setDeleteConfirmState(prev => prev ? {
+        setDeleteConfirmState(prev => prev !== null ? {
           ...prev,
           currentProgress: { current: i + 1, total: bucketNames.length }
         } : null)
         
         try {
-          const response = await api.deleteBucket(bucketName, { force: true })
+          const response = await api.deleteBucket(bucketName, { force: true }) as { success?: boolean; error?: string }
 
           if (!response.success) {
             errors.push(`${bucketName}: ${response.error || 'Failed to delete'}`)
@@ -481,7 +493,7 @@ export default function BucketManager() {
     }
   }
   
-  const toggleBucketSelection = (bucketName: string) => {
+  const toggleBucketSelection = (bucketName: string): void => {
     setSelectedBuckets(prev => {
       if (prev.includes(bucketName)) {
         return prev.filter(name => name !== bucketName)
@@ -491,23 +503,23 @@ export default function BucketManager() {
     })
   }
   
-  const clearBucketSelection = () => {
+  const clearBucketSelection = (): void => {
     setSelectedBuckets([])
   }
 
-  const startEditingBucket = (bucketName: string) => {
+  const startEditingBucket = (bucketName: string): void => {
     setEditingBucketName(bucketName)
     setEditInputValue(bucketName)
     setEditError('')
   }
 
-  const cancelEditingBucket = () => {
+  const cancelEditingBucket = (): void => {
     setEditingBucketName(null)
     setEditInputValue('')
     setEditError('')
   }
 
-  const saveBucketRename = async () => {
+  const saveBucketRename = async (): Promise<void> => {
     if (!editingBucketName) return
     const newName = editInputValue.trim()
     setEditError('')
@@ -662,7 +674,7 @@ export default function BucketManager() {
                       placeholder="New bucket name"
                       autoFocus
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') saveBucketRename()
+                        if (e.key === 'Enter') void saveBucketRename()
                         if (e.key === 'Escape') cancelEditingBucket()
                       }}
                     />
@@ -725,7 +737,7 @@ export default function BucketManager() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
-                          deleteBucket(bucket.name)
+                          void deleteBucket(bucket.name)
                         }}
                         className="bucket-delete"
                       >
@@ -760,7 +772,7 @@ export default function BucketManager() {
             {deleteConfirmState.bucketNames.length === 1 ? (
               <p>
                 Bucket <strong>{deleteConfirmState.bucketNames[0]}</strong> contains{' '}
-                <strong>{deleteConfirmState.totalFiles !== null ? deleteConfirmState.totalFiles : 'multiple'}</strong> file(s).
+                <strong>{deleteConfirmState.totalFiles ?? 'multiple'}</strong> file(s).
               </p>
             ) : (
               <>

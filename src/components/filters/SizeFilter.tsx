@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, type JSX } from 'react'
 import { SIZE_PRESETS, formatFileSize } from '../../utils/filterUtils'
 import type { SizeFilter as SizeFilterType } from '../../types/filters'
 
@@ -18,17 +18,17 @@ export function SizeFilter({
   onPresetChange,
   onCustomRange,
   onClear
-}: SizeFilterProps) {
+}: SizeFilterProps): JSX.Element {
   const dropdownRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const [customMin, setCustomMin] = useState<string>('')
   const [customMax, setCustomMax] = useState<string>('')
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent): void => {
       if (isOpen && 
-          dropdownRef.current && 
-          buttonRef.current &&
+          dropdownRef.current !== null && 
+          buttonRef.current !== null &&
           !dropdownRef.current.contains(event.target as Node) &&
           !buttonRef.current.contains(event.target as Node)) {
         onToggle()
@@ -37,8 +37,9 @@ export function SizeFilter({
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
+      return (): void => { document.removeEventListener('mousedown', handleClickOutside) }
     }
+    return undefined
   }, [isOpen, onToggle])
 
   const handlePresetClick = useCallback((preset: SizeFilterType['preset']) => {
