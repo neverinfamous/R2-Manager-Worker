@@ -19,20 +19,6 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
 
 ---
 
-## 📖 Documentation
-
-**Complete documentation is available in the [GitHub Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki):**
-
-- **[Installation & Setup Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Installation-&-Setup)** - Step-by-step deployment instructions
-- **[API Reference](https://github.com/neverinfamous/R2-Manager-Worker/wiki/API-Reference)** - Complete endpoint documentation
-- **[Configuration Reference](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Configuration-Reference)** - Environment variables and settings
-- **[Development Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Development-Guide)** - Local development and contributing
-- **[Authentication & Security](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Authentication-&-Security)** - Zero Trust implementation details
-- **[Troubleshooting](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Troubleshooting)** - Common issues and solutions
-- **[FAQ](https://github.com/neverinfamous/R2-Manager-Worker/wiki/FAQ)** - Frequently asked questions
-
----
-
 ## 🎯 Why It Exists
 
 Cloudflare's dashboard lacks the full-featured R2 file management capabilities. This tool provides a self-hosted alternative for developers and enterprises wanting:
@@ -174,260 +160,49 @@ Access the development server at `http://localhost:8787`
 
 ---
 
-## 🌓 Theme Customization
+## 📦 Bulk Operations
 
-R2 Bucket Manager supports both light and dark themes with automatic system preference detection:
+### Multi-Bucket Download
+Download multiple buckets simultaneously as a single, timestamped ZIP archive.
+* **Zero Dependencies:** Generates archives on the fly without size limits.
+* **Smart Structure:** Maintains full folder hierarchy (`/bucket-name/folder/file.ext`).
+* **Bulk Actions:** dedicated toolbar for "Select All" and batch processing.
 
-### Theme Modes
-- **System** (default) - Automatically follows your OS/browser theme preference
-- **Light** - Force light mode regardless of system settings
-- **Dark** - Force dark mode regardless of system settings
-
-### How to Use
-1. Click the theme toggle button in the header (next to the Logout button)
-2. Cycle through: System → Light → Dark → System
-3. Your preference is saved automatically and persists across sessions
-4. In System mode, the theme updates automatically when you change your OS theme
-
-### Technical Details
-- Theme preference stored in `localStorage`
-- Smooth CSS transitions between themes
-- All colors managed via CSS custom properties
-- Mobile-friendly with responsive design
-- WCAG compliant color contrast ratios
+### Bulk Bucket Deletion
+Select and force-delete multiple buckets in one operation.
+* **Safety First:** Enhanced confirmation modal calculates total files and size before deletion.
+* **Force Delete:** Automatically recursively empties buckets before removing them.
+* **Progress Tracking:** Visual feedback for long-running deletion tasks.
 
 ---
 
-## 📦 Multi-Bucket Download
+## 🔎 Search & Filtering
 
-R2 Bucket Manager allows you to download multiple buckets at once as a single ZIP archive, making it easy to back up or migrate multiple buckets in one operation.
+### Cross-Bucket Search
+Real-time, server-side parallel search across **all** your buckets instantly.
+* **Performance:** Queries thousands of files in seconds with minimal overhead.
+* **Direct Actions:** Move, copy, download, or delete files directly from search results.
+* **Deep Linking:** Click bucket badges to navigate directly to the source.
 
-### How to Use
-
-1. **Select All** - Click the green "Select All" button to quickly select all buckets, or manually select buckets using checkboxes
-2. **Review Selection** - The bulk action toolbar appears showing how many buckets are selected
-3. **Download Selected** - Click the blue "Download Selected" button
-4. **Track Progress** - Watch the progress indicator (Preparing → Downloading → Complete)
-5. **Save ZIP** - Browser downloads a single ZIP file containing all selected buckets
-
-### Features
-
-- **Select All Button** - Green button on the left side of toolbar for quick selection of all buckets
-- **Bulk Action Toolbar** - Shows selection count with "Select All", "Clear Selection", "Download Selected", and "Delete Selected" buttons
-- **Single ZIP Archive** - All buckets downloaded as one file with each bucket as a top-level folder
-- **Progress Tracking** - Visual feedback during preparation and download phases
-- **Timestamped Filenames** - ZIP files named `buckets-YYYY-MM-DDTHH-MM-SS.zip` for easy organization
-- **Automatic Cleanup** - Selected buckets automatically deselected after successful download
-- **No Size Limits** - Downloads all files from all selected buckets (no cumulative size restrictions)
-- **Nested Structure** - Files maintain their folder hierarchy within each bucket folder
-
-### Use Cases
-
-- Back up multiple buckets for disaster recovery
-- Migrate entire projects containing multiple buckets
-- Create snapshots of development/staging environments
-- Archive completed project buckets
-- Transfer buckets between Cloudflare accounts
-
-### Example ZIP Structure
-
-```
-buckets-2025-10-30T14-30-00.zip
-├── bucket-one/
-│   ├── file1.jpg
-│   ├── folder/
-│   │   └── file2.txt
-│   └── file3.pdf
-├── bucket-two/
-│   ├── index.html
-│   └── assets/
-│       └── style.css
-└── bucket-three/
-    └── data.json
-```
-
----
-
-## 🗑️ Bulk Bucket Deletion
-
-R2 Bucket Manager supports selecting and force deleting multiple buckets at once, making it easy to clean up test buckets or remove multiple buckets in a single operation.
-
-### How to Use
-
-1. **Select Buckets** - Click the checkbox in the top-left corner of each bucket card you want to delete
-2. **Review Selection** - The bulk action toolbar appears showing how many buckets are selected
-3. **Delete Selected** - Click the red "Delete Selected" button
-4. **Confirm** - Review the confirmation modal showing all buckets to be deleted and total file counts
-5. **Track Progress** - Watch the progress bar as buckets are deleted sequentially
-
-### Features
-
-- **Visual Selection** - Selected buckets are highlighted with a blue border and background
-- **Bulk Action Toolbar** - Shows selection count with "Clear Selection" and "Delete Selected" buttons
-- **Enhanced Confirmation Modal**:
-  - Lists all buckets to be deleted
-  - Shows total file count across all selected buckets
-  - Displays progress during deletion ("Deleting bucket X of Y...")
-  - Visual progress bar for real-time feedback
-- **Force Delete** - Automatically deletes all files within each bucket before removing the bucket
-- **Error Handling** - If one bucket fails to delete, the operation continues with remaining buckets
-- **Safety Features** - Clear warnings about permanent deletion that cannot be undone
-
-### Use Cases
-
-- Clean up multiple test or development buckets
-- Remove outdated project buckets in batch
-- Delete multiple empty buckets efficiently
-- Streamline bucket management workflow
-
-**Note:** Like individual bucket deletion, bulk delete uses force deletion which permanently removes all files within each bucket before deleting the bucket itself. This operation cannot be undone.
-
----
-
-## 🔎 Cross-Bucket Search
-
-R2 Bucket Manager now supports searching for files across all buckets from the main page, making it easy to find files regardless of which bucket they're stored in.
-
-### How to Use
-
-1. **Open Search** - Click "🔍 Search Across All Buckets" button on the main page
-2. **Enter Query** - Type filename to search (searches automatically after 300ms)
-3. **Apply Filters** - Use extension, size, and date filters to narrow results
-4. **View Results** - Results displayed in sortable table with bucket names
-5. **Take Action** - Download, move, copy, or delete files directly from results
-6. **Clear/Close** - Click "Clear All" to reset filters and collapse search panel
-
-### Search Features
-
-- **Real-time Search** - Debounced search activates automatically as you type
-- **Server-side Performance** - Searches all buckets in parallel for fast results
-- **Advanced Filters**:
-  - **Extensions** - Filter by file type (Images, Documents, Videos, Code, Archives, or custom)
-  - **Size** - Preset ranges (< 1 MB, 1-10 MB, etc.) or custom min/max
-  - **Date** - Preset ranges (Today, Last 7/30/90 Days, This Year) or custom range
-- **Sortable Table** - Click column headers to sort by filename, bucket, size, or date
-- **Bucket Navigation** - Click bucket badge to navigate directly to that bucket
-- **Full File Operations**:
-  - Download files with signed URLs
-  - Move files between buckets with folder selection
-  - Copy files between buckets with folder selection
-  - Delete files with confirmation
-
-### Search Interface
-
-- **Expandable Design** - Collapsed by default, doesn't clutter the main page
-- **Result Counter** - Shows number of matching files when collapsed
-- **Clear All Button** - One-click to reset all filters and close search
-- **Loading States** - Visual feedback during search operations
-- **Empty States** - Helpful messages when no results found
-- **Responsive Layout** - Works on mobile, tablet, and desktop
-
-### Use Cases
-
-- Find a file when you don't remember which bucket it's in
-- Locate all images of a certain type across multiple projects
-- Find large files (>100 MB) to identify storage usage
-- Search for files uploaded within a specific date range
-- Perform bulk operations on files from multiple buckets
-
-### Performance
-
-- Server-side parallel queries for optimal speed
-- Searches across thousands of files in seconds
-- Results limited to 100 files per search (configurable)
-- Minimal impact on bundle size (+0.1 kB gzipped)
-
----
-
-## 🔍 Filtering Files and Folders
-
-R2 Bucket Manager includes a comprehensive filtering system to help you quickly find files and folders in large buckets:
-
-### Basic Filtering
-1. Use the search bar to filter by filename/folder name
-2. Choose filter type from the dropdown: **All** / **Files Only** / **Folders Only**
-3. View the match counter showing filtered results (e.g., "23 of 156")
-4. Click the **✕** button to clear the filter
-
-### Advanced Filtering (NEW!)
-
-#### Extension Filter
-- **Quick Filters** - One-click filters for common file types:
-  - 📷 Images (.jpg, .png, .gif, .webp, etc.)
-  - 📄 Documents (.pdf, .doc, .xlsx, .txt, etc.)
-  - 🎬 Videos (.mp4, .mov, .webm)
-  - 💻 Code (.js, .py, .html, .css, etc.)
-  - 📦 Archives (.zip, .rar, .tar, .gz)
-- **Custom Selection** - Select specific extensions from available files
-- **Multi-select** - Combine multiple extensions in a single filter
-- **Extension Counts** - See how many files of each type you have
-
-#### Size Filter
-- **Preset Ranges**:
-  - < 1 MB
-  - 1 - 10 MB
-  - 10 - 50 MB
-  - 50 - 100 MB
-  - \> 100 MB
-- **Custom Range** - Set your own min/max size in MB
-- **Real-time Display** - See active size range in the filter button
-
-#### Date Filter
-- **Preset Ranges**:
-  - Today
-  - Last 7 Days
-  - Last 30 Days
-  - Last 90 Days
-  - This Year
-- **Custom Range** - Select specific start and end dates
-- **Upload Date Based** - Filters by when files were uploaded to R2
-
-### Filter Management
-- **Active Filter Badges** - See all active filters at a glance with removable badges
-- **Filter Statistics** - View total size and date range of filtered results
-- **Clear All Filters** - One-click button to reset all filters
-- **Persistent During Operations** - Filters remain active during file selection and operations
-
-### Features
-- **Real-time filtering** - Results update instantly as you apply filters
-- **Case-insensitive search** - Searches match regardless of case
-- **Filename-only matching** - Searches file/folder names, not full paths
-- **Combine Filters** - Use multiple filter types simultaneously for precise results
-- **Works with all views** - Filter in both grid and list views
-- **Preserved selections** - Your selected files remain selected during filtering
-- **Mobile Responsive** - Optimized for all screen sizes
-
-### Use Cases
-- Find all PDF documents uploaded in the last week
-- Locate large video files (>100MB)
-- Filter images by extension (.png only)
-- Narrow down files by size and date range before bulk operations
-- Quickly locate specific file types in buckets with thousands of items
+### Advanced Filtering
+Comprehensive client-side filtering for large buckets.
+* **Smart Filters:** Filter by **File Type** (Images, Code, Docs), **Size** (Presets or custom ranges), and **Date** (Upload time).
+* **Context Aware:** Toggle between "Files Only," "Folders Only," or "All."
+* **Persistent:** Active filters remain applied during batch operations and navigation.
 
 ---
 
 ## 🛡️ Rate Limiting
 
-R2 Bucket Manager implements intelligent rate limiting to protect API endpoints from abuse while ensuring fair resource access for all users.
+Intelligent, per-user rate limiting prevents abuse while ensuring fair resource access. Limits are applied based on the authenticated user's email.
 
-### Rate Limit Tiers
+| Tier | Operations | Limit | Period | Scope |
+| :--- | :--- | :--- | :--- | :--- |
+| **READ** | List, Search, Signed URLs | 100 req | 60s | High-volume access |
+| **WRITE** | Upload, Rename, Move | 30 req | 60s | Modification safety |
+| **DELETE** | Remove Files/Buckets | 10 req | 60s | Destructive actions |
 
-Rate limits are enforced per-user (identified by authenticated email) with three tiers based on operation type:
-
-| Tier | Operations | Limit | Period | Endpoints |
-|------|-----------|-------|--------|-----------|
-| **READ** | Get operations | 100 requests | 60 seconds | List buckets, list files, search, signed URL generation |
-| **WRITE** | Modify operations | 30 requests | 60 seconds | File uploads, renames, copies, moves, folder creation |
-| **DELETE** | Removal operations | 10 requests | 60 seconds | Delete buckets, delete files, delete folders |
-
-### Key Features
-
-- **Per-User Enforcement** - Each authenticated user has independent rate limits based on their email
-- **Tiered by Operation** - Different limits for read, write, and delete operations
-- **Automatic Blocking** - Requests exceeding limits receive a 429 (Too Many Requests) response
-- **Detailed Error Messages** - Rate limit responses include current limit, period, and retry-after time
-- **Violation Logging** - All rate limit violations are logged for monitoring and analysis
-- **Local Development Bypass** - Rate limiting is automatically disabled for localhost development
+**Note:** Rate limiting returns standard `429 Too Many Requests` headers and can be configured or disabled via `wrangler.toml`.
 
 ### Response Headers
 
@@ -593,8 +368,6 @@ The following operations return simulated success responses for UI testing:
 ### Planned Features
 - **Audit Logging** - Track all user actions with detailed logs
 - **AWS S3 Migration** - Add support for migrating AWS S3 to R2
-- **File Versioning** - Track and restore previous versions
-- **Role-Based Access Control (RBAC)** - Fine-grained permissions
 - **Custom Metadata** - User-defined tags and labels
 - **Offline Upload Queue** - Resumable uploads with service workers
 
