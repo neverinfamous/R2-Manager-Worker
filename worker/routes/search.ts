@@ -84,7 +84,7 @@ export async function handleSearchRoutes(
     const bucketsData = await bucketsResponse.json() as CloudflareApiResponse<BucketsListResult>;
     
     // Filter out system buckets
-    const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki', 'kv-manager-backups'];
+    const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki', 'kv-manager-backups', 'do-manager-backups'];
     const buckets = (bucketsData.result?.buckets ?? [])
       .filter((b: { name: string }) => !systemBuckets.includes(b.name))
       .map((b: { name: string }) => b.name);
