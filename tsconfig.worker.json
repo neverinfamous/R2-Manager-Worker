@@ -41,7 +41,8 @@
     /* Module Resolution */
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "verbatimModuleSyntax": true
   },
   "include": ["worker"]
 }

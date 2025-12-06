@@ -1,8 +1,8 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** November 27, 2025 | **Version:** 2.0.0
+**Last Updated:** December 6, 2025 | **Version:** 2.0.0
  
-**Tech Stack:** React 19.2.0 | Vite 7.2.4 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
+**Tech Stack:** React 19.2.1 | Vite 7.2.6 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
@@ -43,7 +43,7 @@
 - 🎨 **Modern UI** - Beautiful, responsive interface built with React 19
 - 🌓 **Light/Dark Mode** - Auto-detects system preference with manual toggle (System → Light → Dark)
 
-**\*Upload Size Limits:** This application supports uploads up to 500MB per file. However, **Cloudflare enforces plan-based limits**:
+**Upload Size Limits:** This application supports uploads up to 500MB per file. However, **Cloudflare enforces plan-based limits**:
 - **Free/Pro Plans:** 100MB maximum per file
 - **Business Plan:** 200MB maximum per file  
 - **Enterprise Plan:** 500MB maximum per file
