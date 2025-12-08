@@ -22,26 +22,31 @@
 ## ✨ Features
 
 - 🚀 **NEW! S3 Import [BETA]** - Migrate data from Amazon S3 buckets to R2 using Cloudflare's Super Slurper API
-- 📋 **Job History Tracking** - Complete audit trail for bulk operations with filterable job list and event timeline
-- 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search and RAG
+- 📋 **Job History & Audit Logging** - Complete audit trail for all operations (bulk and individual) with filterable job list and event timeline
+- 📊 **Metrics Dashboard** - Monitor R2 bucket usage, request counts, and storage analytics in real-time
+- 🪝 **WebHooks** - Set up event notifications for bucket operations (uploads, deletes, migrations)
+- 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search and RAG capabilities
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
 - 🧭 **Bucket Filtering** - Filter buckets by name, size, and creation date with preset and custom ranges
-- 📁 **Folder Management** - Create, rename, copy, move, and delete folders
-- 📄 **File Management** - Rename files via context menu
-- 🔍 **Smart Filtering** - Real-time filtering by filename/folder name
-- 🎯 **Advanced Filtering** - Filter by extension, size, and date
-- 📤 **Smart Uploads** - Chunked uploads with retry (up to 500MB)*
+- 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
+- 📄 **File Management** - Rename files via right-click context menu with validation
+- 🔍 **Smart Filtering** - Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)
+- 🎯 **Advanced Filtering** - Filter files by extension, size ranges, and upload dates with preset and custom options
+- 📤 **Smart Uploads** - Chunked uploads with automatic retry and integrity verification (10MB chunks, up to 500MB files)*
 - ✓ **Upload Verification** - MD5 checksum verification ensures uploaded files match stored files exactly
-- 📥 **Bulk Downloads** - Download multiple files as ZIP
-- 🔗 **Shareable Links** - Generate signed URLs
-- 🔄 **Advanced Operations** - Move/copy between buckets
+- 📥 **Bulk Downloads** - Download multiple files as ZIP archives
+- 🔗 **Shareable Links** - Generate signed URLs to share files securely
+- 🔄 **Advanced File Operations** - Move and copy files/folders between buckets and to specific folders within buckets
 - 🗑️ **Bulk Bucket Delete** - Select and force delete multiple buckets at once with progress tracking
-- 🧭 **Breadcrumb Navigation** - Easy folder traversal
-- 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access
-- 🛡️ **Rate Limiting** - Tiered API rate limits (100/30/10 requests per minute)
-- 🌓 **Light/Dark Mode** - System, light, or dark themes
+- 🧭 **Breadcrumb Navigation** - Navigate through folder hierarchies with ease
+- 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access Zero Trust
+- 🛡️ **Rate Limiting** - Tiered API rate limits (100/min reads, 30/min writes, 10/min deletes) with automatic enforcement
+- ⚡ **Edge Performance** - Deployed on Cloudflare's global network with intelligent client-side caching (5-min TTL)
+- 🔄 **Smart Retry Logic** - Automatic exponential backoff for rate limits and transient errors (429/503/504)
+- 🎨 **Modern UI** - Beautiful, responsive interface built with React 19
+- 🌓 **Light/Dark Mode** - Auto-detects system preference with manual toggle (System → Light → Dark)
 
 **\*Upload Size Limits:** Plan-based (Free: 100MB, Pro: 100MB, Business: 200MB, Enterprise: 500MB)
 

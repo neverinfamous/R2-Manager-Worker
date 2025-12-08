@@ -23,6 +23,8 @@
 
 - 🚀 **NEW! S3 Import [BETA]** - Migrate data from Amazon S3 buckets to R2 using Cloudflare's Super Slurper API
 - 📋 **Job History & Audit Logging** - Complete audit trail for all operations (bulk and individual) with filterable job list and event timeline
+- 📊 **Metrics Dashboard** - Monitor R2 bucket usage, request counts, and storage analytics in real-time
+- 🪝 **WebHooks** - Set up event notifications for bucket operations (uploads, deletes, migrations)
 - 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search and RAG capabilities
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
