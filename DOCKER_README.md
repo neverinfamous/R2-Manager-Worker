@@ -30,7 +30,7 @@ Slurper API
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
-- 🧭 **Bucket Filtering** - Filter buckets by name, size, and creation date with preset and custom ranges
+- 🧭 **NEW! Bucket Filtering** - Filter buckets by name, size, and creation date with preset and custom ranges
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
 - 📄 **File Management** - Rename files via right-click context menu with validation
 - 🔍 **Smart Filtering** - Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)
@@ -326,7 +326,6 @@ See the [Installation & Setup Guide](https://github.com/neverinfamous/R2-Manager
 - **GitHub:** https://github.com/neverinfamous/R2-Manager-Worker
 - **Wiki:** https://github.com/neverinfamous/R2-Manager-Worker/wiki
 - **Issues:** https://github.com/neverinfamous/R2-Manager-Worker/issues
-- **Discussions:** https://github.com/neverinfamous/R2-Manager-Worker/discussions
 - **Support:** https://adamic.tech/
 
 **Cloudflare Documentation:**

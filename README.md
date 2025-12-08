@@ -30,7 +30,7 @@ Slurper API
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
-- 🧭 **Bucket Filtering** - Filter buckets by name, size, and creation date with preset and custom ranges
+- 🧭 **NEW! Bucket Filtering** - Filter buckets by name, size, and creation date with preset and custom ranges
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
 - 📄 **File Management** - Rename files via right-click context menu with validation
 - 🔍 **Smart Filtering** - Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)
@@ -455,14 +455,6 @@ The following operations return simulated success responses for UI testing:
 ---
 
 ## 📋 Roadmap
-
-### Recently Released (v3.0.0)
-- ✅ **S3 Import** - Migrate data from Amazon S3 buckets to R2 using Cloudflare's Super Slurper API
-- ✅ **Job History Tracking** - Complete audit trail for bulk operations
-- ✅ **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search
-- ✅ **Upload Integrity Verification** - MD5 checksum verification for all uploads
-- ✅ **API Rate Limiting** - Tiered rate limits using Cloudflare Workers Rate Limiting API
-- ✅ **Multi-Bucket Download** - Download multiple buckets as a single ZIP archive
 
 ### Planned Features
 - **Custom Metadata** - User-defined tags and labels
