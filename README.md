@@ -13,7 +13,7 @@
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
 [![Type Safety](https://img.shields.io/badge/TypeScript-Strict-blue.svg)](https://github.com/neverinfamous/R2-Manager-Worker)
 
- R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to manage Cloudflare R2 buckets and objects. Supports job history tracking, AI-powered search, drag-and-drop uploads with verification, batch copy/move/delete, multi-file ZIP downloads, signed share links, folder hierarchies, advanced search + filters (extension, size, date), and GitHub SSO via Cloudflare Zero Trust.
+ R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to manage Cloudflare R2 buckets and objects. Supports job history tracking, AI-powered search, drag-and-drop uploads with verification, batch copy/move/delete, multi-file ZIP downloads, signed share links, folder hierarchies, advanced search + filters (extension, size, date), S3 import, and GitHub SSO via Cloudflare Zero Trust.
 
 **[Live Demo](https://r2.adamic.tech/)** • **[Docker](https://hub.docker.com/r/writenotenow/r2-bucket-manager)** • **[Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki)** • **[Changelog](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Changelog)** • **[Release Article](https://adamic.tech/articles/r2-manager)**
 
@@ -21,10 +21,11 @@
 
 ## ✨ Features
 
-- 🚀 **NEW! S3 Import [BETA]** - Migrate data from Amazon S3 buckets to R2 using Cloudflare's Super Slurper API
+- 🚀 **NEW! S3 Import [BETA]** - Migrate data from Amazon, Google, and All S3 Compatible buckets to R2 using Cloudflare's Super 
+- 📊 **NEW! Metrics Dashboard** - Monitor R2 bucket usage, request counts, and storage analytics in real-time
+- 🪝 **NEW! WebHooks** - Set up event notifications for bucket operations (uploads, deletes, migrations)
+Slurper API
 - 📋 **Job History & Audit Logging** - Complete audit trail for all operations (bulk and individual) with filterable job list and event timeline
-- 📊 **Metrics Dashboard** - Monitor R2 bucket usage, request counts, and storage analytics in real-time
-- 🪝 **WebHooks** - Set up event notifications for bucket operations (uploads, deletes, migrations)
 - 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search and RAG capabilities
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
