@@ -34,6 +34,7 @@ interface CloudflareBucket {
   name: string
   creation_date: string
   size?: number
+  objectCount?: number
 }
 
 interface DownloadOptions {
@@ -164,7 +165,7 @@ export interface AISearchResponse {
 // Job History Types
 export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
 
-export type JobOperationType = 
+export type JobOperationType =
   // Bulk operations
   | 'bulk_upload'
   | 'bulk_download'
@@ -234,6 +235,63 @@ export interface JobEventsResponse {
   events: JobEvent[]
 }
 
+// S3 Import Types (Super Slurper)
+export type S3ImportJobStatus = 'pending' | 'running' | 'complete' | 'error' | 'aborted'
+
+export type S3ImportProvider = 'aws' | 'gcs' | 's3_compatible'
+
+export interface S3ImportJobProgress {
+  objects_copied: number
+  objects_skipped: number
+  objects_failed: number
+  bytes_copied: number
+}
+
+export interface S3ImportJob {
+  id: string
+  source: {
+    provider: S3ImportProvider
+    bucket: string
+    region?: string
+    endpoint?: string
+    prefix?: string
+  }
+  destination: {
+    bucket: string
+  }
+  status: S3ImportJobStatus
+  progress?: S3ImportJobProgress
+  overwrite_objects?: boolean
+  created_at: string
+  completed_at?: string
+  error?: string
+}
+
+export interface CreateS3ImportJobRequest {
+  sourceBucketName: string
+  sourceAccessKeyId: string
+  sourceSecretAccessKey: string
+  sourceRegion?: string
+  sourceEndpoint?: string
+  sourceProvider?: S3ImportProvider
+  destinationBucketName: string
+  bucketSubpath?: string
+  overwriteExisting?: boolean
+}
+
+export interface S3ImportJobsListResponse {
+  jobs: S3ImportJob[]
+  has_more?: boolean
+  error?: string
+}
+
+export interface S3ImportJobResponse {
+  success: boolean
+  job?: S3ImportJob
+  error?: string
+  dashboardUrl?: string
+}
+
 interface FileTypeConfig {
   maxSize: number
   description: string
@@ -243,6 +301,79 @@ interface FileTypeConfig {
 interface ValidationResult {
   valid: boolean
   error?: string
+}
+
+/**
+ * Helper to delay execution (for retry backoff)
+ */
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * Fetch with retry and exponential backoff for rate limits
+ * Includes retry with exponential backoff for rate limit (429) errors
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 3
+): Promise<Response> {
+  let lastError: Error | null = null
+  let lastResponse: Response | null = null
+  
+  // Retry with exponential backoff for rate limits
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options)
+      lastResponse = response
+      
+      // Successful response (including 2xx and error responses like 404, 500)
+      if (response.ok || (response.status !== 429 && response.status !== 503 && response.status !== 504)) {
+        return response
+      }
+      
+      // Handle rate limit with retry
+      if (response.status === 429) {
+        lastError = new Error('Rate limited (429). Please wait a moment and try again.')
+        if (attempt < maxRetries) {
+          // Exponential backoff: 2s, 4s, 8s
+          const backoffMs = Math.min(2000 * Math.pow(2, attempt - 1), 8000)
+          await delay(backoffMs)
+          continue // Retry after backoff
+        }
+      }
+      
+      // Handle service unavailable/timeout with retry
+      if (response.status === 503 || response.status === 504) {
+        lastError = new Error(`Service error (${response.status}). Retrying...`)
+        if (attempt < maxRetries) {
+          // Exponential backoff: 2s, 4s, 8s
+          const backoffMs = Math.min(2000 * Math.pow(2, attempt - 1), 8000)
+          await delay(backoffMs)
+          continue
+        }
+      }
+      
+      // Other errors - don't retry
+      return response
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err))
+      if (attempt < maxRetries) {
+        // Network error - retry with backoff
+        const backoffMs = Math.min(2000 * Math.pow(2, attempt - 1), 8000)
+        await delay(backoffMs)
+        continue
+      }
+    }
+  }
+  
+  // If we have a response, return it even if it failed
+  if (lastResponse) {
+    return lastResponse
+  }
+  
+  throw lastError ?? new Error('Request failed after retries')
 }
 
 class APIService {
@@ -458,7 +589,7 @@ class APIService {
 
   validateFile(file: File): ValidationResult {
     let config = this.getFileTypeConfig(file.type)
-    
+
     // If MIME type is not recognized or is text/plain, try to determine by extension
     if (!config || file.type === 'text/plain' || file.type === '') {
       const ext = file.name.split('.').pop()?.toLowerCase()
@@ -467,7 +598,7 @@ class APIService {
         config = configByExt
       }
     }
-    
+
     if (!config) {
       const allowedTypes = Object.values(this.FILE_TYPES)
         .map(type => type.description)
@@ -477,27 +608,27 @@ class APIService {
         error: `File type not allowed. Accepted file types are: ${allowedTypes}`
       }
     }
-    
+
     if (file.size > config.maxSize) {
       return {
         valid: false,
         error: `File size exceeds the limit of ${this.formatSize(config.maxSize)} for ${config.description.toLowerCase()}`
       }
     }
-    
+
     return { valid: true }
   }
 
   private getConfigByExtension(ext: string | undefined): FileTypeConfig | null {
     if (ext === undefined || ext === '') return null
-    
+
     const extensionMap: Record<string, string> = {
       // Images
-      'jpg': 'image', 'jpeg': 'image', 'png': 'image', 'gif': 'image', 
+      'jpg': 'image', 'jpeg': 'image', 'png': 'image', 'gif': 'image',
       'webp': 'image', 'avif': 'image', 'heic': 'image', 'svg': 'image', 'bmp': 'image', 'psd': 'image',
       // Videos
       'mp4': 'video', 'mov': 'video', 'webm': 'video', 'avi': 'video', 'wmv': 'video', 'mkv': 'video',
-      'mpeg': 'video', 'mpg': 'video', 'mpeg4': 'video', 'flv': 'video', 'ogg': 'video', 'ogv': 'video', 
+      'mpeg': 'video', 'mpg': 'video', 'mpeg4': 'video', 'flv': 'video', 'ogg': 'video', 'ogv': 'video',
       '3gp': 'video', '3g2': 'video', 'm4v': 'video',
       // Audio
       'mp3': 'audio', 'wav': 'audio', 'flac': 'audio', 'aac': 'audio', 'm4a': 'audio', 'oga': 'audio', 'opus': 'audio',
@@ -519,12 +650,12 @@ class APIService {
       'sql': 'code', 'ipynb': 'code', 'parquet': 'document',
       'toml': 'config', 'jsonc': 'config', 'env': 'config', 'lock': 'config',
       'conf': 'config', 'ini': 'config',
-      'gitignore': 'devenv', 'gitattributes': 'devenv', 'editorconfig': 'devenv', 
+      'gitignore': 'devenv', 'gitattributes': 'devenv', 'editorconfig': 'devenv',
       'dockerfile': 'devenv', 'nvmrc': 'devenv', 'browserslistrc': 'devenv',
       'feather': 'dataformat', 'avro': 'dataformat', 'ndjson': 'dataformat',
       'nfo': 'docs'
     }
-    
+
     const category = extensionMap[ext]
     if (category === undefined) return null
     const config = this.FILE_TYPES[category]
@@ -535,12 +666,12 @@ class APIService {
     const units = ['B', 'KB', 'MB', 'GB']
     let size = bytes
     let unitIndex = 0
-    
+
     while (size >= 1024 && unitIndex < units.length - 1) {
       size /= 1024
       unitIndex++
     }
-    
+
     return `${size.toFixed(1)} ${units[unitIndex]}`
   }
 
@@ -571,15 +702,15 @@ class APIService {
       // Clear any cached data
       localStorage.clear();
       sessionStorage.clear();
-      
+
       // Throw error with status to trigger logout in app
       throw new Error(`Authentication error: ${response.status}`);
     }
-    
+
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
-    
+
     return response;
   }
 
@@ -620,19 +751,19 @@ class APIService {
       retryDelay = this.DEFAULT_RETRY_DELAY,
       onRetry
     } = options
-    
+
     const uploadFileName = fileName || file.name
     let lastError: Error | null = null
-    
+
     // Calculate MD5 for this chunk
     const chunkMD5 = await this.calculateMD5(chunk)
-    
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const formData = new FormData()
         formData.append('file', chunk, uploadFileName)
 
-        const response = await fetch(`${WORKER_API}/api/files/${bucketName}/upload`, 
+        const response = await fetch(`${WORKER_API}/api/files/${bucketName}/upload`,
           this.getFetchOptions({
             method: 'POST',
             headers: {
@@ -665,7 +796,7 @@ class APIService {
         throw new Error(`Failed to upload chunk ${chunkIndex} after ${maxRetries} attempts: ${lastError.message}`)
       }
     }
-    
+
     throw new Error('Upload failed unexpectedly')
   }
 
@@ -689,7 +820,7 @@ class APIService {
     const totalChunks = Math.ceil(file.size / this.CHUNK_SIZE)
     const uploadedChunks = new Set<number>()
     const chunkResults: { etag: string; md5: string }[] = []
-    
+
     try {
       if (file.size <= this.CHUNK_SIZE) {
         const result = await this.uploadChunkWithRetry(
@@ -698,20 +829,20 @@ class APIService {
           file,
           0,
           1,
-          { 
-            maxRetries: maxRetries ?? this.DEFAULT_MAX_RETRIES, 
-            retryDelay: retryDelay ?? this.DEFAULT_RETRY_DELAY, 
+          {
+            maxRetries: maxRetries ?? this.DEFAULT_MAX_RETRIES,
+            retryDelay: retryDelay ?? this.DEFAULT_RETRY_DELAY,
             onRetry: onRetry ?? (() => { /* no-op */ })
           },
           fileName
         )
         onProgress?.(99)
-        
+
         // Verify single file upload
         onVerification?.('verifying')
         await this.verifyUpload(result.etag, result.md5, false)
         onVerification?.('verified')
-        
+
         onProgress?.(100)
         return
       }
@@ -730,9 +861,9 @@ class APIService {
           chunk,
           chunkIndex,
           totalChunks,
-          { 
-            maxRetries: maxRetries ?? this.DEFAULT_MAX_RETRIES, 
-            retryDelay: retryDelay ?? this.DEFAULT_RETRY_DELAY, 
+          {
+            maxRetries: maxRetries ?? this.DEFAULT_MAX_RETRIES,
+            retryDelay: retryDelay ?? this.DEFAULT_RETRY_DELAY,
             onRetry: onRetry ?? (() => { /* no-op */ })
           },
           fileName
@@ -747,7 +878,7 @@ class APIService {
       // Verify multipart upload
       onProgress?.(96)
       onVerification?.('verifying')
-      
+
       // For multipart uploads, verify that we have all chunks
       if (chunkResults.length === totalChunks) {
         // R2 uses compound ETags for multipart (hash of MD5s + part count)
@@ -762,6 +893,10 @@ class APIService {
       }
 
       onProgress?.(100)
+      
+      // Invalidate file list and bucket list cache after successful upload
+      invalidateFileListCache(bucketName)
+      invalidateBucketListCache() // Bucket sizes are included in bucket list
 
     } catch (error) {
       const failedChunks = Array.from({ length: totalChunks }, (_, i) => i)
@@ -795,36 +930,54 @@ class APIService {
     if (!isMultipart) {
       const cleanEtag = etag.replace(/"/g, '').toLowerCase()
       const cleanMD5 = expectedMD5.toLowerCase()
-      
+
       if (cleanEtag !== cleanMD5) {
         logger.error('Verification', 'ETag mismatch', { etag: cleanEtag, expected: cleanMD5 })
         throw new Error('Verification failed: Checksum mismatch')
       }
-      
+
       logger.debug('Verification', 'Upload verified successfully')
     }
     // For multipart uploads, we just verify ETags exist for all chunks (done in caller)
   }
 
-  async listBuckets(): Promise<{ name: string; creation_date: string; size?: number }[]> {
-    const response = await fetch(`${WORKER_API}/api/buckets`, 
+  async listBuckets(skipCache = false): Promise<{ name: string; creation_date: string; size?: number; objectCount?: number }[]> {
+    // Check cache first
+    if (!skipCache) {
+      const cached = getCachedBucketList()
+      if (cached) {
+        return cached.map((bucket: CloudflareBucket) => ({
+          name: bucket.name,
+          creation_date: bucket.creation_date,
+          size: bucket.size ?? 0,
+          objectCount: bucket.objectCount ?? 0
+        }))
+      }
+    }
+
+    const response = await fetchWithRetry(`${WORKER_API}/api/buckets`,
       this.getFetchOptions({
         headers: this.getHeaders()
       })
     )
-    
+
     await this.handleResponse(response);
 
     const data = await response.json() as { result: { buckets: CloudflareBucket[] } }
+    
+    // Cache the result
+    setCachedBucketList(data.result.buckets)
+    
     return data.result.buckets.map((bucket: CloudflareBucket) => ({
       name: bucket.name,
       creation_date: bucket.creation_date,
-      size: bucket.size ?? 0
+      size: bucket.size ?? 0,
+      objectCount: bucket.objectCount ?? 0
     }))
   }
 
   async createBucket(name: string): Promise<{ name: string; creation_date: string }> {
-    const response = await fetch(`${WORKER_API}/api/buckets`, 
+    const response = await fetchWithRetry(`${WORKER_API}/api/buckets`,
       this.getFetchOptions({
         method: 'POST',
         headers: {
@@ -834,12 +987,16 @@ class APIService {
         body: JSON.stringify({ name })
       })
     )
-    
+
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`)
     }
-    
+
     const data = await response.json() as { result: { name: string; creation_date: string } }
+    
+    // Invalidate bucket list cache after creation
+    invalidateBucketListCache()
+    
     return data.result
   }
 
@@ -848,14 +1005,14 @@ class APIService {
     if (options.force === true) {
       url.searchParams.set('force', 'true')
     }
-    
-    const response = await fetch(url.toString(), 
+
+    const response = await fetchWithRetry(url.toString(),
       this.getFetchOptions({
         method: 'DELETE',
         headers: this.getHeaders()
       })
     )
-    
+
     // Parse the response regardless of status code
     let data: { success?: boolean; error?: string; errors?: { message: string }[] }
     try {
@@ -864,7 +1021,13 @@ class APIService {
       // If response can't be parsed as JSON, return a generic error
       data = { error: `Failed to delete bucket (HTTP ${response.status})` }
     }
-    
+
+    // Invalidate both bucket list and file list for this bucket
+    if (data.success) {
+      invalidateBucketListCache()
+      invalidateFileListCache(name)
+    }
+
     // Return the data along with any context needed
     return data
   }
@@ -893,7 +1056,7 @@ class APIService {
       throw new Error(validation.error)
     }
     const url = `${WORKER_API}/api/buckets/${encodeURIComponent(oldName)}`
-    const response = await fetch(
+    const response = await fetchWithRetry(
       url,
       this.getFetchOptions({
         method: 'PATCH',
@@ -905,7 +1068,17 @@ class APIService {
       const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` })) as { error?: string }
       throw new Error(error.error ?? 'Failed to rename bucket')
     }
-    return response.json() as Promise<{ success: boolean; newName?: string }>
+    
+    const result = await response.json() as { success: boolean; newName?: string }
+    
+    // Invalidate both old and new bucket caches
+    if (result.success) {
+      invalidateBucketListCache()
+      invalidateFileListCache(oldName)
+      invalidateFileListCache(newName)
+    }
+    
+    return result
   }
 
   async listFiles(
@@ -914,6 +1087,14 @@ class APIService {
     limit = 20,
     options: ListFilesOptions = {}
   ): Promise<FileListResponse> {
+    // Only cache first page (no cursor)
+    if (!cursor && !options.skipCache) {
+      const cached = getCachedFileList(bucketName, options.prefix)
+      if (cached) {
+        return cached
+      }
+    }
+
     const url = new URL(`${WORKER_API}/api/files/${bucketName}`)
     if (cursor) {
       url.searchParams.set('cursor', cursor)
@@ -928,32 +1109,43 @@ class APIService {
       url.searchParams.set('prefix', options.prefix)
     }
 
-    const response = await fetch(url, 
+    const response = await fetchWithRetry(url.toString(),
       this.getFetchOptions({
         headers: this.getHeaders()
       })
     )
-    
+
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`)
     }
+
+    const result = await response.json() as FileListResponse
     
-    return response.json() as Promise<FileListResponse>
+    // Cache first page only
+    if (!cursor) {
+      setCachedFileList(bucketName, result, options.prefix)
+    }
+    
+    return result
   }
 
   async deleteFile(bucketName: string, fileName: string): Promise<{ success: boolean }> {
-    const response = await fetch(
+    const response = await fetchWithRetry(
       `${WORKER_API}/api/files/${bucketName}/delete/${encodeURIComponent(fileName)}`,
       this.getFetchOptions({
         method: 'DELETE',
         headers: this.getHeaders()
       })
     )
-    
+
     if (!response.ok) {
       throw new Error(`Delete failed: ${response.status}`)
     }
-    
+
+    // Invalidate file list and bucket list cache
+    invalidateFileListCache(bucketName)
+    invalidateBucketListCache()
+
     return { success: true }
   }
 
@@ -986,7 +1178,7 @@ class APIService {
       return
     }
 
-    const response = await fetch(`${WORKER_API}/api/files/${bucketName}/download-zip`, 
+    const response = await fetch(`${WORKER_API}/api/files/${bucketName}/download-zip`,
       this.getFetchOptions({
         method: 'POST',
         headers: {
@@ -1019,7 +1211,7 @@ class APIService {
     if (fileObject?.url) {
       return `${WORKER_API}${fileObject.url}`
     }
-    
+
     return `${WORKER_API}/api/files/${bucketName}/download/${encodeURIComponent(fileName)}`
   }
 
@@ -1083,10 +1275,10 @@ class APIService {
 
     try {
       onProgress?.(0)
-      
+
       // Collect all files from all buckets
       const bucketFiles: { bucketName: string; files: string[] }[] = []
-      
+
       for (const bucketName of bucketNames) {
         let allFiles: FileObject[] = []
         let cursor: string | undefined = undefined
@@ -1140,7 +1332,7 @@ class APIService {
   }
 
   async moveFile(sourceBucket: string, sourceKey: string, destBucket: string, destPath?: string): Promise<void> {
-    const response = await fetch(
+    const response = await fetchWithRetry(
       `${WORKER_API}/api/files/${sourceBucket}/${encodeURIComponent(sourceKey)}/move`,
       this.getFetchOptions({
         method: 'POST',
@@ -1148,9 +1340,9 @@ class APIService {
           ...this.getHeaders(),
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           destinationBucket: destBucket,
-          destinationPath: destPath 
+          destinationPath: destPath
         })
       })
     )
@@ -1159,6 +1351,11 @@ class APIService {
       const errorData = await response.json().catch(() => ({ error: `Failed to move file: ${response.status}` })) as ApiErrorResponse
       throw new Error(errorData.error ?? 'Failed to move file')
     }
+    
+    // Invalidate file list for both source and destination buckets
+    invalidateFileListCache(sourceBucket)
+    invalidateFileListCache(destBucket)
+    invalidateBucketListCache() // Bucket sizes may have changed
   }
 
   async moveFiles(
@@ -1177,7 +1374,7 @@ class APIService {
   }
 
   async copyFile(sourceBucket: string, sourceKey: string, destBucket: string, destPath?: string): Promise<void> {
-    const response = await fetch(
+    const response = await fetchWithRetry(
       `${WORKER_API}/api/files/${sourceBucket}/${encodeURIComponent(sourceKey)}/copy`,
       this.getFetchOptions({
         method: 'POST',
@@ -1185,9 +1382,9 @@ class APIService {
           ...this.getHeaders(),
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           destinationBucket: destBucket,
-          destinationPath: destPath 
+          destinationPath: destPath
         })
       })
     )
@@ -1196,6 +1393,10 @@ class APIService {
       const errorData = await response.json().catch(() => ({ error: `Failed to copy file: ${response.status}` })) as ApiErrorResponse
       throw new Error(errorData.error ?? 'Failed to copy file')
     }
+    
+    // Invalidate file list cache for destination bucket
+    invalidateFileListCache(destBucket)
+    invalidateBucketListCache() // Bucket sizes may have changed
   }
 
   async copyFiles(
@@ -1221,14 +1422,14 @@ class APIService {
     // Extract directory path from source
     const sourceParts = sourceKey.split('/')
     const sourceDir = sourceParts.slice(0, -1).join('/')
-    
+
     // If newKey doesn't include path, prepend source directory
     let targetKey = newKey
     if (!newKey.includes('/') && sourceDir) {
       targetKey = `${sourceDir}/${newKey}`
     }
 
-    const response = await fetch(
+    const response = await fetchWithRetry(
       `${WORKER_API}/api/files/${bucketName}/${encodeURIComponent(sourceKey)}/rename`,
       this.getFetchOptions({
         method: 'PATCH',
@@ -1241,33 +1442,36 @@ class APIService {
     )
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ 
-        error: `Failed to rename file: ${response.status}` 
+      const errorData = await response.json().catch(() => ({
+        error: `Failed to rename file: ${response.status}`
       })) as ApiErrorResponse
       throw new Error(errorData.error ?? 'Failed to rename file')
     }
+    
+    // Invalidate file list cache for this bucket
+    invalidateFileListCache(bucketName)
   }
 
   validateFileName(name: string): ValidationResult {
     if (!name || name.trim().length === 0) {
       return { valid: false, error: 'File name cannot be empty' }
     }
-    
+
     const trimmedName = name.trim()
-    
+
     // Check for invalid characters
     // eslint-disable-next-line no-control-regex
     const invalidChars = /[<>:"|?*\x00-\x1F]/g
     if (invalidChars.test(trimmedName)) {
       return { valid: false, error: 'File name contains invalid characters' }
     }
-    
+
     // Check for reserved names (Windows compatibility)
     const reservedNames = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i
     if (reservedNames.test(trimmedName)) {
       return { valid: false, error: 'File name is reserved' }
     }
-    
+
     return { valid: true }
   }
 
@@ -1315,7 +1519,7 @@ class APIService {
       throw new Error(validation.error)
     }
 
-    const response = await fetch(
+    const response = await fetchWithRetry(
       `${WORKER_API}/api/folders/${bucketName}/create`,
       this.getFetchOptions({
         method: 'POST',
@@ -1331,6 +1535,9 @@ class APIService {
       const errorData = await response.json().catch(() => ({ error: `Failed to create folder: ${response.status}` })) as ApiErrorResponse
       throw new Error(errorData.error ?? 'Failed to create folder')
     }
+    
+    // Invalidate file list cache for this bucket
+    invalidateFileListCache(bucketName)
   }
 
   async renameFolder(
@@ -1339,7 +1546,7 @@ class APIService {
     newPath: string,
     onProgress?: (completed: number, total: number) => void
   ): Promise<void> {
-    const response = await fetch(
+    const response = await fetchWithRetry(
       `${WORKER_API}/api/folders/${bucketName}/rename`,
       this.getFetchOptions({
         method: 'PATCH',
@@ -1360,6 +1567,9 @@ class APIService {
     if (onProgress && data.copied !== undefined) {
       onProgress(data.copied, data.copied + (data.failed ?? 0))
     }
+    
+    // Invalidate file list cache for this bucket
+    invalidateFileListCache(bucketName)
   }
 
   async copyFolder(
@@ -1369,7 +1579,7 @@ class APIService {
     destPath?: string,
     onProgress?: (completed: number, total: number) => void
   ): Promise<void> {
-    const response = await fetch(
+    const response = await fetchWithRetry(
       `${WORKER_API}/api/folders/${sourceBucket}/${encodeURIComponent(folderPath)}/copy`,
       this.getFetchOptions({
         method: 'POST',
@@ -1390,6 +1600,10 @@ class APIService {
     if (onProgress && data.copied !== undefined) {
       onProgress(data.copied, data.copied + (data.failed ?? 0))
     }
+    
+    // Invalidate file list cache for destination bucket
+    invalidateFileListCache(destBucket)
+    invalidateBucketListCache() // Bucket sizes may have changed
   }
 
   async moveFolder(
@@ -1399,7 +1613,7 @@ class APIService {
     destPath?: string,
     onProgress?: (completed: number, total: number) => void
   ): Promise<void> {
-    const response = await fetch(
+    const response = await fetchWithRetry(
       `${WORKER_API}/api/folders/${sourceBucket}/${encodeURIComponent(folderPath)}/move`,
       this.getFetchOptions({
         method: 'POST',
@@ -1420,6 +1634,11 @@ class APIService {
     if (onProgress && data.moved !== undefined) {
       onProgress(data.moved, data.moved + (data.failed ?? 0))
     }
+    
+    // Invalidate file list cache for both source and destination buckets
+    invalidateFileListCache(sourceBucket)
+    invalidateFileListCache(destBucket)
+    invalidateBucketListCache() // Bucket sizes may have changed
   }
 
   async deleteFolder(bucketName: string, folderPath: string, force = false): Promise<{ success: boolean, fileCount?: number, message?: string }> {
@@ -1428,7 +1647,7 @@ class APIService {
       url.searchParams.set('force', 'true')
     }
 
-    const response = await fetch(
+    const response = await fetchWithRetry(
       url.toString(),
       this.getFetchOptions({
         method: 'DELETE',
@@ -1441,7 +1660,15 @@ class APIService {
       throw new Error(errorData.error ?? 'Failed to delete folder')
     }
 
-    return response.json() as Promise<{ success: boolean, fileCount?: number, message?: string }>
+    const result = await response.json() as { success: boolean, fileCount?: number, message?: string }
+    
+    // Invalidate file list and bucket list cache
+    if (result.success) {
+      invalidateFileListCache(bucketName)
+      invalidateBucketListCache() // Bucket sizes may have changed
+    }
+    
+    return result
   }
 
   async searchAcrossBuckets(params: {
@@ -1454,7 +1681,7 @@ class APIService {
     limit?: number;
   }): Promise<{ results: unknown[]; pagination?: { total?: number; hasMore?: boolean } }> {
     const url = new URL(`${WORKER_API}/api/search`)
-    
+
     if (params.query) {
       url.searchParams.set('q', params.query)
     }
@@ -1647,12 +1874,12 @@ class APIService {
         headers: this.getHeaders()
       })
     )
-    
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
       throw new Error(error.error ?? `Failed to get job list: ${response.status}`)
     }
-    
+
     const data = await response.json() as { result: JobListResponse; success: boolean }
     return data.result
   }
@@ -1664,12 +1891,12 @@ class APIService {
         headers: this.getHeaders()
       })
     )
-    
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
       throw new Error(error.error ?? `Failed to get job events: ${response.status}`)
     }
-    
+
     const data = await response.json() as { result: JobEventsResponse; success: boolean }
     return data.result
   }
@@ -1681,17 +1908,148 @@ class APIService {
         headers: this.getHeaders()
       })
     )
-    
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
       throw new Error(error.error ?? `Failed to get job status: ${response.status}`)
     }
-    
+
     const data = await response.json() as { result: JobListItem; success: boolean }
     return data.result
+  }
+
+  // S3 Import Methods (Super Slurper)
+  async createS3ImportJob(data: CreateS3ImportJobRequest): Promise<S3ImportJobResponse> {
+    const response = await fetch(
+      `${WORKER_API}/api/s3-import/jobs`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+    )
+
+    const result = await response.json() as S3ImportJobResponse
+    return result
+  }
+
+  async listS3ImportJobs(): Promise<S3ImportJobsListResponse> {
+    const response = await fetch(
+      `${WORKER_API}/api/s3-import/jobs`,
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+
+    const result = await response.json() as S3ImportJobsListResponse
+    return result
+  }
+
+  async getS3ImportJob(jobId: string): Promise<S3ImportJobResponse> {
+    const response = await fetch(
+      `${WORKER_API}/api/s3-import/jobs/${encodeURIComponent(jobId)}`,
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+
+    const result = await response.json() as S3ImportJobResponse
+    return result
+  }
+
+  async abortS3ImportJob(jobId: string): Promise<{ success: boolean; error?: string }> {
+    const response = await fetch(
+      `${WORKER_API}/api/s3-import/jobs/${encodeURIComponent(jobId)}/abort`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: this.getHeaders()
+      })
+    )
+
+    const result = await response.json() as { success: boolean; error?: string }
+    return result
+  }
+
+  getS3ImportDashboardUrl(): string {
+    return 'https://dash.cloudflare.com/?to=/:account/r2/slurper'
   }
 
 }
 
 export const api = new APIService();
 
+// ============================================
+// Cache Infrastructure
+// ============================================
+
+// ============================================
+// Bucket List Cache
+// ============================================
+let bucketListCache: { data: CloudflareBucket[]; timestamp: number } | null = null
+const BUCKET_LIST_CACHE_TTL = 300000 // 5 minutes
+
+function getCachedBucketList(): CloudflareBucket[] | null {
+  if (bucketListCache && Date.now() - bucketListCache.timestamp < BUCKET_LIST_CACHE_TTL) {
+    return bucketListCache.data
+  }
+  return null
+}
+
+function setCachedBucketList(data: CloudflareBucket[]): void {
+  bucketListCache = { data, timestamp: Date.now() }
+}
+
+/**
+ * Invalidate bucket list cache
+ * Call after bucket create/delete/rename operations
+ */
+export function invalidateBucketListCache(): void {
+  bucketListCache = null
+}
+
+// ============================================
+// File List Cache (per bucket + prefix)
+// ============================================
+const fileListCache = new Map<string, { data: FileListResponse; timestamp: number }>()
+const FILE_LIST_CACHE_TTL = 300000 // 5 minutes
+
+function getFileListCacheKey(bucketName: string, prefix?: string): string {
+  return `${bucketName}:${prefix ?? ''}`
+}
+
+function getCachedFileList(bucketName: string, prefix?: string): FileListResponse | null {
+  const key = getFileListCacheKey(bucketName, prefix)
+  const cached = fileListCache.get(key)
+  if (cached && Date.now() - cached.timestamp < FILE_LIST_CACHE_TTL) {
+    return cached.data
+  }
+  return null
+}
+
+function setCachedFileList(bucketName: string, data: FileListResponse, prefix?: string): void {
+  const key = getFileListCacheKey(bucketName, prefix)
+  fileListCache.set(key, { data, timestamp: Date.now() })
+}
+
+/**
+ * Invalidate file list cache for a bucket
+ * Call after file operations (upload/delete/move/copy)
+ */
+export function invalidateFileListCache(bucketName?: string): void {
+  if (bucketName) {
+    for (const key of fileListCache.keys()) {
+      if (key.startsWith(`${bucketName}:`)) {
+        fileListCache.delete(key)
+      }
+    }
+  } else {
+    fileListCache.clear()
+  }
+}
+
+// Note: Bucket size cache is not needed as sizes are calculated on the backend
+// and included in the bucket list response. We only need to invalidate the
+// bucket list cache when sizes might change.

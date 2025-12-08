@@ -1,13 +1,13 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** December 6, 2025 | **Version:** 2.0.0
+**Last Updated:** December 8, 2025 | **Version:** 3.0.0
 
-**Tech Stack:** React 19.2.1 | Vite 7.2.6 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
+**Tech Stack:** React 19.2.1 | Vite 7.2.7 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v2.0.0-green)
+![Version](https://img.shields.io/badge/version-v3.0.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
@@ -21,11 +21,13 @@
 
 ## ✨ Features
 
+- 🚀 **NEW! S3 Import [BETA]** - Migrate data from Amazon S3 buckets to R2 using Cloudflare's Super Slurper API
 - 📋 **Job History Tracking** - Complete audit trail for bulk operations with filterable job list and event timeline
 - 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search and RAG
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
+- 🧭 **Bucket Filtering** - Filter buckets by name, size, and creation date with preset and custom ranges
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders
 - 📄 **File Management** - Rename files via context menu
 - 🔍 **Smart Filtering** - Real-time filtering by filename/folder name
@@ -134,13 +136,13 @@ docker run -p 8787:8787 -v "/path/to/wrangler.toml:/app/wrangler.toml" writenote
 | Tag | Description | Use Case |
 |-----|-------------|----------|
 | `latest` | Latest stable release | **Recommended for testing** |
-| `v2.0.0` | Specific version | Pin to exact version |
+| `v3.0.0` | Specific version | Pin to exact version |
 | `sha-abc1234` | Commit SHA (12-char short) | Development/traceability |
 
 **Pull a specific version:**
 
 ```bash
-docker pull writenotenow/r2-bucket-manager:v2.0.0
+docker pull writenotenow/r2-bucket-manager:v3.0.0
 ```
 
 ---
@@ -179,7 +181,7 @@ npx wrangler d1 execute r2-manager-metadata --remote --file=worker/schema.sql
 
 ### Version-Specific Upgrades
 
-**Upgrading to v2.0.0 or later:**
+**Upgrading to v3.0.0 or later:**
 - Job History requires a D1 database. See the [Installation Guide](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Installation-&-Setup) for setup instructions.
 - Rate limiting requires a Cloudflare Workers paid plan.
 - AI Search requires the `[ai]` binding in your wrangler.toml.

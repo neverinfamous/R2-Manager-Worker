@@ -1,8 +1,10 @@
 import type { Env } from './types';
+import { logInfo, logWarning, logError } from './utils/error-logger';
 import { CF_API } from './types';
 import { validateAccessJWT } from './utils/auth';
 import { validateSignature } from './utils/signing';
 import { getCorsHeaders, handleCorsPreflightRequest, isLocalDevelopment } from './utils/cors';
+import { getCloudflareHeaders } from './utils/helpers';
 import { handleSiteWebmanifest, handleStaticAsset, serveFrontendAssets } from './utils/assets';
 import { checkRateLimit, createRateLimitResponse } from './utils/ratelimit';
 import { handleBucketRoutes } from './routes/buckets';
@@ -12,11 +14,18 @@ import { handleSearchRoutes } from './routes/search';
 import { handleAISearchRoutes } from './routes/ai-search';
 import { handleJobRoutes } from './routes/jobs';
 import { handleAuditRoutes } from './routes/audit';
+import { handleS3ImportRoutes } from './routes/s3-import';
+import { handleMetricsRoutes } from './routes/metrics';
+import { handleWebhookRoutes } from './routes/webhooks';
 
 async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
-  console.log('[Request]', request.method, url.pathname);
-  
+  // Detect if we're in local development (hoisted for logging availability)
+  const isLocalhost = isLocalDevelopment(request);
+  const isLocalDev = isLocalhost && (!env.ACCOUNT_ID || !env.CF_EMAIL || !env.API_KEY);
+
+  logInfo(`[Request] ${request.method} ${url.pathname}`, { module: 'worker', operation: 'request' });
+
   // Get CORS headers
   const corsHeaders = getCorsHeaders(request);
 
@@ -38,36 +47,29 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
 
   // Check for signed file downloads
   if (url.pathname.includes('/download/')) {
-    console.log('[Download] Request:', url.pathname, 'query:', url.search);
-    
+    logInfo(`[Download] Request: ${url.pathname} query: ${url.search}`, { module: 'worker', operation: 'download_check' });
+
     if (await validateSignature(request, env)) {
       const pathParts = url.pathname.split('/');
       const bucketName = pathParts[3];
       // Get everything after /download/ to support nested folders
       const fileName = pathParts.slice(5).map(part => decodeURIComponent(part)).join('/');
 
-      console.log('[Download] Attempting download:', {
-        bucket: bucketName,
-        file: fileName,
-        pathParts
-      });
+      logInfo('Attempting download', { module: 'worker', operation: 'download_check', bucketName: bucketName ?? 'unknown', fileName });
 
       try {
         const fetchUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(fileName);
-        console.log('[Download] Fetching from R2:', fetchUrl);
-        
+        logInfo(`Fetching from R2: ${fetchUrl}`, { module: 'worker', operation: 'download_check', bucketName: bucketName ?? 'unknown' });
+
         const response = await fetch(fetchUrl, {
-          headers: {
-            'X-Auth-Email': env.CF_EMAIL,
-            'X-Auth-Key': env.API_KEY
-          }
+          headers: getCloudflareHeaders(env)
         });
 
-        console.log('[Download] R2 response status:', response.status);
+        logInfo(`R2 response status: ${response.status}`, { module: 'worker', operation: 'download_check', bucketName: bucketName ?? 'unknown' });
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('[Download] R2 error:', errorText);
+          void logError(env, new Error(`R2 error: ${errorText}`), { module: 'worker', operation: 'download_check', bucketName: bucketName ?? 'unknown' }, isLocalDev);
           throw new Error('Download failed: ' + response.status);
         }
 
@@ -82,10 +84,10 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
           }
         });
       } catch (err) {
-        console.error('[Files] Download error:', err);
-        return new Response(JSON.stringify({ 
+        void logError(env, err instanceof Error ? err : new Error(String(err)), { module: 'worker', operation: 'download_check' }, isLocalDev);
+        return new Response(JSON.stringify({
           error: 'Download failed'
-        }), { 
+        }), {
           status: 500,
           headers: {
             'Content-Type': 'application/json',
@@ -94,10 +96,10 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         });
       }
     } else {
-      console.error('[Files] Invalid signature for download:', url.pathname);
-      return new Response(JSON.stringify({ 
-        error: 'Invalid signature' 
-      }), { 
+      void logError(env, new Error('Invalid signature'), { module: 'worker', operation: 'download_check', metadata: { path: url.pathname } }, isLocalDev);
+      return new Response(JSON.stringify({
+        error: 'Invalid signature'
+      }), {
         status: 403,
         headers: {
           'Content-Type': 'application/json',
@@ -107,19 +109,18 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     }
   }
 
-  // Check if local development
-  const isLocalhost = isLocalDevelopment(request);
-  
+
+
   // Skip auth for localhost development
   let userEmail: string | null = null;
   if (isLocalhost) {
-    console.log('[Auth] Localhost detected, skipping JWT validation');
+    logInfo('Localhost detected, skipping JWT validation', { module: 'worker', operation: 'auth' });
     userEmail = 'dev@localhost';
   } else {
     // Require auth for production API endpoints
     userEmail = await validateAccessJWT(request, env);
     if (!userEmail) {
-      return new Response('Unauthorized', { 
+      return new Response('Unauthorized', {
         status: 401,
         headers: corsHeaders
       });
@@ -130,28 +131,41 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   if (!isLocalhost && url.pathname.startsWith('/api/') && env.RATE_LIMITER_READ !== undefined) {
     try {
       const rateLimitResult = await checkRateLimit(env, request.method, url.pathname, userEmail);
-      
+
       if (!rateLimitResult.success) {
         // Rate limit exceeded - return 429 response
-        console.warn('[Rate Limit] Request blocked', {
-          userEmail,
-          method: request.method,
-          pathname: url.pathname,
-          tier: rateLimitResult.tier
+        logWarning('Request blocked by rate limit', {
+          module: 'worker',
+          operation: 'rate_limit',
+          metadata: { userEmail: userEmail ?? undefined, method: request.method, pathname: url.pathname, tier: rateLimitResult.tier }
         });
-        
+
         return createRateLimitResponse(rateLimitResult, corsHeaders);
       }
     } catch (error) {
       // Log error but don't block request if rate limiting fails
-      console.error('[Rate Limit] Error checking rate limit:', error);
+      void logError(env, error instanceof Error ? error : new Error(String(error)), {
+        module: 'worker',
+        operation: 'rate_limit',
+        metadata: { error: String(error) }
+      }, isLocalDev);
     }
   }
 
-  // Detect if we're in local development without credentials
-  const isLocalDev = isLocalhost && (!env.ACCOUNT_ID || !env.CF_EMAIL || !env.API_KEY);
+
 
   // Route API requests
+  if (url.pathname.startsWith('/api/metrics')) {
+    const metricsResponse = await handleMetricsRoutes(request, env, url, corsHeaders, isLocalDev);
+    if (metricsResponse) {
+      return metricsResponse;
+    }
+  }
+
+  if (url.pathname.startsWith('/api/s3-import')) {
+    return await handleS3ImportRoutes(request, env, url, corsHeaders, isLocalDev);
+  }
+
   if (url.pathname.startsWith('/api/ai-search')) {
     return await handleAISearchRoutes(request, env, url, corsHeaders, isLocalDev);
   }
@@ -186,18 +200,25 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     return await handleFolderRoutes(request, env, url, corsHeaders, isLocalDev, userEmail);
   }
 
+  if (url.pathname.startsWith('/api/webhooks')) {
+    const webhookResponse = await handleWebhookRoutes(request, env, url, corsHeaders, isLocalDev, userEmail);
+    if (webhookResponse) {
+      return webhookResponse;
+    }
+  }
+
   // Serve frontend assets
   return await serveFrontendAssets(request, env, isLocalhost);
 }
 
 export default {
-   
+
   async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
     try {
       return await handleApiRequest(request, env);
     } catch (e) {
-      console.error('[Error] Unhandled error:', e);
-      return new Response('Internal Server Error: ' + (e as Error).message, { 
+      void logError(env, e instanceof Error ? e : new Error(String(e)), { module: 'worker', operation: 'fetch' }, false);
+      return new Response('Internal Server Error: ' + (e as Error).message, {
         status: 500,
         headers: {
           'Access-Control-Allow-Origin': '*'

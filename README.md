@@ -1,13 +1,13 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** December 6, 2025 | **Version:** 2.0.0
+**Last Updated:** December 8, 2025 | **Version:** 3.0.0
  
-**Tech Stack:** React 19.2.1 | Vite 7.2.6 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
+**Tech Stack:** React 19.2.1 | Vite 7.2.7 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v2.0.0-green)
+![Version](https://img.shields.io/badge/version-v3.0.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
@@ -21,11 +21,13 @@
 
 ## ✨ Features
 
+- 🚀 **NEW! S3 Import [BETA]** - Migrate data from Amazon S3 buckets to R2 using Cloudflare's Super Slurper API
 - 📋 **Job History & Audit Logging** - Complete audit trail for all operations (bulk and individual) with filterable job list and event timeline
 - 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search and RAG capabilities
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
+- 🧭 **Bucket Filtering** - Filter buckets by name, size, and creation date with preset and custom ranges
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
 - 📄 **File Management** - Rename files via right-click context menu with validation
 - 🔍 **Smart Filtering** - Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)
@@ -39,7 +41,8 @@
 - 🧭 **Breadcrumb Navigation** - Navigate through folder hierarchies with ease
 - 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access Zero Trust
 - 🛡️ **Rate Limiting** - Tiered API rate limits (100/min reads, 30/min writes, 10/min deletes) with automatic enforcement
-- ⚡ **Edge Performance** - Deployed on Cloudflare's global network
+- ⚡ **Edge Performance** - Deployed on Cloudflare's global network with intelligent client-side caching (5-min TTL)
+- 🔄 **Smart Retry Logic** - Automatic exponential backoff for rate limits and transient errors (429/503/504)
 - 🎨 **Modern UI** - Beautiful, responsive interface built with React 19
 - 🌓 **Light/Dark Mode** - Auto-detects system preference with manual toggle (System → Light → Dark)
 
@@ -131,7 +134,7 @@
 
 ---
 
-### Upgrading from v2.0.0
+### Upgrading from v3.0.0
 
 If you already have Job History set up and want to enable individual action logging (file uploads, downloads, deletes, etc.), run the schema migration to add the new `audit_log` table:
 
@@ -368,8 +371,8 @@ The following operations return simulated success responses for UI testing:
 
 | Component | Technology | Version |
 |-----------|-----------|---------|
-| Frontend | React | 19.2.0 |
-| Build Tool | Vite | 7.2.2 |
+| Frontend | React | 19.2.1 |
+| Build Tool | Vite | 7.2.7 |
 | Language | TypeScript | 5.9.3 |
 | Backend | Cloudflare Workers | Runtime API |
 | Storage | Cloudflare R2 | S3-compatible |
@@ -450,7 +453,8 @@ The following operations return simulated success responses for UI testing:
 
 ## 📋 Roadmap
 
-### Recently Released (v2.0.0)
+### Recently Released (v3.0.0)
+- ✅ **S3 Import** - Migrate data from Amazon S3 buckets to R2 using Cloudflare's Super Slurper API
 - ✅ **Job History Tracking** - Complete audit trail for bulk operations
 - ✅ **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search
 - ✅ **Upload Integrity Verification** - MD5 checksum verification for all uploads
@@ -458,7 +462,6 @@ The following operations return simulated success responses for UI testing:
 - ✅ **Multi-Bucket Download** - Download multiple buckets as a single ZIP archive
 
 ### Planned Features
-- **AWS S3 Migration** - Add support for migrating AWS S3 to R2
 - **Custom Metadata** - User-defined tags and labels
 - **File Versioning** - Track and restore previous file versions
 - **Offline Upload Queue** - Resumable uploads with service workers

@@ -1,5 +1,7 @@
 import type { Env, CloudflareApiResponse, BucketsListResult } from '../types';
 import { CF_API } from '../types';
+import { getCloudflareHeaders } from '../utils/helpers';
+import { logInfo, logError } from '../utils/error-logger';
 
 interface R2ObjectResult {
   key: string;
@@ -30,17 +32,13 @@ export async function handleSearchRoutes(
   corsHeaders: HeadersInit,
   isLocalDev: boolean
 ): Promise<Response> {
-  console.log('[Search] Handling search operation');
-  
+  logInfo('Handling search operation', { module: 'search', operation: 'search' });
+
   if (request.method !== 'GET' || url.pathname !== '/api/search') {
     return new Response('Not Found', { status: 404, headers: corsHeaders });
   }
 
-  const cfHeaders = {
-    'X-Auth-Email': env.CF_EMAIL,
-    'X-Auth-Key': env.API_KEY,
-    'Content-Type': 'application/json'
-  };
+  const cfHeaders = getCloudflareHeaders(env);
 
   try {
     // Extract search parameters
@@ -57,11 +55,11 @@ export async function handleSearchRoutes(
     const endDate = endDateParam !== null ? new Date(endDateParam) : null;
     const limit = parseInt(url.searchParams.get('limit') ?? '100');
 
-    console.log('[Search] Parameters:', { query, extensions, minSize, maxSize, startDate, endDate, limit });
+    logInfo('Search parameters', { module: 'search', operation: 'search', metadata: { query, extensions, minSize, maxSize, startDate, endDate, limit } });
 
     // Mock response for local development
     if (isLocalDev) {
-      console.log('[Search] Using mock data for local development');
+      logInfo('Using mock data for local development', { module: 'search', operation: 'search' });
       return new Response(JSON.stringify({
         results: [],
         pagination: {
@@ -82,14 +80,14 @@ export async function handleSearchRoutes(
       { headers: cfHeaders }
     );
     const bucketsData = await bucketsResponse.json() as CloudflareApiResponse<BucketsListResult>;
-    
+
     // Filter out system buckets
     const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki', 'kv-manager-backups', 'do-manager-backups', 'd1-manager-backups'];
     const buckets = (bucketsData.result?.buckets ?? [])
       .filter((b: { name: string }) => !systemBuckets.includes(b.name))
       .map((b: { name: string }) => b.name);
 
-    console.log('[Search] Searching across', buckets.length, 'buckets');
+    logInfo(`Searching across ${buckets.length} buckets`, { module: 'search', operation: 'search', metadata: { bucketCount: buckets.length } });
 
     // Fetch files from all buckets in parallel
     const bucketFilePromises = buckets.map(async (bucketName: string) => {
@@ -99,15 +97,15 @@ export async function handleSearchRoutes(
           + '&per_page=1000'; // Get up to 1000 files per bucket
 
         const response = await fetch(listUrl, { headers: cfHeaders });
-        
+
         if (!response.ok) {
-          console.error('[Search] Failed to list files in bucket:', bucketName);
+          await logError(env, new Error(`Failed to list files in bucket: ${bucketName}`), { module: 'search', operation: 'search', bucketName }, isLocalDev);
           return [];
         }
 
         const data = await response.json() as CloudflareApiResponse<R2ObjectResult[]>;
         const objects: R2ObjectResult[] = Array.isArray(data.result) ? data.result : [];
-        
+
         // Map files with bucket name
         return objects.map((obj: R2ObjectResult) => ({
           key: obj.key,
@@ -117,7 +115,7 @@ export async function handleSearchRoutes(
           url: `https://${env.ACCOUNT_ID}.r2.cloudflarestorage.com/${bucketName}/${obj.key}`
         }));
       } catch (err) {
-        console.error('[Search] Error fetching files from bucket:', bucketName, err);
+        await logError(env, err instanceof Error ? err : String(err), { module: 'search', operation: 'search', bucketName }, isLocalDev);
         return [];
       }
     });
@@ -125,7 +123,7 @@ export async function handleSearchRoutes(
     const allBucketFiles = await Promise.all(bucketFilePromises);
     const allFiles: SearchResult[] = allBucketFiles.flat();
 
-    console.log('[Search] Total files found:', allFiles.length);
+    logInfo(`Total files found: ${allFiles.length}`, { module: 'search', operation: 'search', metadata: { totalFiles: allFiles.length } });
 
     // Filter files based on search criteria
     const filteredFiles = allFiles.filter((file) => {
@@ -137,8 +135,8 @@ export async function handleSearchRoutes(
 
       // Extension filter
       if (extensions.length > 0) {
-        const fileExt = fileName.includes('.') 
-          ? '.' + (fileName.split('.').pop() ?? '').toLowerCase() 
+        const fileExt = fileName.includes('.')
+          ? '.' + (fileName.split('.').pop() ?? '').toLowerCase()
           : '';
         if (!extensions.includes(fileExt)) {
           return false;
@@ -167,7 +165,7 @@ export async function handleSearchRoutes(
       return true;
     });
 
-    console.log('[Search] Filtered to', filteredFiles.length, 'results');
+    logInfo(`Filtered to ${filteredFiles.length} results`, { module: 'search', operation: 'search', metadata: { resultCount: filteredFiles.length } });
 
     // Sort by uploaded date (newest first)
     filteredFiles.sort((a, b) => {
@@ -193,8 +191,8 @@ export async function handleSearchRoutes(
     });
 
   } catch (err) {
-    console.error('[Search] Search error:', err);
-    return new Response(JSON.stringify({ 
+    await logError(env, err instanceof Error ? err : String(err), { module: 'search', operation: 'search' }, isLocalDev);
+    return new Response(JSON.stringify({
       error: 'Search failed',
       details: err instanceof Error ? err.message : 'Unknown error'
     }), {

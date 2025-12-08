@@ -1,9 +1,10 @@
 import type { Env } from '../types';
+import { logInfo, logWarning } from './error-logger';
 
 // URL signing functions using HMAC-SHA256
 export async function generateSignature(path: string, env: Env): Promise<string> {
   const encoder = new TextEncoder();
-  
+
   // Import the signing key for HMAC
   const key = await crypto.subtle.importKey(
     'raw',
@@ -12,14 +13,14 @@ export async function generateSignature(path: string, env: Env): Promise<string>
     false,
     ['sign']
   );
-  
+
   // Generate HMAC-SHA256 signature
   const signature = await crypto.subtle.sign(
     'HMAC',
     key,
     encoder.encode(path)
   );
-  
+
   // Convert to hex string
   return Array.from(new Uint8Array(signature))
     .map(b => b.toString(16).padStart(2, '0'))
@@ -30,7 +31,7 @@ export async function validateSignature(request: Request, env: Env): Promise<boo
   const url = new URL(request.url);
   const signature = url.searchParams.get('sig');
   if (!signature) {
-    console.log('[Signature] No signature provided');
+    logWarning('[Signature] No signature provided', { module: 'signing', operation: 'validate' });
     return false;
   }
 
@@ -40,18 +41,22 @@ export async function validateSignature(request: Request, env: Env): Promise<boo
   searchParams.delete('sig');
   const queryString = searchParams.toString();
   const pathWithQuery = queryString ? decodedPath + '?' + queryString : decodedPath;
-  
+
   const expectedSignature = await generateSignature(pathWithQuery, env);
-  
-  console.log('[Signature] Validation:', {
-    path: url.pathname,
-    decodedPath,
-    pathWithQuery,
-    providedSig: signature,
-    expectedSig: expectedSignature,
-    match: signature === expectedSignature
+
+  logInfo('[Signature] Validation', {
+    module: 'signing',
+    operation: 'validate',
+    metadata: {
+      path: url.pathname,
+      decodedPath,
+      pathWithQuery,
+      providedSig: signature,
+      expectedSig: expectedSignature,
+      match: signature === expectedSignature
+    }
   });
-  
+
   return signature === expectedSignature;
 }
 

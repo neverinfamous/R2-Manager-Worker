@@ -1,6 +1,8 @@
 import type { Env, CloudflareApiResponse, R2ObjectInfo, AISearchCompatibility, AISearchFileInfo, AISearchInstance, AISearchInstancesListResult, AISearchQueryRequest, AISearchResponse, CreateAISearchBody, AISearchSyncResponse } from '../types';
 import { CF_API } from '../types';
 import { type CorsHeaders } from '../utils/cors';
+import { getCloudflareHeaders } from '../utils/helpers';
+import { logInfo, logError, logWarning } from '../utils/error-logger';
 
 // AI Search supported file extensions and size limits (per Cloudflare docs)
 const AI_SEARCH_SUPPORTED_EXTENSIONS: Record<string, { maxSize: number; mimeType: string }> = {
@@ -53,20 +55,20 @@ function getFileExtension(key: string): string {
 
 function isFileIndexable(key: string, size: number): { indexable: boolean; reason?: string } {
   const ext = getFileExtension(key);
-  
+
   if (!ext) {
     return { indexable: false, reason: 'No file extension' };
   }
-  
+
   const config = AI_SEARCH_SUPPORTED_EXTENSIONS[ext];
   if (!config) {
     return { indexable: false, reason: `Unsupported extension: ${ext}` };
   }
-  
+
   if (size > config.maxSize) {
     return { indexable: false, reason: `File size ${(size / 1024 / 1024).toFixed(2)}MB exceeds limit of ${config.maxSize / 1024 / 1024}MB` };
   }
-  
+
   return { indexable: true };
 }
 
@@ -77,13 +79,9 @@ export async function handleAISearchRoutes(
   corsHeaders: CorsHeaders,
   isLocalDev: boolean
 ): Promise<Response> {
-  console.log('[AI Search] Handling AI Search operation');
+  logInfo('Handling AI Search operation', { module: 'ai_search', operation: 'handle_request' });
 
-  const cfHeaders = {
-    'X-Auth-Email': env.CF_EMAIL,
-    'X-Auth-Key': env.API_KEY,
-    'Content-Type': 'application/json'
-  };
+  const cfHeaders = getCloudflareHeaders(env);
 
   try {
     // GET /api/ai-search/compatibility/:bucketName - Analyze bucket for AI Search compatibility
@@ -91,7 +89,7 @@ export async function handleAISearchRoutes(
     const compatibilityMatch = compatibilityRegex.exec(url.pathname);
     if (request.method === 'GET' && compatibilityMatch?.[1] !== undefined) {
       const bucketName = decodeURIComponent(compatibilityMatch[1]);
-      console.log('[AI Search] Checking compatibility for bucket:', bucketName);
+      logInfo('Checking compatibility for bucket', { module: 'ai_search', operation: 'check_compatibility', bucketName });
 
       if (isLocalDev) {
         // Return mock data for local development
@@ -190,7 +188,7 @@ export async function handleAISearchRoutes(
 
     // GET /api/ai-search/instances - List all AI Search instances
     if (request.method === 'GET' && url.pathname === '/api/ai-search/instances') {
-      console.log('[AI Search] Listing AI Search instances');
+      logInfo('Listing AI Search instances', { module: 'ai_search', operation: 'list_instances' });
 
       if (isLocalDev) {
         const mockInstances: AISearchInstance[] = [
@@ -216,8 +214,8 @@ export async function handleAISearchRoutes(
 
         if (!response.ok) {
           // API might not be available or require different permissions
-          console.warn('[AI Search] Failed to list instances:', response.status);
-          return new Response(JSON.stringify({ 
+          logWarning('Failed to list instances', { module: 'ai_search', operation: 'list_instances', metadata: { status: response.status } });
+          return new Response(JSON.stringify({
             instances: [],
             error: 'AI Search management API not available. Create instances via Cloudflare Dashboard.',
             dashboardUrl: `https://dash.cloudflare.com/?to=/:account/ai/ai-search`
@@ -227,14 +225,14 @@ export async function handleAISearchRoutes(
         }
 
         const data = await response.json() as CloudflareApiResponse<AISearchInstancesListResult>;
-        return new Response(JSON.stringify({ 
-          instances: data.result?.rags ?? [] 
+        return new Response(JSON.stringify({
+          instances: data.result?.rags ?? []
         }), {
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
       } catch (err) {
-        console.error('[AI Search] Error listing instances:', err);
-        return new Response(JSON.stringify({ 
+        await logError(env, err instanceof Error ? err : String(err), { module: 'ai_search', operation: 'list_instances' }, isLocalDev);
+        return new Response(JSON.stringify({
           instances: [],
           error: 'Failed to fetch AI Search instances'
         }), {
@@ -246,7 +244,7 @@ export async function handleAISearchRoutes(
     // POST /api/ai-search/instances - Create a new AI Search instance
     if (request.method === 'POST' && url.pathname === '/api/ai-search/instances') {
       const body = await request.json() as CreateAISearchBody;
-      console.log('[AI Search] Creating AI Search instance:', body.name);
+      logInfo('Creating AI Search instance', { module: 'ai_search', operation: 'create_instance', metadata: { instanceName: body.name } });
 
       if (isLocalDev) {
         return new Response(JSON.stringify({
@@ -283,8 +281,8 @@ export async function handleAISearchRoutes(
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('[AI Search] Failed to create instance:', response.status, errorText);
-          return new Response(JSON.stringify({ 
+          await logError(env, new Error(errorText), { module: 'ai_search', operation: 'create_instance', metadata: { status: response.status } }, isLocalDev);
+          return new Response(JSON.stringify({
             success: false,
             error: 'Failed to create AI Search instance. Use Cloudflare Dashboard instead.',
             dashboardUrl: `https://dash.cloudflare.com/?to=/:account/ai/ai-search`
@@ -295,15 +293,15 @@ export async function handleAISearchRoutes(
         }
 
         const data = await response.json() as CloudflareApiResponse<AISearchInstance>;
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
           success: true,
-          instance: data.result 
+          instance: data.result
         }), {
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
       } catch (err) {
-        console.error('[AI Search] Error creating instance:', err);
-        return new Response(JSON.stringify({ 
+        await logError(env, err instanceof Error ? err : String(err), { module: 'ai_search', operation: 'create_instance' }, isLocalDev);
+        return new Response(JSON.stringify({
           success: false,
           error: 'Failed to create AI Search instance'
         }), {
@@ -318,7 +316,7 @@ export async function handleAISearchRoutes(
     const deleteMatch = deleteRegex.exec(url.pathname);
     if (request.method === 'DELETE' && deleteMatch?.[1] !== undefined) {
       const instanceName = decodeURIComponent(deleteMatch[1]);
-      console.log('[AI Search] Deleting AI Search instance:', instanceName);
+      logInfo('Deleting AI Search instance', { module: 'ai_search', operation: 'delete_instance', metadata: { instanceName } });
 
       if (isLocalDev) {
         return new Response(JSON.stringify({ success: true }), {
@@ -333,7 +331,7 @@ export async function handleAISearchRoutes(
         );
 
         if (!response.ok) {
-          return new Response(JSON.stringify({ 
+          return new Response(JSON.stringify({
             success: false,
             error: 'Failed to delete AI Search instance'
           }), {
@@ -346,8 +344,8 @@ export async function handleAISearchRoutes(
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
       } catch (err) {
-        console.error('[AI Search] Error deleting instance:', err);
-        return new Response(JSON.stringify({ 
+        await logError(env, err instanceof Error ? err : String(err), { module: 'ai_search', operation: 'delete_instance' }, isLocalDev);
+        return new Response(JSON.stringify({
           success: false,
           error: 'Failed to delete AI Search instance'
         }), {
@@ -362,10 +360,10 @@ export async function handleAISearchRoutes(
     const syncMatch = syncRegex.exec(url.pathname);
     if (request.method === 'POST' && syncMatch?.[1] !== undefined) {
       const instanceName = decodeURIComponent(syncMatch[1]);
-      console.log('[AI Search] Triggering sync for instance:', instanceName);
+      logInfo('Triggering sync for instance', { module: 'ai_search', operation: 'trigger_sync', metadata: { instanceName } });
 
       if (isLocalDev) {
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
           success: true,
           message: 'Sync triggered successfully',
           job_id: 'mock-job-id-123'
@@ -381,9 +379,9 @@ export async function handleAISearchRoutes(
         );
 
         const data = await response.json() as CloudflareApiResponse<AISearchSyncResponse>;
-        
+
         if (!response.ok) {
-          return new Response(JSON.stringify({ 
+          return new Response(JSON.stringify({
             success: false,
             error: 'Failed to trigger sync'
           }), {
@@ -392,7 +390,7 @@ export async function handleAISearchRoutes(
           });
         }
 
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
           success: true,
           message: 'Sync triggered successfully',
           job_id: data.result?.job_id
@@ -400,8 +398,8 @@ export async function handleAISearchRoutes(
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
       } catch (err) {
-        console.error('[AI Search] Error triggering sync:', err);
-        return new Response(JSON.stringify({ 
+        await logError(env, err instanceof Error ? err : String(err), { module: 'ai_search', operation: 'trigger_sync' }, isLocalDev);
+        return new Response(JSON.stringify({
           success: false,
           error: 'Failed to trigger sync'
         }), {
@@ -417,7 +415,7 @@ export async function handleAISearchRoutes(
     if (request.method === 'POST' && searchMatch?.[1] !== undefined) {
       const instanceName = decodeURIComponent(searchMatch[1]);
       const body = await request.json() as AISearchQueryRequest;
-      console.log('[AI Search] Search query for instance:', instanceName);
+      logInfo('Search query for instance', { module: 'ai_search', operation: 'search', metadata: { instanceName } });
 
       if (isLocalDev) {
         const mockResponse: AISearchResponse = {
@@ -452,7 +450,7 @@ export async function handleAISearchRoutes(
             rewrite_query: body.rewrite_query ?? false,
             max_num_results: body.max_num_results ?? 10
           };
-          
+
           if (body.score_threshold !== undefined) {
             searchParams.ranking_options = { score_threshold: body.score_threshold };
           }
@@ -466,8 +464,8 @@ export async function handleAISearchRoutes(
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
           });
         } catch (err) {
-          console.error('[AI Search] Search error:', err);
-          return new Response(JSON.stringify({ 
+          await logError(env, err instanceof Error ? err : String(err), { module: 'ai_search', operation: 'search' }, isLocalDev);
+          return new Response(JSON.stringify({
             error: 'Search failed',
             details: err instanceof Error ? err.message : 'Unknown error'
           }), {
@@ -493,8 +491,8 @@ export async function handleAISearchRoutes(
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
           });
         } catch (err) {
-          console.error('[AI Search] REST API search error:', err);
-          return new Response(JSON.stringify({ 
+          await logError(env, err instanceof Error ? err : String(err), { module: 'ai_search', operation: 'search' }, isLocalDev);
+          return new Response(JSON.stringify({
             error: 'Search failed'
           }), {
             status: 500,
@@ -510,7 +508,7 @@ export async function handleAISearchRoutes(
     if (request.method === 'POST' && aiSearchMatch?.[1] !== undefined) {
       const instanceName = decodeURIComponent(aiSearchMatch[1]);
       const body = await request.json() as AISearchQueryRequest;
-      console.log('[AI Search] AI Search query for instance:', instanceName);
+      logInfo('AI Search query for instance', { module: 'ai_search', operation: 'ai_search', metadata: { instanceName } });
 
       if (isLocalDev) {
         const mockResponse: AISearchResponse = {
@@ -550,7 +548,7 @@ export async function handleAISearchRoutes(
               max_num_results: body.max_num_results ?? 10,
               stream: true
             };
-            
+
             if (body.score_threshold !== undefined) {
               streamParams.ranking_options = { score_threshold: body.score_threshold };
             }
@@ -559,14 +557,14 @@ export async function handleAISearchRoutes(
             }
 
             const streamResult = await env.AI.autorag(instanceName).aiSearch(streamParams);
-            
+
             // The streaming response returns a Response object
             return new Response(streamResult.body, {
-              headers: { 
+              headers: {
                 'Content-Type': 'text/event-stream',
                 'Cache-Control': 'no-cache',
                 'Connection': 'keep-alive',
-                ...corsHeaders 
+                ...corsHeaders
               }
             });
           } else {
@@ -582,7 +580,7 @@ export async function handleAISearchRoutes(
               rewrite_query: body.rewrite_query ?? false,
               max_num_results: body.max_num_results ?? 10
             };
-            
+
             if (body.score_threshold !== undefined) {
               searchParams.ranking_options = { score_threshold: body.score_threshold };
             }
@@ -597,8 +595,8 @@ export async function handleAISearchRoutes(
             });
           }
         } catch (err) {
-          console.error('[AI Search] AI Search error:', err);
-          return new Response(JSON.stringify({ 
+          await logError(env, err instanceof Error ? err : String(err), { module: 'ai_search', operation: 'ai_search' }, isLocalDev);
+          return new Response(JSON.stringify({
             error: 'AI Search failed',
             details: err instanceof Error ? err.message : 'Unknown error'
           }), {
@@ -624,8 +622,8 @@ export async function handleAISearchRoutes(
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
           });
         } catch (err) {
-          console.error('[AI Search] REST API AI Search error:', err);
-          return new Response(JSON.stringify({ 
+          await logError(env, err instanceof Error ? err : String(err), { module: 'ai_search', operation: 'ai_search' }, isLocalDev);
+          return new Response(JSON.stringify({
             error: 'AI Search failed'
           }), {
             status: 500,
@@ -646,7 +644,7 @@ export async function handleAISearchRoutes(
     }
 
   } catch (err) {
-    console.error('[AI Search] Operation error:', err);
+    await logError(env, err instanceof Error ? err : String(err), { module: 'ai_search', operation: 'handle_request' }, isLocalDev);
     return new Response(JSON.stringify({ error: 'AI Search operation failed' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json', ...corsHeaders }

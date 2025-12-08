@@ -2,8 +2,10 @@ import JSZip from 'jszip';
 import type { Env, CloudflareApiResponse, JobOperationType } from '../types';
 import { CF_API } from '../types';
 import { generateSignature } from '../utils/signing';
+import { getCloudflareHeaders } from '../utils/helpers';
 import { generateJobId, createJob, updateJobProgress, completeJob, logJobEvent } from './jobs';
 import { logAuditEvent } from './audit';
+import { logError, logInfo, logWarning } from '../utils/error-logger';
 
 interface MultiBucketDownloadBody {
   buckets: { bucketName: string; files: string[] }[];
@@ -36,15 +38,12 @@ export async function handleFileRoutes(
   isLocalDev: boolean,
   userEmail: string
 ): Promise<Response> {
-  console.log('[Files] Handling file operation');
+  logInfo('Handling file operation', { module: 'files', operation: 'handle' });
   const parts = url.pathname.split('/');
   const bucketName = parts[3];
   const db = env.METADATA;
-  
-  const cfHeaders = {
-    'X-Auth-Email': env.CF_EMAIL,
-    'X-Auth-Key': env.API_KEY
-  };
+
+  const cfHeaders = getCloudflareHeaders(env);
 
   // Handle multi-bucket ZIP download
   if (request.method === 'POST' && url.pathname === '/api/files/download-buckets-zip') {
@@ -53,15 +52,15 @@ export async function handleFileRoutes(
     let totalFiles = 0;
     let processedFiles = 0;
     let errorCount = 0;
-    
+
     try {
-      console.log('[Files] Processing multi-bucket ZIP download request');
+      logInfo('Processing multi-bucket ZIP download request', { module: 'files', operation: 'multi_download' });
       const { buckets } = await request.json() as MultiBucketDownloadBody;
-      
+
       // Calculate total files
       totalFiles = buckets.reduce((sum, b) => sum + b.files.length, 0);
       const bucketNames = buckets.map(b => b.bucketName).join(', ');
-      
+
       // Create job record
       if (db) {
         await createJob(db, {
@@ -73,25 +72,25 @@ export async function handleFileRoutes(
           metadata: { buckets: buckets.map(b => ({ name: b.bucketName, fileCount: b.files.length })) }
         });
       }
-      
+
       const zip = new JSZip();
-      
+
       for (const bucket of buckets) {
-        console.log('[Files] Processing bucket:', bucket.bucketName);
+        logInfo(`Processing bucket: ${bucket.bucketName}`, { module: 'files', operation: 'multi_download', bucketName: bucket.bucketName });
         const bucketFolder = zip.folder(bucket.bucketName);
-        
+
         if (bucketFolder === null) {
           throw new Error('Failed to create folder for bucket: ' + bucket.bucketName);
         }
-        
+
         for (const fileName of bucket.files) {
-          console.log('[Files] Fetching:', fileName, 'from bucket:', bucket.bucketName);
+          logInfo(`Fetching: ${fileName} from bucket: ${bucket.bucketName}`, { module: 'files', operation: 'multi_download', bucketName: bucket.bucketName, fileName });
           try {
             const response = await fetch(
               CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucket.bucketName + '/objects/' + fileName,
               { headers: cfHeaders }
             );
-            
+
             if (!response.ok) {
               errorCount++;
               if (db) {
@@ -104,11 +103,11 @@ export async function handleFileRoutes(
               }
               continue;
             }
-            
+
             const buffer = await response.arrayBuffer();
             bucketFolder.file(fileName, buffer);
             processedFiles++;
-            
+
             // Update progress every 5 files or on last file
             if (db && (processedFiles % 5 === 0 || processedFiles === totalFiles)) {
               await updateJobProgress(db, {
@@ -120,7 +119,7 @@ export async function handleFileRoutes(
             }
           } catch (fileErr) {
             errorCount++;
-            console.error('[Files] Error fetching file:', fileName, fileErr);
+            void logError(env, fileErr instanceof Error ? fileErr : new Error(String(fileErr)), { module: 'files', operation: 'multi_download', bucketName: bucket.bucketName, fileName }, isLocalDev);
             if (db) {
               await logJobEvent(db, {
                 jobId,
@@ -132,10 +131,10 @@ export async function handleFileRoutes(
           }
         }
       }
-      
-      console.log('[Files] Creating multi-bucket ZIP');
-      const zipContent = await zip.generateAsync({type: "uint8array"});
-      
+
+      logInfo('Creating multi-bucket ZIP', { module: 'files', operation: 'multi_download' });
+      const zipContent = await zip.generateAsync({ type: "uint8array" });
+
       // Complete the job
       if (db) {
         await completeJob(db, {
@@ -146,7 +145,7 @@ export async function handleFileRoutes(
           userEmail
         });
       }
-      
+
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
       return new Response(zipContent.buffer as ArrayBuffer, {
         headers: {
@@ -157,8 +156,8 @@ export async function handleFileRoutes(
       });
 
     } catch (err) {
-      console.error('[Files] Multi-bucket ZIP download error:', err);
-      
+      void logError(env, err instanceof Error ? err : new Error(String(err)), { module: 'files', operation: 'multi_download' }, isLocalDev);
+
       // Mark job as failed
       if (db) {
         await completeJob(db, {
@@ -170,8 +169,8 @@ export async function handleFileRoutes(
           errorMessage: String(err)
         });
       }
-      
-      return new Response(JSON.stringify({ 
+
+      return new Response(JSON.stringify({
         error: 'Failed to create multi-bucket zip file'
       }), {
         status: 500,
@@ -191,13 +190,13 @@ export async function handleFileRoutes(
     let errorCount = 0;
     let totalFiles = 0;
     const targetBucket = bucketName ?? 'unknown';
-    
+
     try {
-      console.log('[Files] Processing ZIP download request');
+      logInfo('Processing ZIP download request', { module: 'files', operation: 'download_zip', bucketName: bucketName ?? 'unknown' });
       const body = await request.json() as ZipDownloadBody;
       const files = body.files;
       totalFiles = files.length;
-      
+
       // Create job record
       if (db) {
         await createJob(db, {
@@ -209,17 +208,17 @@ export async function handleFileRoutes(
           metadata: { files }
         });
       }
-      
+
       const zip = new JSZip();
-      
+
       for (const fileName of files) {
-        console.log('[Files] Fetching:', fileName);
+        logInfo(`Fetching: ${fileName}`, { module: 'files', operation: 'download_zip', bucketName: bucketName ?? 'unknown', fileName });
         try {
           const response = await fetch(
             CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + fileName,
             { headers: cfHeaders }
           );
-          
+
           if (!response.ok) {
             errorCount++;
             if (db) {
@@ -232,11 +231,11 @@ export async function handleFileRoutes(
             }
             continue;
           }
-          
+
           const buffer = await response.arrayBuffer();
           zip.file(fileName, buffer);
           processedFiles++;
-          
+
           // Update progress every 5 files or on last file
           if (db && (processedFiles % 5 === 0 || processedFiles === totalFiles)) {
             await updateJobProgress(db, {
@@ -248,7 +247,7 @@ export async function handleFileRoutes(
           }
         } catch (fileErr) {
           errorCount++;
-          console.error('[Files] Error fetching file:', fileName, fileErr);
+          void logError(env, fileErr instanceof Error ? fileErr : new Error(String(fileErr)), { module: 'files', operation: 'download_zip', bucketName: bucketName ?? 'unknown', fileName }, isLocalDev);
           if (db) {
             await logJobEvent(db, {
               jobId,
@@ -259,10 +258,10 @@ export async function handleFileRoutes(
           }
         }
       }
-      
-      console.log('[Files] Creating ZIP');
-      const zipContent = await zip.generateAsync({type: "uint8array"});
-      
+
+      logInfo('Creating ZIP', { module: 'files', operation: 'download_zip', bucketName: bucketName ?? 'unknown' });
+      const zipContent = await zip.generateAsync({ type: "uint8array" });
+
       // Complete the job
       if (db) {
         await completeJob(db, {
@@ -273,7 +272,7 @@ export async function handleFileRoutes(
           userEmail
         });
       }
-      
+
       return new Response(zipContent.buffer as ArrayBuffer, {
         headers: {
           'Content-Type': 'application/zip',
@@ -283,8 +282,8 @@ export async function handleFileRoutes(
       });
 
     } catch (err) {
-      console.error('[Files] ZIP download error:', err);
-      
+      void logError(env, err instanceof Error ? err : new Error(String(err)), { module: 'files', operation: 'download_zip', bucketName: bucketName ?? 'unknown' }, isLocalDev);
+
       // Mark job as failed
       if (db) {
         await completeJob(db, {
@@ -296,8 +295,8 @@ export async function handleFileRoutes(
           errorMessage: String(err)
         });
       }
-      
-      return new Response(JSON.stringify({ 
+
+      return new Response(JSON.stringify({
         error: 'Failed to create zip file'
       }), {
         status: 500,
@@ -312,15 +311,15 @@ export async function handleFileRoutes(
   // List files with pagination
   if (request.method === 'GET' && parts.length === 4) {
     try {
-      console.log('[Files] Listing files in bucket:', bucketName);
+      logInfo(`Listing files in bucket: ${bucketName}`, { module: 'files', operation: 'list', bucketName: bucketName ?? 'unknown' });
       const cursor = url.searchParams.get('cursor');
       const limit = parseInt(url.searchParams.get('limit') ?? '20');
       const skipCache = url.searchParams.get('skipCache') === 'true';
       const prefix = url.searchParams.get('prefix');
-      
+
       // Mock response for local development
       if (isLocalDev) {
-        console.log('[Files] Using mock data for local development');
+        logInfo('Using mock data for local development', { module: 'files', operation: 'list', bucketName: bucketName ?? 'unknown' });
         return new Response(JSON.stringify({
           objects: [],
           folders: [],
@@ -336,55 +335,49 @@ export async function handleFileRoutes(
           }
         });
       }
-      
+
       let apiUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects'
         + '?include=customMetadata,httpMetadata'
         + '&per_page=' + String(limit)
         + '&delimiter=/'
         + '&order=desc'
         + '&sort_by=last_modified';
-      
+
       if (cursor !== null && cursor !== '') {
         apiUrl += '&cursor=' + cursor;
       }
-      
+
       // Add prefix parameter for folder navigation
       if (prefix !== null && prefix !== '') {
         apiUrl += '&prefix=' + encodeURIComponent(prefix);
-        console.log('[Files] Using prefix filter:', prefix);
+        logInfo(`Using prefix filter: ${prefix}`, { module: 'files', operation: 'list', bucketName: bucketName ?? 'unknown', metadata: { prefix } });
       }
 
       // Add cache-busting parameter if requested
       if (skipCache) {
         apiUrl += '&_t=' + String(Date.now());
       }
-      
-      console.log('[Files] List request URL:', apiUrl);
-      const response = await fetch(apiUrl, { 
+
+      logInfo(`List request URL: ${apiUrl}`, { module: 'files', operation: 'list', bucketName: bucketName ?? 'unknown' });
+      const response = await fetch(apiUrl, {
         headers: {
           ...cfHeaders,
           'Cache-Control': skipCache ? 'no-cache' : 'max-age=60'
         }
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to list files: ' + String(response.status));
       }
 
       const data = await response.json() as CloudflareApiResponse<ListFilesResponseResult['objects']>;
-      console.log('[Files] List response:', {
-        url: apiUrl,
-        objects: data.result?.slice(0, 3),
-        total: data.result?.length ?? 0,
-        pagination: data.result_info,
-        sorting: 'desc by last_modified'
-      });
+      logInfo('List response received', { module: 'files', operation: 'list', bucketName: bucketName ?? 'unknown', metadata: { url: apiUrl, objectsSample: data.result?.slice(0, 3), total: data.result?.length ?? 0, pagination: data.result_info } });
 
       // Filter out assets folder, .keep files, and process objects
       const fileList: ListFilesResponseResult['objects'] = Array.isArray(data.result) ? data.result : [];
       const objectPromises = fileList
-        .filter((obj: ListFilesResponseResult['objects'][0]) => 
-          !obj.key.startsWith('assets/') && 
+        .filter((obj: ListFilesResponseResult['objects'][0]) =>
+          !obj.key.startsWith('assets/') &&
           !obj.key.endsWith('/.keep') &&
           obj.key !== '.keep'
         )
@@ -411,12 +404,12 @@ export async function handleFileRoutes(
       // Extract folders from the API response
       // The Cloudflare REST API returns folders in data.result_info.delimited
       const rawPrefixes: string[] = data.result_info?.delimited ?? [];
-      console.log('[Files] Found folders in result_info.delimited:', rawPrefixes);
-      
+      logInfo(`Found folders in result_info.delimited: ${JSON.stringify(rawPrefixes)}`, { module: 'files', operation: 'list', bucketName: bucketName ?? 'unknown', metadata: { folders: rawPrefixes } });
+
       const folders = rawPrefixes
         .filter((prefix: string) => !prefix.startsWith('assets/'))
         .map((prefix: string) => prefix.endsWith('/') ? prefix.slice(0, -1) : prefix);
-      console.log('[Files] Processed folders array:', folders);
+      logInfo(`Processed folders array: ${JSON.stringify(folders)}`, { module: 'files', operation: 'list', bucketName: bucketName ?? 'unknown' });
 
       // Determine if there are more results
       // hasMore should be true only if the API indicates truncation AND we have a cursor for the next page
@@ -424,14 +417,7 @@ export async function handleFileRoutes(
       const hasValidCursor = data.result_info?.cursor !== undefined && data.result_info.cursor !== '';
       const hasMore = apiHasMore && hasValidCursor;
 
-      console.log('[Files] Pagination info:', {
-        apiTruncated: apiHasMore,
-        cursor: data.result_info?.cursor,
-        hasMore: hasMore,
-        objectsReturned: objects.length,
-        foldersReturned: folders.length,
-        requestedLimit: limit
-      });
+      logInfo('Pagination info', { module: 'files', operation: 'list', bucketName: bucketName ?? 'unknown', metadata: { apiTruncated: apiHasMore, cursor: data.result_info?.cursor, hasMore, objectsReturned: objects.length, foldersReturned: folders.length, limit } });
 
       return new Response(JSON.stringify({
         objects,
@@ -449,8 +435,8 @@ export async function handleFileRoutes(
       });
 
     } catch (err) {
-      console.error('[Files] List error:', err);
-      return new Response(JSON.stringify({ 
+      void logError(env, err instanceof Error ? err : new Error(String(err)), { module: 'files', operation: 'list', bucketName: bucketName ?? 'unknown' }, isLocalDev);
+      return new Response(JSON.stringify({
         error: 'Failed to list files'
       }), {
         status: 500,
@@ -469,31 +455,27 @@ export async function handleFileRoutes(
     const fileName = request.headers.get('X-File-Name');
     const chunkIndex = parseInt(request.headers.get('X-Chunk-Index') ?? '0');
     const totalChunks = parseInt(request.headers.get('X-Total-Chunks') ?? '1');
-    
+
     if (fileName === null || file === null) {
-      console.log('[Files] Missing filename or file in upload request');
-      return new Response('Missing file or file name', { 
+      logInfo('Missing filename or file in upload request', { module: 'files', operation: 'upload', bucketName: bucketName ?? 'unknown' });
+      return new Response('Missing file or file name', {
         status: 400,
         headers: corsHeaders
       });
     }
 
     try {
-      console.log('[Files] Processing upload:',
-        'bucket=' + bucketName,
-        'file=' + fileName,
-        'chunk=' + String(chunkIndex + 1) + '/' + String(totalChunks)
-      );
+      logInfo(`Processing upload: ${fileName} (chunk ${chunkIndex + 1}/${totalChunks})`, { module: 'files', operation: 'upload', bucketName: bucketName ?? 'unknown', fileName, metadata: { chunkIndex, totalChunks } });
 
       // Mock response for local development
       if (isLocalDev) {
-        console.log('[Files] Simulating upload success for local development');
+        logInfo('Simulating upload success for local development', { module: 'files', operation: 'upload', bucketName: bucketName ?? 'unknown', fileName });
         const uploadTimestamp = new Date().toISOString();
-        return new Response(JSON.stringify({ 
+        return new Response(JSON.stringify({
           success: true,
           key: decodeURIComponent(fileName),
           timestamp: uploadTimestamp
-        }), { 
+        }), {
           headers: {
             'Content-Type': 'application/json',
             'Cache-Control': 'no-cache',
@@ -506,12 +488,12 @@ export async function handleFileRoutes(
       const uploadUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + decodedFileName;
       const uploadTimestamp = new Date().toISOString();
       let etag = '';
-      
+
       // Upload file using REST API
       const uploadResponse = await fetch(uploadUrl, {
         method: 'PUT',
-        headers: { 
-          ...cfHeaders, 
+        headers: {
+          ...cfHeaders,
           'Content-Type': file.type !== '' ? file.type : 'application/octet-stream',
           'X-Upload-Created': uploadTimestamp,
           'Cache-Control': 'no-cache'
@@ -525,7 +507,7 @@ export async function handleFileRoutes(
 
       // Try to get ETag from PUT response headers first
       etag = uploadResponse.headers.get('etag') ?? uploadResponse.headers.get('ETag') ?? '';
-      
+
       // If not in headers, try parsing from response body (R2 REST API returns JSON)
       if (!etag) {
         try {
@@ -540,7 +522,7 @@ export async function handleFileRoutes(
       if (!etag) {
         const listUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects?prefix=' + encodeURIComponent(decodedFileName);
         const listResponse = await fetch(listUrl, { headers: cfHeaders });
-        
+
         if (listResponse.ok) {
           const listData = await listResponse.json() as CloudflareApiResponse<{ key: string; etag?: string; httpEtag?: string }[]>;
           const fileObj = listData.result?.find(obj => obj.key === decodedFileName);
@@ -549,12 +531,12 @@ export async function handleFileRoutes(
           }
         }
       }
-      
+
       if (totalChunks === 1) {
-        console.log('[Files] Upload completed:', decodedFileName, 'ETag:', etag);
+        logInfo(`Upload completed: ${decodedFileName}, ETag: ${etag}`, { module: 'files', operation: 'upload', bucketName: bucketName ?? 'unknown', fileName: decodedFileName, metadata: { etag } });
       } else {
         const chunkId = decodedFileName + '-' + String(chunkIndex);
-        console.log('[Files] Chunk uploaded:', chunkId, 'ETag:', etag);
+        logInfo(`Chunk uploaded: ${chunkId}, ETag: ${etag}`, { module: 'files', operation: 'upload_chunk', bucketName: bucketName ?? 'unknown', fileName: decodedFileName, metadata: { chunkId, etag } });
       }
 
       // Force a cache refresh of the file listing
@@ -567,7 +549,7 @@ export async function handleFileRoutes(
 
       // Log audit event for file upload (only for final chunk or single chunk uploads)
       if (db && (totalChunks === 1 || chunkIndex === totalChunks - 1)) {
-        await logAuditEvent(db, {
+        await logAuditEvent(env, {
           operationType: 'file_upload',
           bucketName: bucketName ?? undefined,
           objectKey: decodedFileName,
@@ -575,15 +557,15 @@ export async function handleFileRoutes(
           status: 'success',
           sizeBytes: file.size,
           metadata: { etag, totalChunks }
-        });
+        }, isLocalDev);
       }
 
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         success: true,
         timestamp: uploadTimestamp,
         etag: etag,
         chunkIndex: chunkIndex
-      }), { 
+      }), {
         headers: {
           'Content-Type': 'application/json',
           'Cache-Control': 'no-cache',
@@ -592,23 +574,23 @@ export async function handleFileRoutes(
       });
 
     } catch (err) {
-      console.error('[Files] Upload error:', err);
-      
+      void logError(env, err instanceof Error ? err : new Error(String(err)), { module: 'files', operation: 'upload', bucketName: bucketName ?? 'unknown', fileName: fileName ? decodeURIComponent(fileName) : 'unknown' }, isLocalDev);
+
       // Log failed upload
       if (db) {
-        await logAuditEvent(db, {
+        await logAuditEvent(env, {
           operationType: 'file_upload',
           bucketName: bucketName ?? undefined,
           objectKey: fileName !== null ? decodeURIComponent(fileName) : undefined,
           userEmail,
           status: 'failed',
           metadata: { error: String(err) }
-        });
+        }, isLocalDev);
       }
-      
+
       return new Response(JSON.stringify({
         error: 'Upload failed'
-      }), { 
+      }), {
         status: 500,
         headers: {
           'Content-Type': 'application/json',
@@ -629,30 +611,30 @@ export async function handleFileRoutes(
         });
       }
       const key = decodeURIComponent(keyPart);
-      console.log('[Files] Generating signed URL for:', key);
-      
+      logInfo(`Generating signed URL for: ${key}`, { module: 'files', operation: 'signed_url', bucketName: bucketName ?? 'unknown', fileName: key });
+
       // Create the download path
       const downloadPath = '/api/files/' + bucketName + '/download/' + key;
       const version = Date.now();
       const versionedPath = downloadPath + '?ts=' + String(version);
       const signature = await generateSignature(versionedPath, env);
       const signedUrl = versionedPath + '&sig=' + signature;
-      
+
       // Return the full URL
       const fullUrl = new URL(signedUrl, request.url).toString();
-      
+
       // Log audit event for file download (signed URL generation)
       if (db) {
-        await logAuditEvent(db, {
+        await logAuditEvent(env, {
           operationType: 'file_download',
           bucketName: bucketName ?? undefined,
           objectKey: key,
           userEmail,
           status: 'success'
-        });
+        }, isLocalDev);
       }
-      
-      return new Response(JSON.stringify({ 
+
+      return new Response(JSON.stringify({
         success: true,
         url: fullUrl
       }), {
@@ -663,10 +645,10 @@ export async function handleFileRoutes(
       });
 
     } catch (err) {
-      console.error('[Files] Signed URL generation error:', err);
+      void logError(env, err instanceof Error ? err : new Error(String(err)), { module: 'files', operation: 'signed_url', bucketName: bucketName ?? 'unknown' }, isLocalDev);
       return new Response(JSON.stringify({
         error: 'Failed to generate signed URL'
-      }), { 
+      }), {
         status: 500,
         headers: {
           'Content-Type': 'application/json',
@@ -688,8 +670,8 @@ export async function handleFileRoutes(
         });
       }
       fileKey = decodeURIComponent(keyPart);
-      console.log('[Files] Deleting file:', fileKey);
-      
+      logInfo(`Deleting file: ${fileKey}`, { module: 'files', operation: 'delete', bucketName: bucketName ?? 'unknown', fileName: fileKey });
+
       const response = await fetch(
         CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + fileKey,
         {
@@ -704,13 +686,13 @@ export async function handleFileRoutes(
 
       // Log audit event for file delete
       if (db) {
-        await logAuditEvent(db, {
+        await logAuditEvent(env, {
           operationType: 'file_delete',
           bucketName: bucketName ?? undefined,
           objectKey: fileKey,
           userEmail,
           status: 'success'
-        });
+        }, isLocalDev);
       }
 
       return new Response(JSON.stringify({ success: true }), {
@@ -721,23 +703,23 @@ export async function handleFileRoutes(
       });
 
     } catch (err) {
-      console.error('[Files] Delete error:', err);
-      
+      void logError(env, err instanceof Error ? err : new Error(String(err)), { module: 'files', operation: 'delete', bucketName: bucketName ?? 'unknown', fileName: fileKey }, isLocalDev);
+
       // Log failed delete
       if (db && fileKey !== '') {
-        await logAuditEvent(db, {
+        await logAuditEvent(env, {
           operationType: 'file_delete',
           bucketName: bucketName ?? undefined,
           objectKey: fileKey,
           userEmail,
           status: 'failed',
           metadata: { error: String(err) }
-        });
+        }, isLocalDev);
       }
-      
+
       return new Response(JSON.stringify({
         error: 'Delete failed'
-      }), { 
+      }), {
         status: 500,
         headers: {
           'Content-Type': 'application/json',
@@ -754,7 +736,7 @@ export async function handleFileRoutes(
       const body = await request.json() as TransferBody;
       const destBucket = body.destinationBucket;
       const destPath = body.destinationPath ?? '';
-      
+
       if (destBucket === undefined || destBucket === '') {
         return new Response(JSON.stringify({ error: 'Missing destination bucket' }), {
           status: 400,
@@ -768,7 +750,7 @@ export async function handleFileRoutes(
       // Allow same-bucket operations if destination path is different
       const fileName = sourceKey.split('/').pop() ?? sourceKey;
       const destKey = destPath !== '' ? `${destPath}${destPath.endsWith('/') ? '' : '/'}${fileName}` : fileName;
-      
+
       if (bucketName === destBucket && sourceKey === destKey) {
         return new Response(JSON.stringify({ error: 'Source and destination must be different' }), {
           status: 400,
@@ -779,7 +761,7 @@ export async function handleFileRoutes(
         });
       }
 
-      console.log('[Files] Moving file:', sourceKey, 'from:', bucketName, 'to:', destBucket + '/' + destKey);
+      logInfo(`Moving file: ${sourceKey} to ${destBucket}/${destKey}`, { module: 'files', operation: 'move', bucketName: bucketName ?? 'unknown', fileName: sourceKey, metadata: { destination: `${destBucket}/${destKey}` } });
 
       // 1. Fetch file from source bucket
       const getUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + sourceKey;
@@ -825,15 +807,15 @@ export async function handleFileRoutes(
       });
 
       if (!deleteResponse.ok) {
-        console.warn('[Files] Warning: Failed to delete source file after successful copy:', deleteResponse.status);
+        logWarning(`Failed to delete source file after successful copy: ${deleteResponse.status}`, { module: 'files', operation: 'move', bucketName: bucketName ?? 'unknown', fileName: sourceKey });
         // Don't fail the operation if delete fails - the copy was successful
       }
 
-      console.log('[Files] Move completed successfully');
+      logInfo('Move completed successfully', { module: 'files', operation: 'move', bucketName: bucketName ?? 'unknown', fileName: sourceKey });
 
       // Log audit event for file move
       if (db) {
-        await logAuditEvent(db, {
+        await logAuditEvent(env, {
           operationType: 'file_move',
           bucketName: bucketName ?? undefined,
           objectKey: sourceKey,
@@ -842,7 +824,7 @@ export async function handleFileRoutes(
           sizeBytes: fileBuffer.byteLength,
           destinationBucket: destBucket,
           destinationKey: destKey
-        });
+        }, isLocalDev);
       }
 
       return new Response(JSON.stringify({ success: true }), {
@@ -853,21 +835,21 @@ export async function handleFileRoutes(
       });
 
     } catch (err) {
-      console.error('[Files] Move error:', err);
-      
+      void logError(env, err instanceof Error ? err : new Error(String(err)), { module: 'files', operation: 'move', bucketName: bucketName ?? 'unknown' }, isLocalDev);
+
       // Log failed move (we need to get sourceKey from parts again since it may not be in scope)
       if (db) {
         const failedSourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
-        await logAuditEvent(db, {
+        await logAuditEvent(env, {
           operationType: 'file_move',
           bucketName: bucketName ?? undefined,
           objectKey: failedSourceKey,
           userEmail,
           status: 'failed',
           metadata: { error: String(err) }
-        });
+        }, isLocalDev);
       }
-      
+
       return new Response(JSON.stringify({
         error: 'Move failed'
       }), {
@@ -887,7 +869,7 @@ export async function handleFileRoutes(
       const body = await request.json() as TransferBody;
       const destBucket = body.destinationBucket;
       const destPath = body.destinationPath ?? '';
-      
+
       if (destBucket === undefined || destBucket === '') {
         return new Response(JSON.stringify({ error: 'Missing destination bucket' }), {
           status: 400,
@@ -901,7 +883,7 @@ export async function handleFileRoutes(
       // Allow same-bucket operations if destination path is different
       const fileName = sourceKey.split('/').pop() ?? sourceKey;
       const destKey = destPath !== '' ? `${destPath}${destPath.endsWith('/') ? '' : '/'}${fileName}` : fileName;
-      
+
       if (bucketName === destBucket && sourceKey === destKey) {
         return new Response(JSON.stringify({ error: 'Source and destination must be different' }), {
           status: 400,
@@ -912,7 +894,7 @@ export async function handleFileRoutes(
         });
       }
 
-      console.log('[Files] Copying file:', sourceKey, 'from:', bucketName, 'to:', destBucket + '/' + destKey);
+      logInfo(`Copying file: ${sourceKey} to ${destBucket}/${destKey}`, { module: 'files', operation: 'copy', bucketName: bucketName ?? 'unknown', fileName: sourceKey, metadata: { destination: `${destBucket}/${destKey}` } });
 
       // 1. Fetch file from source bucket (same as move)
       const getUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + sourceKey;
@@ -950,11 +932,11 @@ export async function handleFileRoutes(
         throw new Error('Failed to upload to destination: ' + String(putResponse.status));
       }
 
-      console.log('[Files] Copy completed successfully');
+      logInfo('Copy completed successfully', { module: 'files', operation: 'copy', bucketName: bucketName ?? 'unknown', fileName: sourceKey });
 
       // Log audit event for file copy
       if (db) {
-        await logAuditEvent(db, {
+        await logAuditEvent(env, {
           operationType: 'file_copy',
           bucketName: bucketName ?? undefined,
           objectKey: sourceKey,
@@ -963,7 +945,7 @@ export async function handleFileRoutes(
           sizeBytes: fileBuffer.byteLength,
           destinationBucket: destBucket,
           destinationKey: destKey
-        });
+        }, isLocalDev);
       }
 
       return new Response(JSON.stringify({ success: true }), {
@@ -974,21 +956,21 @@ export async function handleFileRoutes(
       });
 
     } catch (err) {
-      console.error('[Files] Copy error:', err);
-      
+      void logError(env, err instanceof Error ? err : new Error(String(err)), { module: 'files', operation: 'copy', bucketName: bucketName ?? 'unknown' }, isLocalDev);
+
       // Log failed copy
       if (db) {
         const failedSourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
-        await logAuditEvent(db, {
+        await logAuditEvent(env, {
           operationType: 'file_copy',
           bucketName: bucketName ?? undefined,
           objectKey: failedSourceKey,
           userEmail,
           status: 'failed',
           metadata: { error: String(err) }
-        });
+        }, isLocalDev);
       }
-      
+
       return new Response(JSON.stringify({
         error: 'Copy failed'
       }), {
@@ -1007,7 +989,7 @@ export async function handleFileRoutes(
       const sourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
       const body = await request.json() as RenameFileBody;
       const newKey = body.newKey?.trim();
-      
+
       if (newKey === undefined || newKey === '') {
         return new Response(JSON.stringify({ error: 'New key is required' }), {
           status: 400,
@@ -1018,7 +1000,7 @@ export async function handleFileRoutes(
       // Prevent overwriting existing files
       const checkUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(newKey);
       const checkResponse = await fetch(checkUrl, { method: 'HEAD', headers: cfHeaders });
-      
+
       if (checkResponse.ok) {
         return new Response(JSON.stringify({ error: 'File with that name already exists' }), {
           status: 409,
@@ -1026,7 +1008,7 @@ export async function handleFileRoutes(
         });
       }
 
-      console.log('[Files] Renaming file:', sourceKey, 'to:', newKey);
+      logInfo(`Renaming file: ${sourceKey} to ${newKey}`, { module: 'files', operation: 'rename', bucketName: bucketName ?? 'unknown', fileName: sourceKey, metadata: { newKey } });
 
       // 1. Get source file
       const getUrl = CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets/' + bucketName + '/objects/' + encodeURIComponent(sourceKey);
@@ -1069,15 +1051,15 @@ export async function handleFileRoutes(
       });
 
       if (!deleteResponse.ok) {
-        console.warn('[Files] Warning: Failed to delete original file after rename:', deleteResponse.status);
+        logWarning(`Failed to delete original file after rename: ${deleteResponse.status}`, { module: 'files', operation: 'rename', bucketName: bucketName ?? 'unknown', fileName: sourceKey });
         // Don't fail the operation - the rename was successful
       }
 
-      console.log('[Files] File renamed successfully');
+      logInfo('File renamed successfully', { module: 'files', operation: 'rename', bucketName: bucketName ?? 'unknown', fileName: sourceKey });
 
       // Log audit event for file rename
       if (db) {
-        await logAuditEvent(db, {
+        await logAuditEvent(env, {
           operationType: 'file_rename',
           bucketName: bucketName ?? undefined,
           objectKey: sourceKey,
@@ -1086,7 +1068,7 @@ export async function handleFileRoutes(
           sizeBytes: fileBuffer.byteLength,
           destinationBucket: bucketName ?? undefined,
           destinationKey: newKey
-        });
+        }, isLocalDev);
       }
 
       return new Response(JSON.stringify({ success: true, newKey }), {
@@ -1097,21 +1079,21 @@ export async function handleFileRoutes(
       });
 
     } catch (err) {
-      console.error('[Files] Rename error:', err);
-      
+      void logError(env, err instanceof Error ? err : new Error(String(err)), { module: 'files', operation: 'rename', bucketName: bucketName ?? 'unknown' }, isLocalDev);
+
       // Log failed rename
       if (db) {
         const failedSourceKey = decodeURIComponent(parts.slice(4, -1).join('/'));
-        await logAuditEvent(db, {
+        await logAuditEvent(env, {
           operationType: 'file_rename',
           bucketName: bucketName ?? undefined,
           objectKey: failedSourceKey,
           userEmail,
           status: 'failed',
           metadata: { error: String(err) }
-        });
+        }, isLocalDev);
       }
-      
+
       return new Response(JSON.stringify({
         error: 'Failed to rename file'
       }), {
@@ -1124,7 +1106,7 @@ export async function handleFileRoutes(
     }
   }
 
-  return new Response('Not Found', { 
+  return new Response('Not Found', {
     status: 404,
     headers: corsHeaders
   });

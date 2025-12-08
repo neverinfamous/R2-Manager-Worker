@@ -1,4 +1,5 @@
 import type { Env } from '../types';
+import { logWarning } from './error-logger';
 
 /**
  * Rate limit tier types for different operation categories
@@ -32,18 +33,18 @@ function getRateLimitTier(method: string, pathname: string): RateLimitTier {
   if (method === 'DELETE') {
     return 'DELETE';
   }
-  
+
   // GET operations (reads) - signed-url generation is also a read
   if (method === 'GET' || pathname.includes('/signed-url/')) {
     return 'READ';
   }
-  
+
   // POST and PATCH operations (writes)
   // This includes: uploads, renames, copies, moves, folder creation
   if (method === 'POST' || method === 'PATCH') {
     return 'WRITE';
   }
-  
+
   // Default to READ for any other methods
   return 'READ';
 }
@@ -86,26 +87,30 @@ export async function checkRateLimit(
 ): Promise<RateLimitCheckResult> {
   // Determine appropriate tier for this request
   const tier = getRateLimitTier(method, pathname);
-  
+
   // Get the corresponding rate limiter
   const { limiter, limit, period } = getRateLimiter(env, tier);
-  
+
   // Check rate limit using user email as the key
   // This ensures each user has their own rate limit counter
   const { success } = await limiter.limit({ key: userEmail });
-  
+
   // Log violation for monitoring
   if (!success) {
-    console.warn('[Rate Limit] Limit exceeded', {
-      timestamp: new Date().toISOString(),
-      userEmail,
-      method,
-      pathname,
-      tier,
-      limit: `${limit} requests per ${period} seconds`
+    logWarning('[Rate Limit] Limit exceeded', {
+      module: 'ratelimit',
+      operation: 'check',
+      metadata: {
+        timestamp: new Date().toISOString(),
+        userEmail,
+        method,
+        pathname,
+        tier,
+        limit: `${limit} requests per ${period} seconds`
+      }
     });
   }
-  
+
   return {
     success,
     tier,
@@ -126,11 +131,11 @@ export function createRateLimitResponse(
   corsHeaders: HeadersInit
 ): Response {
   const { tier, limit, period } = checkResult;
-  
+
   // Calculate Retry-After header (in seconds)
   // Using the period as a safe retry time
   const retryAfter = period;
-  
+
   return new Response(JSON.stringify({
     error: 'Rate limit exceeded',
     message: `You have exceeded the ${tier.toLowerCase()} operation rate limit of ${limit} requests per ${period} seconds. Please wait before retrying.`,

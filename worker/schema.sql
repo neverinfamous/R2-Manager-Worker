@@ -96,3 +96,23 @@ CREATE INDEX IF NOT EXISTS idx_audit_log_bucket ON audit_log(bucket_name);
 CREATE INDEX IF NOT EXISTS idx_audit_log_user ON audit_log(user_email);
 CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_log_status ON audit_log(status);
+
+-- ============================================
+-- Webhooks Table
+-- ============================================
+
+-- Webhook configurations for event notifications
+CREATE TABLE IF NOT EXISTS webhooks (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  url TEXT NOT NULL,
+  secret TEXT,
+  events TEXT NOT NULL, -- JSON array of event types
+  enabled INTEGER DEFAULT 1,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+-- Index for querying enabled webhooks
+CREATE INDEX IF NOT EXISTS idx_webhooks_enabled ON webhooks(enabled);
+

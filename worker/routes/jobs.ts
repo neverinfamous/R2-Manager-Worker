@@ -1,7 +1,7 @@
-import type { 
-  Env, 
-  BulkJob, 
-  JobAuditEvent, 
+import type {
+  Env,
+  BulkJob,
+  JobAuditEvent,
   JobOperationType,
   CreateJobParams,
   UpdateJobProgressParams,
@@ -9,6 +9,7 @@ import type {
   LogJobEventParams,
   AuditLogEntry
 } from '../types';
+import { logInfo, logError } from '../utils/error-logger';
 
 interface APIResponse {
   success: boolean;
@@ -66,7 +67,7 @@ export async function createJob(
   params: CreateJobParams
 ): Promise<void> {
   const now = new Date().toISOString();
-  
+
   await db.prepare(`
     INSERT INTO bulk_jobs (
       job_id, bucket_name, operation_type, status, 
@@ -86,7 +87,7 @@ export async function createJob(
     params.userEmail,
     params.metadata ? JSON.stringify(params.metadata) : null
   ).run();
-  
+
   // Log the started event
   await logJobEvent(db, {
     jobId: params.jobId,
@@ -106,7 +107,7 @@ export async function updateJobProgress(
   const percentage = params.totalItems !== undefined && params.totalItems !== null && params.totalItems > 0
     ? (params.processedItems / params.totalItems) * 100
     : 0;
-  
+
   await db.prepare(`
     UPDATE bulk_jobs SET
       processed_items = ?,
@@ -129,7 +130,7 @@ export async function completeJob(
   params: CompleteJobParams
 ): Promise<void> {
   const now = new Date().toISOString();
-  
+
   await db.prepare(`
     UPDATE bulk_jobs SET
       status = ?,
@@ -146,7 +147,7 @@ export async function completeJob(
     params.status,
     params.jobId
   ).run();
-  
+
   // Log the completion event
   await logJobEvent(db, {
     jobId: params.jobId,
@@ -193,7 +194,7 @@ export async function handleJobRoutes(
 
   // GET /api/jobs - Get list of user's jobs
   if (url.pathname === '/api/jobs' && request.method === 'GET') {
-    console.log('[Jobs] Getting job list for user:', userEmail);
+    logInfo('Getting job list for user', { module: 'jobs', operation: 'list_jobs', userId: userEmail });
 
     const limit = parseInt(url.searchParams.get('limit') ?? '50');
     const offset = parseInt(url.searchParams.get('offset') ?? '0');
@@ -288,7 +289,7 @@ export async function handleJobRoutes(
       const isAuditOnlyOperation: boolean = operationType !== null && (AUDIT_ONLY_OPERATIONS as readonly string[]).includes(operationType);
       const isBulkJobOperation: boolean = operationType !== null && (BULK_JOB_OPERATIONS as readonly string[]).includes(operationType);
       const queryBoth: boolean = operationType === null; // Query both tables if no operation type filter
-      
+
       let allJobs: BulkJob[] = [];
       let totalBulkJobs = 0;
       let totalAuditEntries = 0;
@@ -411,7 +412,7 @@ export async function handleJobRoutes(
             throw bulkError;
           }
           // Table doesn't exist yet, continue with empty results
-          console.log('[Jobs] bulk_jobs table does not exist yet');
+          logInfo('bulk_jobs table does not exist yet', { module: 'jobs', operation: 'list_jobs' });
         }
       }
 
@@ -502,7 +503,7 @@ export async function handleJobRoutes(
             throw auditError;
           }
           // Table doesn't exist yet, continue with existing results
-          console.log('[Jobs] audit_log table does not exist yet');
+          logInfo('audit_log table does not exist yet', { module: 'jobs', operation: 'list_jobs' });
         }
       }
 
@@ -531,12 +532,12 @@ export async function handleJobRoutes(
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
     } catch (error) {
-      console.error('[Jobs] Error listing jobs:', error);
-      
+      await logError(env, error instanceof Error ? error : String(error), { module: 'jobs', operation: 'list_jobs' }, isLocalDev);
+
       // Check if this is a "table doesn't exist" error - return empty list instead of error
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes('no such table') || errorMessage.includes('bulk_jobs')) {
-        console.log('[Jobs] bulk_jobs table does not exist yet - returning empty list');
+        logInfo('bulk_jobs table does not exist yet - returning empty list', { module: 'jobs', operation: 'list_jobs' });
         const response: APIResponse = {
           success: true,
           result: {
@@ -550,7 +551,7 @@ export async function handleJobRoutes(
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
       }
-      
+
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to list jobs' }),
         { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
@@ -570,7 +571,7 @@ export async function handleJobRoutes(
       });
     }
 
-    console.log('[Jobs] Getting status for job:', requestedJobId);
+    logInfo('Getting status for job', { module: 'jobs', operation: 'get_job', metadata: { jobId: requestedJobId } });
 
     if (isLocalDev || !db) {
       const response: APIResponse = {
@@ -617,9 +618,9 @@ export async function handleJobRoutes(
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
     } catch (error) {
-      console.error('[Jobs] Error getting job:', error);
+      await logError(env, error instanceof Error ? error : String(error), { module: 'jobs', operation: 'get_job', metadata: { jobId: requestedJobId } }, isLocalDev);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       // If table doesn't exist, return 404 instead of 500
       if (errorMessage.includes('no such table') || errorMessage.includes('bulk_jobs')) {
         return new Response(JSON.stringify({ success: false, error: 'Job not found' }), {
@@ -627,7 +628,7 @@ export async function handleJobRoutes(
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
       }
-      
+
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to get job status' }),
         { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
@@ -647,7 +648,7 @@ export async function handleJobRoutes(
       });
     }
 
-    console.log('[Jobs] Getting events for job:', requestedJobId);
+    logInfo('Getting events for job', { module: 'jobs', operation: 'get_job_events', metadata: { jobId: requestedJobId } });
 
     if (isLocalDev || !db) {
       // Return mock events for local dev
@@ -716,9 +717,9 @@ export async function handleJobRoutes(
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
     } catch (error) {
-      console.error('[Jobs] Error getting job events:', error);
+      await logError(env, error instanceof Error ? error : String(error), { module: 'jobs', operation: 'get_job_events', metadata: { jobId: requestedJobId } }, isLocalDev);
       const errorMessage = error instanceof Error ? error.message : String(error);
-      
+
       // If table doesn't exist, return empty events list
       if (errorMessage.includes('no such table') || errorMessage.includes('job_audit_events')) {
         const response: APIResponse = {
@@ -732,7 +733,7 @@ export async function handleJobRoutes(
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
       }
-      
+
       return new Response(
         JSON.stringify({ success: false, error: 'Failed to get job events' }),
         { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }

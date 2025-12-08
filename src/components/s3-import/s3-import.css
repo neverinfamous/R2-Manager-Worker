@@ -1,0 +1,715 @@
+/* S3 Import Panel Styles - Using App Theme System */
+
+/* Main Container - Match Job History pattern */
+.s3-import-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  overflow: hidden;
+  margin: 0;
+}
+
+/* Header - Match AI Search header style */
+.s3-import-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  background: var(--accent-blue);
+  color: var(--text-inverse);
+}
+
+.s3-import-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.s3-import-title h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: inherit;
+  background: none;
+  -webkit-background-clip: unset;
+  -webkit-text-fill-color: unset;
+  background-clip: unset;
+}
+
+.s3-import-icon {
+  width: 24px;
+  height: 24px;
+}
+
+.s3-import-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 0.375rem;
+  padding: 0.375rem;
+  cursor: pointer;
+  color: inherit;
+  transition: background-color 0.2s;
+  display: none; /* Hidden since navigation is via main tabs */
+}
+
+.s3-import-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.s3-import-close svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Tabs - Match AI Search tabs */
+.s3-import-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.s3-import-tab {
+  flex: 1;
+  padding: 0.875rem 1rem;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.s3-import-tab:hover:not(:disabled) {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.s3-import-tab.active {
+  color: var(--accent-blue-light);
+  border-bottom-color: var(--accent-blue-light);
+  background: var(--bg-secondary);
+}
+
+.s3-import-badge {
+  background: var(--accent-blue);
+  color: var(--text-inverse);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  min-width: 1.25rem;
+  text-align: center;
+}
+
+/* Content Area */
+.s3-import-content {
+  padding: 1.25rem;
+  min-height: 300px;
+}
+
+/* Error State - Match Job History error */
+.s3-import-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--accent-red-bg);
+  border-radius: 0.375rem;
+  color: var(--accent-red-light);
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.s3-import-error svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* Loading State */
+.s3-import-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 3rem;
+  color: var(--text-secondary);
+}
+
+.s3-import-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent-blue-light);
+  border-radius: 50%;
+  animation: s3-spin 1s linear infinite;
+}
+
+@keyframes s3-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Form Styles - Match existing form patterns */
+.s3-credentials-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.s3-form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--bg-tertiary);
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+}
+
+.s3-form-section h3 {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent-blue-light);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.s3-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.s3-group-label,
+.s3-form-group label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.s3-form-group input,
+.s3-form-group select {
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--border-color);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  transition: border-color 0.2s;
+  color-scheme: inherit;
+}
+
+.s3-form-group select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.25rem;
+}
+
+.s3-form-group select option {
+  background: var(--bg-dropdown);
+  color: var(--text-primary);
+}
+
+.s3-form-group input:focus,
+.s3-form-group select:focus {
+  outline: none;
+  border-color: var(--border-focus);
+}
+
+.s3-form-group input:hover,
+.s3-form-group select:hover {
+  border-color: var(--border-hover);
+}
+
+.s3-form-group input::placeholder {
+  color: var(--text-tertiary);
+}
+
+.s3-form-group small {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+/* Checkbox Group */
+.s3-form-checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-secondary);
+  border-radius: 0.375rem;
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.s3-form-checkbox:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-hover);
+}
+
+.s3-form-checkbox input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--accent-blue);
+  cursor: pointer;
+}
+
+.s3-form-checkbox label {
+  margin: 0;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+
+/* Radio Options for Destination Type */
+.s3-destination-type-selector {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.s3-radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  padding: 0.375rem 0.5rem;
+  border-radius: 0.25rem;
+  transition: background 0.2s;
+}
+
+.s3-radio-option:hover {
+  background: var(--bg-hover);
+}
+
+.s3-radio-option input[type="radio"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--accent-blue);
+  cursor: pointer;
+}
+
+/* Info Box - Match AI Search info box */
+.s3-form-info {
+  display: flex;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--accent-blue-bg);
+  border-radius: 0.5rem;
+  border-left: 4px solid var(--accent-blue-light);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+}
+
+.s3-form-info svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  color: var(--accent-blue-light);
+}
+
+.s3-form-info p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.s3-form-info code {
+  background: var(--bg-secondary);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
+  font-family: 'Monaco', 'Menlo', monospace;
+  color: var(--accent-blue-light);
+}
+
+/* Form Actions */
+.s3-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding-top: 0.5rem;
+}
+
+.s3-btn-primary,
+.s3-btn-secondary {
+  padding: 0.625rem 1.25rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.s3-btn-primary {
+  background: var(--accent-blue);
+  color: var(--text-inverse);
+  border: none;
+}
+
+.s3-btn-primary:hover:not(:disabled) {
+  background: var(--accent-blue-hover);
+}
+
+.s3-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.s3-btn-secondary {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.s3-btn-secondary:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+}
+
+/* Jobs List Styles */
+.s3-jobs-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 4rem 2rem;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.s3-jobs-empty svg {
+  width: 4rem;
+  height: 4rem;
+  color: var(--text-tertiary);
+  opacity: 0.5;
+}
+
+.s3-jobs-empty p {
+  margin: 0;
+  max-width: 20rem;
+  line-height: 1.5;
+}
+
+.s3-jobs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.s3-jobs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.s3-jobs-count {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.s3-jobs-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  border-radius: 0.375rem;
+  color: var(--text-secondary);
+  transition: all 0.2s ease;
+}
+
+.s3-jobs-refresh:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+  color: var(--accent-blue-light);
+}
+
+.s3-jobs-refresh svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Job Card - Match Job History card style */
+.s3-job-card {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.s3-job-card:hover {
+  border-color: var(--border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.s3-job-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.s3-job-buckets {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.938rem;
+  font-weight: 600;
+}
+
+.s3-job-buckets svg {
+  width: 1rem;
+  height: 1rem;
+  color: var(--text-tertiary);
+}
+
+.s3-job-source {
+  color: var(--text-secondary);
+}
+
+.s3-job-destination {
+  color: var(--accent-blue-light);
+}
+
+/* Status Badges - Match Job History status badges */
+.s3-job-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.s3-status-success {
+  background: var(--accent-green-bg);
+  color: var(--accent-green-light);
+}
+
+.s3-status-error {
+  background: var(--accent-red-bg);
+  color: var(--accent-red-light);
+}
+
+.s3-status-warning {
+  background: var(--accent-yellow-bg);
+  color: var(--accent-yellow);
+}
+
+.s3-status-running {
+  background: var(--accent-blue-bg);
+  color: var(--accent-blue-light);
+}
+
+.s3-status-pending {
+  background: var(--accent-gray-bg);
+  color: var(--accent-gray-light);
+}
+
+/* Job Progress */
+.s3-job-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.s3-progress-bar {
+  height: 0.5rem;
+  background: var(--bg-secondary);
+  border-radius: 0.25rem;
+  overflow: hidden;
+}
+
+.s3-progress-fill {
+  height: 100%;
+  background: var(--accent-blue);
+  border-radius: 0.25rem;
+  transition: width 0.3s ease;
+}
+
+.s3-job-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.813rem;
+  color: var(--text-secondary);
+}
+
+.s3-stat strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.s3-stat-skipped strong {
+  color: var(--accent-yellow);
+}
+
+.s3-stat-failed strong {
+  color: var(--accent-red-light);
+}
+
+.s3-stat-bytes {
+  margin-left: auto;
+  color: var(--text-tertiary);
+  font-weight: 500;
+}
+
+/* Job Metadata */
+.s3-job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.s3-job-id {
+  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  background: var(--bg-secondary);
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+.s3-job-region {
+  background: var(--bg-secondary);
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
+  font-weight: 500;
+}
+
+/* Job Error */
+.s3-job-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--accent-red-bg);
+  border-radius: 0.375rem;
+  font-size: 0.813rem;
+  color: var(--accent-red-light);
+}
+
+.s3-job-error svg {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
+/* Job Actions */
+.s3-job-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 0.25rem;
+}
+
+.s3-btn-abort {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--accent-red-light);
+  background: transparent;
+  color: var(--accent-red-light);
+  border-radius: 0.375rem;
+  font-size: 0.813rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.s3-btn-abort:hover {
+  background: var(--accent-red-bg);
+}
+
+/* S3 Import View container */
+.s3-import-view {
+  padding: 0;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .s3-import-header {
+    padding: 0.875rem 1rem;
+  }
+
+  .s3-import-tabs {
+    overflow-x: auto;
+  }
+
+  .s3-import-tab {
+    padding: 0.75rem;
+    font-size: 0.813rem;
+    flex: none;
+    min-width: fit-content;
+  }
+
+  .s3-import-content {
+    padding: 1rem;
+  }
+
+  .s3-form-section {
+    padding: 1rem;
+  }
+
+  .s3-form-actions {
+    flex-direction: column;
+  }
+
+  .s3-btn-primary,
+  .s3-btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .s3-job-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .s3-job-stats {
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .s3-stat-bytes {
+    margin-left: 0;
+  }
+
+  .s3-destination-type-selector {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}

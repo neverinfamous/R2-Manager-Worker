@@ -1,4 +1,5 @@
 import type { Env } from '../types';
+import { logInfo, logError } from './error-logger';
 
 export function handleSiteWebmanifest(): Response {
   return new Response(JSON.stringify({
@@ -20,21 +21,21 @@ export function handleSiteWebmanifest(): Response {
 
 export async function handleStaticAsset(request: Request, env: Env, corsHeaders: HeadersInit): Promise<Response> {
   const url = new URL(request.url);
-  
+
   // Serve other static assets (only in production with ASSETS binding)
   if (url.pathname.startsWith('/manifest.json') || url.pathname.startsWith('/favicon.ico')) {
     if (env.ASSETS !== undefined) {
       try {
         return await env.ASSETS.fetch(request);
       } catch (e) {
-        console.error('[Assets] Failed to serve static asset:', e);
+        void logError(env, e instanceof Error ? e : new Error(String(e)), { module: 'assets', operation: 'static_asset' }, false);
         return new Response('Not Found', { status: 404 });
       }
     }
     // In development, return 404 - these are handled by Vite
     return new Response('Not Found', { status: 404 });
   }
-  
+
   return new Response('Not Found', { status: 404, headers: corsHeaders });
 }
 
@@ -43,7 +44,7 @@ export async function serveFrontendAssets(request: Request, env: Env, isLocalhos
   // In development, frontend is served by Vite on port 5173
   if (env.ASSETS !== undefined) {
     try {
-      console.log('[Assets] Serving frontend asset');
+      logInfo('Serving frontend asset', { module: 'assets', operation: 'frontend' });
       return await env.ASSETS.fetch(request);
     } catch {
       return new Response('Not Found', { status: 404 });
@@ -51,7 +52,7 @@ export async function serveFrontendAssets(request: Request, env: Env, isLocalhos
   } else {
     // Development mode: redirect to Vite server
     if (isLocalhost) {
-      return new Response('Development mode: Frontend is served by Vite on http://localhost:5173', { 
+      return new Response('Development mode: Frontend is served by Vite on http://localhost:5173', {
         status: 200,
         headers: { 'Content-Type': 'text/plain' }
       });

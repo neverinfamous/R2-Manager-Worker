@@ -61,7 +61,7 @@ jobs:
         if [ -f "VERSION" ]; then
           VERSION=$(cat VERSION | tr -d '[:space:]')
         else
-          VERSION="2.0.0"
+          VERSION="3.0.0"
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Detected version: $VERSION"
@@ -74,7 +74,7 @@ jobs:
         flavor: |
           latest=auto
         tags: |
-          # When pushing Git tag v2.0.0, create only: v2.0.0 (exact version)
+          # When pushing Git tag v3.0.0, create only: v3.0.0 (exact version)
           type=semver,pattern=v{{version}}
           # When pushing to main branch, use version from VERSION file + latest
           type=raw,value=v${{ steps.version.outputs.version }},enable={{is_default_branch}}

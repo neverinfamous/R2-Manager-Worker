@@ -34,6 +34,8 @@ export interface CloudflareApiResponse<T = unknown> {
 export interface BucketInfo {
   name: string;
   creation_date?: string;
+  size?: number;
+  objectCount?: number;
 }
 
 export interface BucketsListResult {
@@ -151,6 +153,120 @@ export interface AISearchResult {
   }[];
 }
 
+// ============================================
+// R2 Metrics Types (GraphQL Analytics API)
+// ============================================
+
+/**
+ * Time range for metrics queries
+ */
+export type MetricsTimeRange = '24h' | '7d' | '30d';
+
+/**
+ * Raw metrics data point from GraphQL API
+ */
+export interface MetricsDataPoint {
+  date: string;
+  bucketName: string;
+  readOperations: number;
+  writeOperations: number;
+  bytesUploaded: number;
+  bytesDownloaded: number;
+  classAOperations: number;
+  classBOperations: number;
+}
+
+/**
+ * Storage metrics from GraphQL API
+ */
+export interface StorageDataPoint {
+  date: string;
+  bucketName: string;
+  storageBytes: number;
+}
+
+/**
+ * Aggregated metrics for a bucket
+ */
+export interface BucketMetricsSummary {
+  bucketName: string;
+  totalReadOperations: number;
+  totalWriteOperations: number;
+  totalBytesUploaded: number;
+  totalBytesDownloaded: number;
+  classAOperations: number;
+  classBOperations: number;
+  currentStorageBytes?: number | undefined;
+}
+
+/**
+ * Account-wide metrics summary
+ */
+export interface MetricsSummary {
+  timeRange: MetricsTimeRange;
+  startDate: string;
+  endDate: string;
+  totalReadOperations: number;
+  totalWriteOperations: number;
+  totalBytesUploaded: number;
+  totalBytesDownloaded: number;
+  totalStorageBytes: number;
+  bucketCount: number;
+}
+
+/**
+ * Full metrics response
+ */
+export interface MetricsResponse {
+  summary: MetricsSummary;
+  byBucket: BucketMetricsSummary[];
+  timeSeries: MetricsDataPoint[];
+  storageSeries: StorageDataPoint[];
+}
+
+/**
+ * GraphQL API response structure
+ */
+export interface GraphQLResponse<T> {
+  data?: T;
+  errors?: {
+    message: string;
+    path?: string[];
+    extensions?: Record<string, unknown>;
+  }[];
+}
+
+/**
+ * R2 Analytics GraphQL query result
+ */
+export interface R2AnalyticsResult {
+  viewer: {
+    accounts: {
+      r2OperationsAdaptiveGroups?: {
+        sum: {
+          requests: number;
+        };
+        dimensions: {
+          date: string;
+          bucketName: string;
+          actionType: string;
+        };
+      }[];
+      r2StorageAdaptiveGroups?: {
+        max: {
+          metadataSize: number;
+          payloadSize: number;
+        };
+        dimensions: {
+          date: string;
+          bucketName: string;
+        };
+      }[];
+    }[];
+  };
+}
+
+
 export interface AISearchResponse {
   response?: string;
   data: AISearchResult[];
@@ -175,7 +291,7 @@ export interface AISearchSyncResponse {
 // Job History Types
 export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
 
-export type JobOperationType = 
+export type JobOperationType =
   | 'bulk_upload'
   | 'bulk_download'
   | 'bulk_delete'
@@ -311,4 +427,174 @@ export interface AuditLogSummary {
   count: number;
   success_count: number;
   failed_count: number;
+}
+
+// S3 Import Types (Super Slurper)
+export type S3ImportJobStatus = 'pending' | 'running' | 'complete' | 'error' | 'aborted';
+
+export type S3ImportProvider = 'aws' | 'gcs' | 's3_compatible';
+
+export interface S3ImportJobProgress {
+  objects_copied: number;
+  objects_skipped: number;
+  objects_failed: number;
+  bytes_copied: number;
+}
+
+export interface S3ImportJob {
+  id: string;
+  source: {
+    provider: S3ImportProvider;
+    bucket: string;
+    region?: string | undefined;
+    endpoint?: string | undefined;
+    prefix?: string | undefined;
+  };
+  destination: {
+    bucket: string;
+  };
+  status: S3ImportJobStatus;
+  progress?: S3ImportJobProgress | undefined;
+  overwrite_objects?: boolean | undefined;
+  created_at: string;
+  completed_at?: string | undefined;
+  error?: string | undefined;
+}
+
+export interface CreateS3ImportJobBody {
+  sourceBucketName: string;
+  sourceAccessKeyId: string;
+  sourceSecretAccessKey: string;
+  sourceRegion?: string;
+  sourceEndpoint?: string;
+  sourceProvider?: S3ImportProvider;
+  destinationBucketName: string;
+  bucketSubpath?: string;
+  overwriteExisting?: boolean;
+}
+
+export interface S3ImportJobsListResponse {
+  jobs: S3ImportJob[];
+  has_more?: boolean;
+}
+
+export interface S3ImportJobResponse {
+  success: boolean;
+  job?: S3ImportJob;
+  error?: string;
+  dashboardUrl?: string;
+}
+
+// ============================================
+// Webhook Types
+// ============================================
+
+/**
+ * Webhook event types for R2 operations
+ */
+export type WebhookEventType =
+  | 'file_upload'
+  | 'file_download'
+  | 'file_delete'
+  | 'bucket_create'
+  | 'bucket_delete'
+  | 'job_failed'
+  | 'job_completed';
+
+/**
+ * Webhook configuration stored in database
+ */
+export interface Webhook {
+  id: string;
+  name: string;
+  url: string;
+  secret: string | null;
+  events: string; // JSON array of WebhookEventType
+  enabled: number; // SQLite boolean (0 or 1)
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Webhook create/update request body
+ */
+export interface WebhookInput {
+  name: string;
+  url: string;
+  secret?: string | null;
+  events: WebhookEventType[];
+  enabled?: boolean;
+}
+
+/**
+ * Webhook test result
+ */
+export interface WebhookTestResult {
+  success: boolean;
+  message: string;
+  statusCode?: number;
+  error?: string;
+}
+
+/**
+ * Webhook payload sent to endpoints
+ */
+export interface WebhookPayload {
+  event: WebhookEventType;
+  timestamp: string;
+  data: Record<string, unknown>;
+}
+
+/**
+ * Result from sending a webhook
+ */
+export interface WebhookResult {
+  success: boolean;
+  statusCode?: number;
+  error?: string;
+}
+
+/**
+ * API response types
+ */
+export interface WebhooksResponse {
+  webhooks: Webhook[];
+}
+
+export interface WebhookResponse {
+  webhook: Webhook;
+}
+
+// ============================================
+// Error Logging Types
+// ============================================
+
+/**
+ * Error severity levels
+ */
+export type ErrorSeverity = 'error' | 'warning' | 'info';
+
+/**
+ * Context for structured error logging
+ */
+export interface ErrorContext {
+  module: string;          // e.g., 'buckets', 'files', 'jobs'
+  operation: string;       // e.g., 'create', 'delete', 'upload'
+  entityId?: string;       // e.g., bucket name, file key, job ID
+  bucketName?: string;
+  fileName?: string;
+  userId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Structured error for logging and webhook payloads
+ */
+export interface StructuredError {
+  timestamp: string;
+  level: ErrorSeverity;
+  code: string;            // e.g., 'BKT_CREATE_FAILED', 'FILE_UPLOAD_FAILED'
+  message: string;
+  context: ErrorContext;
+  stack?: string | undefined;
 }

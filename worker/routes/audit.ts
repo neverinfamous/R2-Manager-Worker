@@ -4,6 +4,7 @@ import type {
   AuditOperationType,
   LogAuditEventParams,
 } from '../types';
+import { logInfo, logError, logWarning } from '../utils/error-logger';
 
 interface APIResponse {
   success: boolean;
@@ -15,9 +16,11 @@ interface APIResponse {
  * Log an audit event for a single operation
  */
 export async function logAuditEvent(
-  db: D1Database | undefined,
-  params: LogAuditEventParams
+  env: Env,
+  params: LogAuditEventParams,
+  isLocalDev: boolean
 ): Promise<void> {
+  const db = env.METADATA;
   // Skip if no database bound
   if (!db) {
     return;
@@ -44,9 +47,9 @@ export async function logAuditEvent(
     // Log error but don't fail the operation - audit logging is non-critical
     const errorMessage = error instanceof Error ? error.message : String(error);
     if (errorMessage.includes('no such table')) {
-      console.log('[Audit] audit_log table does not exist - run schema migration: npx wrangler d1 execute r2-manager-metadata --remote --file=worker/schema.sql');
+      logWarning('audit_log table does not exist', { module: 'audit', operation: 'log_event', metadata: { command: 'npx wrangler d1 execute r2-manager-metadata --remote --file=worker/schema.sql' } });
     } else {
-      console.error('[Audit] Failed to log audit event:', error);
+      await logError(env, errorMessage, { module: 'audit', operation: 'log_event' }, isLocalDev);
     }
   }
 }
@@ -66,7 +69,7 @@ export async function handleAuditRoutes(
 
   // GET /api/audit - List audit log entries with filtering
   if (url.pathname === '/api/audit' && request.method === 'GET') {
-    console.log('[Audit] Getting audit log entries');
+    logInfo('Getting audit log entries', { module: 'audit', operation: 'list_entries' });
 
     const limit = parseInt(url.searchParams.get('limit') ?? '50');
     const offset = parseInt(url.searchParams.get('offset') ?? '0');
@@ -247,12 +250,12 @@ export async function handleAuditRoutes(
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
     } catch (error) {
-      console.error('[Audit] Error listing audit entries:', error);
+      await logError(env, error instanceof Error ? error : String(error), { module: 'audit', operation: 'list_entries' }, isLocalDev);
 
       // Check if this is a "table doesn't exist" error
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes('no such table') || errorMessage.includes('audit_log')) {
-        console.log('[Audit] audit_log table does not exist yet - returning empty list');
+        logInfo('audit_log table does not exist yet - returning empty list', { module: 'audit', operation: 'list_entries' });
         const response: APIResponse = {
           success: true,
           result: {
@@ -276,7 +279,7 @@ export async function handleAuditRoutes(
 
   // GET /api/audit/summary - Get operation counts by type
   if (url.pathname === '/api/audit/summary' && request.method === 'GET') {
-    console.log('[Audit] Getting audit summary');
+    logInfo('Getting audit summary', { module: 'audit', operation: 'get_summary' });
 
     const startDate = url.searchParams.get('start_date');
     const endDate = url.searchParams.get('end_date');
@@ -340,7 +343,7 @@ export async function handleAuditRoutes(
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
     } catch (error) {
-      console.error('[Audit] Error getting audit summary:', error);
+      await logError(env, error instanceof Error ? error : String(error), { module: 'audit', operation: 'get_summary' }, isLocalDev);
 
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (errorMessage.includes('no such table') || errorMessage.includes('audit_log')) {

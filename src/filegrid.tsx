@@ -96,7 +96,16 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     hasError: false,
     isInitialLoad: true
   })
-  const [viewMode, setViewMode] = useState<ViewMode>(ViewMode.Preview)
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    // Check for saved preference
+    const savedMode = localStorage.getItem('r2_manager_view_mode')
+    return savedMode ? (savedMode as ViewMode) : ViewMode.List
+  })
+
+  // Persist view mode preference
+  useEffect(() => {
+    localStorage.setItem('r2_manager_view_mode', viewMode)
+  }, [viewMode])
   const [shouldRefresh, setShouldRefresh] = useState(false)
   const [transferState, setTransferState] = useState<{
     isDialogOpen: boolean
@@ -252,7 +261,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         document.removeEventListener('keydown', handleEscape)
       }
     }
-    
+
     if (renameState !== null) {
       document.addEventListener('keydown', handleEscape)
       return (): void => { document.removeEventListener('keydown', handleEscape) }
@@ -266,12 +275,12 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       const target = event.target as HTMLElement
       const fileItem = target.closest('.file-item') ?? target.closest('.folder-item')
       const customContextMenu = target.closest('.context-menu')
-      
+
       // Don't prevent default on our custom context menu - let it work normally
       if (customContextMenu) {
         return
       }
-      
+
       // Prevent default browser context menu if clicking on file items, folder items, or the grid
       // Only prevent default, don't stop propagation so React handlers can still fire
       if (fileItem || gridRef.current?.contains(target)) {
@@ -292,7 +301,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
   const loadFiles = useCallback(async (reset = false) => {
     if (!bucketName || loadingRef.current.isLoading) return
-    
+
     const now = Date.now()
     if (!reset && loadingRef.current.lastRequestTime && now - loadingRef.current.lastRequestTime < DEBOUNCE_DELAY) {
       return
@@ -301,7 +310,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     try {
       loadingRef.current = { isLoading: true, lastRequestTime: now }
       setPaginationState(prev => ({ ...prev, isLoading: true, hasError: false }))
-      
+
       const response = await api.listFiles(
         bucketName,
         reset ? undefined : paginatedFiles.cursor,
@@ -314,16 +323,16 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       setPaginatedFiles(prev => {
         let newObjects: FileObject[]
         let newFolders: FolderObject[]
-        
+
         if (reset) {
           logger.debug('FileGrid', 'Reset load', { currentPath, objectCount: response.objects.length, folders: response.folders })
-          
+
           newObjects = response.objects
           // Convert folder paths to FolderObject format
           // Only include folders that belong to the current path level
           newFolders = (response.folders ?? []).map((folderPath: string) => {
             // Remove the currentPath prefix if present to get the relative folder name
-            const relativePath = currentPath.length > 0 && folderPath.startsWith(currentPath) 
+            const relativePath = currentPath.length > 0 && folderPath.startsWith(currentPath)
               ? folderPath.substring(currentPath.length)
               : folderPath
             const folderName = relativePath.split('/').find(Boolean) ?? relativePath
@@ -333,7 +342,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
               path: folderPath
             }
           })
-          
+
           logger.debug('FileGrid', 'Processed folders', { newFolders })
         } else {
           const existingKeys = new Set(prev.objects.map(obj => obj.key))
@@ -341,10 +350,10 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           newObjects = [...prev.objects, ...uniqueNewObjects]
           newFolders = prev.folders
         }
-        
+
         const sortedObjects = sortFiles(newObjects)
         sortedFilesRef.current = sortedObjects
-        
+
         return {
           objects: sortedObjects,
           folders: newFolders,
@@ -440,21 +449,21 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     setCurrentPath('')
     setDownloadProgress(null)
     lastSelectedRef.current = null
-    setPaginatedFiles({ 
+    setPaginatedFiles({
       objects: [],
       folders: [],
       cursor: undefined,
-      hasMore: true 
+      hasMore: true
     })
     setPaginationState({
       isLoading: false,
       hasError: false,
       isInitialLoad: true
     })
-    
+
     // Reset path to root when bucket changes
     onPathChange?.('')
-    
+
     if (bucketName) {
       setShouldRefresh(true)
     }
@@ -462,7 +471,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
   const handleSelection = useCallback((key: string, event: React.MouseEvent | React.ChangeEvent<HTMLInputElement>) => {
     event.stopPropagation()
-    
+
     const isShiftClick = 'shiftKey' in event && event.shiftKey && lastSelectedRef.current !== null
     const isCtrlClick = 'ctrlKey' in event && (event.ctrlKey || event.metaKey)
     const lastSelected = lastSelectedRef.current
@@ -472,10 +481,10 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       const fileKeys = sortedFilesRef.current.map(f => f.key)
       const currentIndex = fileKeys.indexOf(key)
       const lastIndex = fileKeys.indexOf(lastSelected)
-      
+
       const start = Math.min(currentIndex, lastIndex)
       const end = Math.max(currentIndex, lastIndex)
-      
+
       const newSelection = fileKeys.slice(start, end + 1)
       setSelectedFiles(prev => Array.from(new Set([...prev, ...newSelection])))
     } else if (isCtrlClick) {
@@ -495,7 +504,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         return newSelection
       })
     }
-    
+
     lastSelectedRef.current = key
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -508,31 +517,31 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   const handleDelete = useCallback(async () => {
     const totalItems = selectedFiles.length + selectedFolders.length
     if (totalItems === 0) return
-    
+
     const itemText = selectedFiles.length > 0 && selectedFolders.length > 0
       ? `${selectedFiles.length} file(s) and ${selectedFolders.length} folder(s)`
       : selectedFiles.length > 0
         ? `${selectedFiles.length} file(s)`
         : `${selectedFolders.length} folder(s)`
-    
+
     if (!window.confirm(`Delete ${itemText}?`)) return
 
     setError('')
     try {
       // Delete all selected files
       if (selectedFiles.length > 0) {
-        await Promise.all(selectedFiles.map(file => 
+        await Promise.all(selectedFiles.map(file =>
           api.deleteFile(bucketName, file)
         ))
       }
-      
+
       // Delete all selected folders
       if (selectedFolders.length > 0) {
-        await Promise.all(selectedFolders.map(folderPath => 
+        await Promise.all(selectedFolders.map(folderPath =>
           api.deleteFolder(bucketName, folderPath, true)
         ))
       }
-      
+
       setSelectedFiles([])
       setSelectedFolders([])
       setShouldRefresh(true)
@@ -551,7 +560,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
     try {
       const selectedObjects = paginatedFiles.objects.filter(f => selectedFiles.includes(f.key))
-      
+
       await api.downloadFiles(bucketName, selectedObjects, {
         asZip: selectedFiles.length > 1,
         onProgress: (progress) => {
@@ -563,7 +572,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       })
 
       setSelectedFiles([])
-      
+
       setTimeout(() => {
         setDownloadProgress(null)
       }, 2000)
@@ -610,22 +619,22 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
   const handleTransferFiles = useCallback(async () => {
     if (!transferState?.mode || !transferState.targetBucket) return
-    
+
     setIsTransferring(true)
     setError('')
     setInfoMessage('')
-    
+
     try {
       const totalItems = selectedFiles.length + selectedFolders.length
       let completed = 0
-      
+
       // Transfer files
       if (selectedFiles.length > 0) {
         const fileMethod = transferState.mode === 'move' ? api.moveFiles.bind(api) : api.copyFiles.bind(api)
-        
+
         await fileMethod(
-          bucketName, 
-          selectedFiles, 
+          bucketName,
+          selectedFiles,
           transferState.targetBucket,
           transferState.targetPath || undefined,
           (fileCompleted) => {
@@ -635,36 +644,36 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           }
         )
       }
-      
+
       // Transfer folders
       if (selectedFolders.length > 0) {
         const folderMethod = transferState.mode === 'move' ? api.moveFolder.bind(api) : api.copyFolder.bind(api)
-        
+
         for (const folder of selectedFolders) {
           // Extract just the folder name (not the full path)
           const folderName = folder.split('/').filter(p => p !== '').pop() ?? folder
-          
+
           // If destination path is specified, append folder name to it; otherwise use just folder name
-          const destPath = transferState.targetPath !== '' 
+          const destPath = transferState.targetPath !== ''
             ? `${transferState.targetPath}${transferState.targetPath.endsWith('/') ? '' : '/'}${folderName}`
             : folderName
-          
+
           await folderMethod(bucketName, folder, transferState.targetBucket, destPath)
           completed++
           const action = transferState.mode === 'move' ? 'Moving' : 'Copying'
           setInfoMessage(`${action} items: ${completed}/${totalItems}...`)
         }
       }
-      
+
       setSelectedFiles([])
       setSelectedFolders([])
       setShouldRefresh(true)
       setTransferState(null)
-      
+
       const action = transferState.mode === 'move' ? 'moved' : 'copied'
       setInfoMessage(`Successfully ${action} ${totalItems} item(s)`)
       setTimeout(() => setInfoMessage(''), 3000)
-      
+
       onFilesChange?.()
     } catch (err) {
       logger.error('FileGrid', 'Transfer failed', err)
@@ -715,7 +724,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
   }, [deselectAll])
 
   const toggleViewMode = useCallback(() => {
-    setViewMode(prevMode => 
+    setViewMode(prevMode =>
       prevMode === ViewMode.Preview ? ViewMode.List : ViewMode.Preview
     )
   }, [])
@@ -795,18 +804,18 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
   const handleCopySignedUrl = useCallback(async (fileName: string, event?: React.MouseEvent) => {
     event?.stopPropagation()
-    
+
     try {
       setCopyingUrl(fileName)
       setError('')
-      
+
       const signedUrl = await api.getSignedUrl(bucketName, fileName)
-      
+
       await navigator.clipboard.writeText(signedUrl)
-      
+
       setCopiedUrl(fileName)
       setInfoMessage(`Copied link for ${fileName}`)
-      
+
       setTimeout(() => {
         setCopiedUrl(null)
         setInfoMessage('')
@@ -833,21 +842,21 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
   const handleRenameSubmit = useCallback(async () => {
     if (!renameState) return
-    
+
     const newName = renameState.newName.trim()
-    
+
     // Validate
-    const validation = renameState.itemType === 'file' 
+    const validation = renameState.itemType === 'file'
       ? api.validateFileName(newName)
       : api.validateFolderName(newName)
-    
+
     if (!validation.valid) {
       setRenameState(prev => prev ? { ...prev, error: validation.error || '' } : null)
       return
     }
-    
+
     setRenameState(prev => prev ? { ...prev, isRenaming: true, error: '' } : null)
-    
+
     try {
       if (renameState.itemType === 'file') {
         await api.renameFile(bucketName, renameState.itemKey, newName)
@@ -857,20 +866,20 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         const newPath = [...pathParts.slice(0, -1), newName].join('/')
         await api.renameFolder(bucketName, renameState.itemKey, newPath)
       }
-      
+
       // Clear failed images cache when renaming files (especially images)
       if (renameState.itemType === 'file') {
         setFailedImages(new Set())
       }
-      
+
       // Close rename modal first
       setRenameState(null)
-      
+
       // Manually trigger file refresh to get updated file list with new filenames and fresh signed URLs
       // This is more reliable than using setShouldRefresh which is async
       await loadFiles(true)
       onFilesChange?.()
-      
+
       setInfoMessage(`${renameState.itemType === 'file' ? 'File' : 'Folder'} renamed successfully`)
       setTimeout(() => setInfoMessage(''), 3000)
     } catch (err) {
@@ -887,7 +896,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     <div className="file-grid-container">
       {onBack && (
         <div style={{ marginBottom: '15px', paddingBottom: '10px', borderBottom: '1px solid #333' }}>
-          <button 
+          <button
             onClick={onBack}
             style={{
               padding: '8px 16px',
@@ -923,7 +932,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             aria-label="Filter files and folders"
           />
           {filterText && (
-            <button 
+            <button
               className="filter-clear-button"
               onClick={() => setFilterText('')}
               title="Clear filter"
@@ -933,9 +942,9 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             </button>
           )}
         </div>
-        
+
         <div className="filter-controls">
-          <select 
+          <select
             id="filter-type"
             name="filter-type"
             className="filter-type-select"
@@ -947,7 +956,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             <option value="files">Files Only</option>
             <option value="folders">Folders Only</option>
           </select>
-          
+
           <ExtensionFilter
             selectedExtensions={selectedExtensions}
             availableExtensions={availableExtensions}
@@ -957,7 +966,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             onGroupSelect={handleExtensionGroupSelect}
             onClear={() => setSelectedExtensions([])}
           />
-          
+
           <SizeFilter
             sizeFilter={sizeFilter}
             isOpen={sizeDropdownOpen}
@@ -966,7 +975,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             onCustomRange={handleCustomSizeRange}
             onClear={() => setSizeFilter({ min: null, max: null, preset: 'all' })}
           />
-          
+
           <DateFilter
             dateFilter={dateFilter}
             isOpen={dateDropdownOpen}
@@ -975,7 +984,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             onCustomRange={handleCustomDateRange}
             onClear={() => setDateFilter({ start: null, end: null, preset: 'all' })}
           />
-          
+
           {filteredCount !== totalCount && (
             <span className="filter-match-count">
               {filteredCount} of {totalCount}
@@ -1008,20 +1017,20 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flex: 1 }}>
           {(selectedFiles.length > 0 || selectedFolders.length > 0) && (
             <span className="selected-count">
-              {selectedFiles.length > 0 && selectedFolders.length > 0 
+              {selectedFiles.length > 0 && selectedFolders.length > 0
                 ? `${selectedFiles.length} files, ${selectedFolders.length} folders selected`
                 : selectedFiles.length > 0
-                ? `${selectedFiles.length} selected (${formatFileSize(totalSelectedSize)})`
-                : `${selectedFolders.length} ${selectedFolders.length === 1 ? 'folder' : 'folders'} selected`
+                  ? `${selectedFiles.length} selected (${formatFileSize(totalSelectedSize)})`
+                  : `${selectedFolders.length} ${selectedFolders.length === 1 ? 'folder' : 'folders'} selected`
               }
               {isOverSizeLimit && (
                 <span className="size-warning"> - Exceeds 500MB limit</span>
               )}
             </span>
           )}
-          
+
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button 
+            <button
               onClick={() => setShowCreateFolderModal(true)}
               className="action-button create-folder-button"
               style={{
@@ -1029,10 +1038,10 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                 color: 'white'
               }}
             >
-               Create Folder
+              Create Folder
             </button>
             {selectedFiles.length > 0 && (
-              <button 
+              <button
                 onClick={downloadSelected}
                 className={`action-button download-button ${downloadProgress?.status || ''}`}
                 disabled={isOverSizeLimit}
@@ -1040,25 +1049,25 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
               >
                 {downloadProgress ? (
                   downloadProgress.status === 'error' ? 'Download Failed' :
-                  downloadProgress.status === 'complete' ? 'Download Complete' :
-                  `Downloading (${Math.round(downloadProgress.progress)}%)`
+                    downloadProgress.status === 'complete' ? 'Download Complete' :
+                      `Downloading (${Math.round(downloadProgress.progress)}%)`
                 ) : 'Download Selected'}
               </button>
             )}
-            <button 
+            <button
               onClick={downloadBucket}
               className={`action-button download-button ${downloadProgress?.status || ''}`}
             >
               {downloadProgress ? (
                 downloadProgress.status === 'error' ? 'Download Failed' :
-                downloadProgress.status === 'complete' ? 'Download Complete' :
-                `Downloading (${Math.round(downloadProgress.progress)}%)`
+                  downloadProgress.status === 'complete' ? 'Download Complete' :
+                    `Downloading (${Math.round(downloadProgress.progress)}%)`
               ) : 'Download Bucket'}
             </button>
           </div>
 
           {filteredFiles.length > 0 && selectedFiles.length < filteredFiles.length && (
-            <button 
+            <button
               onClick={() => setSelectedFiles(filteredFiles.map(f => f.key))}
               className="action-button select-all-button"
             >
@@ -1068,7 +1077,13 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
 
           {(selectedFiles.length > 0 || selectedFolders.length > 0) && (
             <>
-              <TransferDropdown 
+              <button
+                onClick={deselectAll}
+                className="action-button deselect-button"
+              >
+                Deselect All
+              </button>
+              <TransferDropdown
                 isOpen={transferDropdownOpen}
                 position={dropdownPosition}
                 buttonRef={transferButtonRef}
@@ -1076,24 +1091,18 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                 onCopy={() => openTransferDialog('copy')}
                 onMove={() => openTransferDialog('move')}
               />
-              <button 
+              <button
                 onClick={handleDelete}
                 className="action-button delete-button"
               >
                 Delete Selected
-              </button>
-              <button 
-                onClick={deselectAll}
-                className="action-button deselect-button"
-              >
-                Deselect All
               </button>
             </>
           )}
 
           <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.5rem' }}>
             {availableBuckets && availableBuckets.length > 1 && (
-              <BucketDropdown 
+              <BucketDropdown
                 isOpen={bucketDropdownOpen}
                 position={bucketDropdownPosition}
                 currentBucket={bucketName}
@@ -1103,7 +1112,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                 onSelect={handleBucketSelect}
               />
             )}
-            <SortDropdown 
+            <SortDropdown
               isOpen={sortDropdownOpen}
               position={sortDropdownPosition}
               currentField={sortState.field}
@@ -1155,7 +1164,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       {paginationState.isInitialLoad ? (
         <div className="loading-state">Loading...</div>
       ) : viewMode === ViewMode.Preview ? (
-        <div 
+        <div
           ref={gridRef}
           className="file-grid"
           onClick={handleGridClick}
@@ -1165,7 +1174,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           {filteredFolders.map((folder) => {
             const isSelected = selectedFolders.includes(folder.path)
             const checkboxId = `folder-select-${folder.path}`
-            
+
             return (
               <div
                 key={folder.path}
@@ -1191,7 +1200,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                     checked={isSelected}
                     onChange={(e) => {
                       e.stopPropagation()
-                      setSelectedFolders(prev => 
+                      setSelectedFolders(prev =>
                         prev.includes(folder.path)
                           ? prev.filter(p => p !== folder.path)
                           : [...prev, folder.path]
@@ -1202,7 +1211,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
-                
+
                 <div className="file-preview">
                   <div className="file-icon">
                     {getFolderIcon()}
@@ -1215,7 +1224,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
               </div>
             )
           })}
-          
+
           {/* Render Files */}
           {filteredFiles.map((file) => {
             const isImage = isImageFile(file.key)
@@ -1223,7 +1232,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             const isSelected = selectedFiles.includes(file.key)
             const checkboxId = `file-select-${file.key}`
             const fileUrl = api.getFileUrl(bucketName, file.key, file)
-            
+
             return (
               <div
                 key={file.key}
@@ -1253,10 +1262,10 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                     onClick={(e) => e.stopPropagation()}
                   />
                 </div>
-                
+
                 <div className="file-preview">
                   {isImage && !failedImages.has(file.key) ? (
-                    <img 
+                    <img
                       src={fileUrl}
                       alt={file.key}
                       loading="lazy"
@@ -1308,7 +1317,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
             )
           })}
 
-          <div 
+          <div
             ref={loadingTriggerRef}
             style={{ height: '20px', width: '100%' }}
           >
@@ -1379,9 +1388,9 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
               {filteredFolders.map((folder) => {
                 const isSelected = selectedFolders.includes(folder.path)
                 const checkboxId = `list-folder-select-${folder.path}`
-                
+
                 return (
-                  <tr 
+                  <tr
                     key={folder.path}
                     onClick={() => handleFolderNavigation(folder.path)}
                     className={`folder-row ${isSelected ? 'selected' : ''}`}
@@ -1395,7 +1404,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                         checked={isSelected}
                         onChange={(e) => {
                           e.stopPropagation()
-                          setSelectedFolders(prev => 
+                          setSelectedFolders(prev =>
                             prev.includes(folder.path)
                               ? prev.filter(p => p !== folder.path)
                               : [...prev, folder.path]
@@ -1420,12 +1429,12 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                   </tr>
                 )
               })}
-              
+
               {/* Render Files */}
               {filteredFiles.map(file => {
                 const checkboxId = `list-file-select-${file.key}`
                 return (
-                  <tr 
+                  <tr
                     key={file.key}
                     onClick={(e) => handleRowClick(file.key, e)}
                     className={selectedFiles.includes(file.key) ? 'selected' : ''}
@@ -1444,7 +1453,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {isImageFile(file.key) && !failedImages.has(file.key) ? (
-                          <img 
+                          <img
                             src={api.getFileUrl(bucketName, file.key, file)}
                             alt={file.key}
                             style={{ width: '32px', height: '32px', objectFit: 'cover' }}
@@ -1541,7 +1550,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         />
       )}
 
-      <ContextMenu 
+      <ContextMenu
         show={contextMenu?.show ?? false}
         x={contextMenu?.x ?? 0}
         y={contextMenu?.y ?? 0}
@@ -1563,7 +1572,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
           error={renameState.error}
           isRenaming={renameState.isRenaming}
           onClose={() => setRenameState(null)}
-          onNewNameChange={(value: string) => setRenameState(prev => 
+          onNewNameChange={(value: string) => setRenameState(prev =>
             prev ? { ...prev, newName: value, error: '' } : null
           )}
           onSubmit={handleRenameSubmit}
@@ -1571,12 +1580,12 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
       )}
 
       {process.env['NODE_ENV'] === 'development' && (
-        <div style={{ 
-          position: 'fixed', 
-          bottom: 10, 
-          right: 10, 
-          background: '#1a1f2c', 
-          padding: '10px', 
+        <div style={{
+          position: 'fixed',
+          bottom: 10,
+          right: 10,
+          background: '#1a1f2c',
+          padding: '10px',
           borderRadius: '5px',
           fontSize: '12px',
           zIndex: 1000
