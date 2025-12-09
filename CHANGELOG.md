@@ -1,12 +1,12 @@
 # Changelog
 
-The D1 Database Manager changelog is maintained in the project wiki.
+The R2 Database Manager changelog is maintained in the project wiki.
 
 ## 📚 View the Changelog
 
 **Wiki (recommended):** [Changelog](C:\Users\chris\Desktop\R2-Manager-Worker.wiki\Changelog.md)
 
-**GitHub Repository:** [neverinfamous/d1-manager](https://github.com/neverinfamous/R2-Manager-Worker)
+**GitHub Repository:** [neverinfamous/R2-Manager-Worker](https://github.com/neverinfamous/R2-Manager-Worker)
 
 ---
 

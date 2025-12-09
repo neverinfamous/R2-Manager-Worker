@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type JSX } from 'react'
+import { useCallback, useEffect, useState, lazy, Suspense, type JSX } from 'react'
 import { useDropzone } from 'react-dropzone'
 import './app.css'
 import { FileGrid } from './filegrid'
@@ -8,14 +8,24 @@ import { logger } from './services/logger'
 import { ThemeToggle } from './components/ThemeToggle'
 import { CrossBucketSearch } from './components/search/CrossBucketSearch'
 import { AISearchPanel } from './components/ai-search'
-import { S3ImportPanel } from './components/s3-import'
-import { JobHistory } from './components/job-history'
-import { WebhookManager } from './components/webhooks/WebhookManager'
 import { BucketFilterBar } from './components/filters/BucketFilterBar'
 import { useBucketFilters } from './hooks/useBucketFilters'
-import { MetricsDashboard } from './components/MetricsDashboard'
 import './styles/metrics.css'
 import type { FileRejection, FileWithPath } from 'react-dropzone'
+
+// Lazy-loaded tab components for better code splitting
+const MetricsDashboard = lazy(() => import('./components/MetricsDashboard').then(m => ({ default: m.MetricsDashboard })))
+const S3ImportPanel = lazy(() => import('./components/s3-import').then(m => ({ default: m.S3ImportPanel })))
+const JobHistory = lazy(() => import('./components/job-history').then(m => ({ default: m.JobHistory })))
+const WebhookManager = lazy(() => import('./components/webhooks/WebhookManager').then(m => ({ default: m.WebhookManager })))
+
+// Loading fallback for lazy-loaded components
+const LazyLoadingFallback = (): JSX.Element => (
+  <div className="lazy-loading-fallback">
+    <div className="loading-spinner" />
+    <span>Loading...</span>
+  </div>
+)
 
 type ActiveView = 'buckets' | 'metrics' | 's3-import' | 'job-history' | 'webhooks'
 
@@ -693,28 +703,36 @@ export default function BucketManager(): JSX.Element {
 
       {/* Metrics View */}
       {!selectedBucket && activeView === 'metrics' && (
-        <MetricsDashboard onClose={() => setActiveView('buckets')} />
+        <Suspense fallback={<LazyLoadingFallback />}>
+          <MetricsDashboard onClose={() => setActiveView('buckets')} />
+        </Suspense>
       )}
 
       {/* S3 Import View */}
       {!selectedBucket && activeView === 's3-import' && (
-        <div className="s3-import-view">
-          <S3ImportPanel
-            buckets={buckets.map(b => b.name)}
-            onClose={() => setActiveView('buckets')}
-            onJobCreated={loadBuckets}
-          />
-        </div>
+        <Suspense fallback={<LazyLoadingFallback />}>
+          <div className="s3-import-view">
+            <S3ImportPanel
+              buckets={buckets.map(b => b.name)}
+              onClose={() => setActiveView('buckets')}
+              onJobCreated={loadBuckets}
+            />
+          </div>
+        </Suspense>
       )}
 
       {/* Job History View */}
       {!selectedBucket && activeView === 'job-history' && (
-        <JobHistory buckets={buckets.map(b => ({ name: b.name }))} />
+        <Suspense fallback={<LazyLoadingFallback />}>
+          <JobHistory buckets={buckets.map(b => ({ name: b.name }))} />
+        </Suspense>
       )}
 
       {/* Webhooks View */}
       {!selectedBucket && activeView === 'webhooks' && (
-        <WebhookManager />
+        <Suspense fallback={<LazyLoadingFallback />}>
+          <WebhookManager />
+        </Suspense>
       )}
 
       {/* Buckets View */}
