@@ -1920,7 +1920,7 @@ class APIService {
 
   // S3 Import Methods (Super Slurper)
   async createS3ImportJob(data: CreateS3ImportJobRequest): Promise<S3ImportJobResponse> {
-    const response = await fetch(
+    const response = await fetchWithRetry(
       `${WORKER_API}/api/s3-import/jobs`,
       this.getFetchOptions({
         method: 'POST',
@@ -1933,11 +1933,25 @@ class APIService {
     )
 
     const result = await response.json() as S3ImportJobResponse
+
+    // Invalidate cache on successful job creation
+    if (result.success) {
+      invalidateS3ImportJobsCache()
+    }
+
     return result
   }
 
-  async listS3ImportJobs(): Promise<S3ImportJobsListResponse> {
-    const response = await fetch(
+  async listS3ImportJobs(skipCache = false): Promise<S3ImportJobsListResponse> {
+    // Check cache first
+    if (!skipCache) {
+      const cached = getCachedS3ImportJobs()
+      if (cached) {
+        return cached
+      }
+    }
+
+    const response = await fetchWithRetry(
       `${WORKER_API}/api/s3-import/jobs`,
       this.getFetchOptions({
         headers: this.getHeaders()
@@ -1945,11 +1959,15 @@ class APIService {
     )
 
     const result = await response.json() as S3ImportJobsListResponse
+
+    // Cache the result
+    setCachedS3ImportJobs(result)
+
     return result
   }
 
   async getS3ImportJob(jobId: string): Promise<S3ImportJobResponse> {
-    const response = await fetch(
+    const response = await fetchWithRetry(
       `${WORKER_API}/api/s3-import/jobs/${encodeURIComponent(jobId)}`,
       this.getFetchOptions({
         headers: this.getHeaders()
@@ -1961,7 +1979,7 @@ class APIService {
   }
 
   async abortS3ImportJob(jobId: string): Promise<{ success: boolean; error?: string }> {
-    const response = await fetch(
+    const response = await fetchWithRetry(
       `${WORKER_API}/api/s3-import/jobs/${encodeURIComponent(jobId)}/abort`,
       this.getFetchOptions({
         method: 'POST',
@@ -1970,6 +1988,12 @@ class APIService {
     )
 
     const result = await response.json() as { success: boolean; error?: string }
+
+    // Invalidate cache on successful abort
+    if (result.success) {
+      invalidateS3ImportJobsCache()
+    }
+
     return result
   }
 
@@ -2514,3 +2538,29 @@ export function invalidateBucketColorCache(): void {
   bucketColorsCache = null
 }
 
+// ============================================
+// S3 Import Jobs Cache
+// ============================================
+const S3_IMPORT_CACHE_TTL = 120000 // 2 minutes (shorter for frequently-updated data)
+
+// Cache for listS3ImportJobs
+let s3ImportJobsCache: { data: S3ImportJobsListResponse; timestamp: number } | null = null
+
+function getCachedS3ImportJobs(): S3ImportJobsListResponse | null {
+  if (s3ImportJobsCache && Date.now() - s3ImportJobsCache.timestamp < S3_IMPORT_CACHE_TTL) {
+    return s3ImportJobsCache.data
+  }
+  return null
+}
+
+function setCachedS3ImportJobs(data: S3ImportJobsListResponse): void {
+  s3ImportJobsCache = { data, timestamp: Date.now() }
+}
+
+/**
+ * Invalidate S3 import jobs cache
+ * Call after job create/abort operations
+ */
+export function invalidateS3ImportJobsCache(): void {
+  s3ImportJobsCache = null
+}

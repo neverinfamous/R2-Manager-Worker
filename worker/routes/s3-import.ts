@@ -71,6 +71,92 @@ function mapApiJobToS3ImportJob(apiJob: SlurperJobApiResponse): S3ImportJob {
     };
 }
 
+// S3 Import Error Codes
+const S3_ERROR_CODES = {
+    LIST_FAILED: 'S3_LIST_JOBS_FAILED',
+    CREATE_FAILED: 'S3_CREATE_JOB_FAILED',
+    GET_STATUS_FAILED: 'S3_GET_STATUS_FAILED',
+    ABORT_FAILED: 'S3_ABORT_JOB_FAILED',
+    RATE_LIMITED: 'S3_RATE_LIMITED',
+} as const;
+
+/**
+ * Delay helper for retry backoff
+ */
+function delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Fetch with retry and exponential backoff for rate limits (429/503/504)
+ * Retry pattern: 2s → 4s → 8s (max 3 attempts)
+ */
+async function fetchWithRetryBackend(
+    url: string,
+    options: RequestInit,
+    env: Env,
+    isLocalDev: boolean,
+    context: { operation: string; code: string }
+): Promise<Response> {
+    const maxRetries = 3;
+    let lastError: Error | null = null;
+    let lastResponse: Response | null = null;
+
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+            const response = await fetch(url, options);
+            lastResponse = response;
+
+            // Check for retryable status codes
+            if (response.status === 429 || response.status === 503 || response.status === 504) {
+                if (attempt < maxRetries) {
+                    // Exponential backoff: 2s, 4s, 8s
+                    const backoffMs = Math.min(2000 * Math.pow(2, attempt - 1), 8000);
+
+                    // Get Retry-After header if available
+                    const retryAfter = response.headers.get('Retry-After');
+                    const waitMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : backoffMs;
+
+                    logWarning(`[${S3_ERROR_CODES.RATE_LIMITED}] Rate limited (${response.status}), retrying in ${waitMs}ms (attempt ${attempt}/${maxRetries})`, {
+                        module: 's3-import',
+                        operation: context.operation
+                    });
+
+                    await delay(waitMs);
+                    continue;
+                }
+            }
+
+            return response;
+        } catch (err) {
+            lastError = err instanceof Error ? err : new Error(String(err));
+
+            if (attempt < maxRetries) {
+                const backoffMs = Math.min(2000 * Math.pow(2, attempt - 1), 8000);
+                logWarning(`[${context.code}] Network error, retrying in ${backoffMs}ms (attempt ${attempt}/${maxRetries})`, {
+                    module: 's3-import',
+                    operation: context.operation
+                });
+                await delay(backoffMs);
+                continue;
+            }
+        }
+    }
+
+    // If we have a response, return it even if it failed
+    if (lastResponse) {
+        return lastResponse;
+    }
+
+    // Log and throw the last error
+    await logError(env, lastError ?? new Error('Request failed after retries'), {
+        module: 's3-import',
+        operation: context.operation
+    }, isLocalDev);
+
+    throw lastError ?? new Error('Request failed after retries');
+}
+
 export async function handleS3ImportRoutes(
     request: Request,
     env: Env,
@@ -131,7 +217,7 @@ export async function handleS3ImportRoutes(
 
             // Create job via Cloudflare Super Slurper API
             try {
-                const response = await fetch(
+                const response = await fetchWithRetryBackend(
                     `${CF_API}/accounts/${env.ACCOUNT_ID}/slurper/jobs`,
                     {
                         method: 'POST',
@@ -151,7 +237,10 @@ export async function handleS3ImportRoutes(
                             },
                             overwrite_objects: body.overwriteExisting ?? false,
                         })
-                    }
+                    },
+                    env,
+                    isLocalDev,
+                    { operation: 'create_job', code: S3_ERROR_CODES.CREATE_FAILED }
                 );
 
                 if (!response.ok) {
@@ -229,9 +318,12 @@ export async function handleS3ImportRoutes(
             }
 
             try {
-                const response = await fetch(
+                const response = await fetchWithRetryBackend(
                     `${CF_API}/accounts/${env.ACCOUNT_ID}/slurper/jobs`,
-                    { headers: cfHeaders }
+                    { headers: cfHeaders },
+                    env,
+                    isLocalDev,
+                    { operation: 'list_jobs', code: S3_ERROR_CODES.LIST_FAILED }
                 );
 
                 if (!response.ok) {
@@ -287,9 +379,12 @@ export async function handleS3ImportRoutes(
             }
 
             try {
-                const response = await fetch(
+                const response = await fetchWithRetryBackend(
                     `${CF_API}/accounts/${env.ACCOUNT_ID}/slurper/jobs/${jobId}`,
-                    { headers: cfHeaders }
+                    { headers: cfHeaders },
+                    env,
+                    isLocalDev,
+                    { operation: 'get_job_status', code: S3_ERROR_CODES.GET_STATUS_FAILED }
                 );
 
                 if (!response.ok) {
@@ -345,9 +440,12 @@ export async function handleS3ImportRoutes(
             }
 
             try {
-                const response = await fetch(
+                const response = await fetchWithRetryBackend(
                     `${CF_API}/accounts/${env.ACCOUNT_ID}/slurper/jobs/${jobId}/abort`,
-                    { method: 'POST', headers: cfHeaders }
+                    { method: 'POST', headers: cfHeaders },
+                    env,
+                    isLocalDev,
+                    { operation: 'abort_job', code: S3_ERROR_CODES.ABORT_FAILED }
                 );
 
                 if (!response.ok) {

@@ -19,11 +19,12 @@ export function S3ImportPanel({ buckets, onClose, onJobCreated }: S3ImportPanelP
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    const loadJobs = useCallback(async () => {
+    // Load jobs with optional cache bypass (skipCache=true for manual refresh)
+    const loadJobs = useCallback(async (skipCache = false) => {
         setIsLoading(true)
         setError(null)
         try {
-            const data: S3ImportJobsListResponse = await api.listS3ImportJobs()
+            const data: S3ImportJobsListResponse = await api.listS3ImportJobs(skipCache)
             setJobs(data.jobs)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load migration jobs')
@@ -32,17 +33,23 @@ export function S3ImportPanel({ buckets, onClose, onJobCreated }: S3ImportPanelP
         }
     }, [])
 
+    // Tab change uses cache (skipCache=false)
     const handleTabChange = useCallback((tab: TabType) => {
         setActiveTab(tab)
         setError(null)
         if (tab !== 'new') {
-            void loadJobs()
+            void loadJobs(false)
         }
+    }, [loadJobs])
+
+    // Manual refresh bypasses cache (skipCache=true)
+    const handleRefresh = useCallback(() => {
+        void loadJobs(true)
     }, [loadJobs])
 
     const handleJobCreated = useCallback(() => {
         setActiveTab('active')
-        void loadJobs()
+        void loadJobs(true) // Bypass cache after job creation
         onJobCreated?.()
     }, [loadJobs, onJobCreated])
 
@@ -50,7 +57,7 @@ export function S3ImportPanel({ buckets, onClose, onJobCreated }: S3ImportPanelP
         try {
             const result = await api.abortS3ImportJob(jobId)
             if (result.success) {
-                void loadJobs()
+                void loadJobs(true) // Bypass cache after abort
             } else {
                 setError('Failed to abort job')
             }
@@ -66,6 +73,7 @@ export function S3ImportPanel({ buckets, onClose, onJobCreated }: S3ImportPanelP
     // Filter jobs by status for tabs
     const activeJobs = jobs.filter(j => j.status === 'pending' || j.status === 'running')
     const historyJobs = jobs.filter(j => j.status === 'complete' || j.status === 'error' || j.status === 'aborted')
+
 
     return (
         <div className="s3-import-panel">
@@ -138,7 +146,7 @@ export function S3ImportPanel({ buckets, onClose, onJobCreated }: S3ImportPanelP
                         jobs={activeJobs}
                         showAbort={true}
                         onAbortJob={handleAbortJob}
-                        onRefresh={loadJobs}
+                        onRefresh={handleRefresh}
                         emptyMessage="No active migrations. Start a new migration to import data from S3."
                     />
                 )}
@@ -147,7 +155,7 @@ export function S3ImportPanel({ buckets, onClose, onJobCreated }: S3ImportPanelP
                     <MigrationJobsList
                         jobs={historyJobs}
                         showAbort={false}
-                        onRefresh={loadJobs}
+                        onRefresh={handleRefresh}
                         emptyMessage="No migration history yet."
                     />
                 )}
