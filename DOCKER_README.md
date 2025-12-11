@@ -1,13 +1,13 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** December 8, 2025 | **Version:** 3.0.0
+**Last Updated:** December 11, 2025 | **Version:** 3.1.0
 
 **Tech Stack:** React 19.2.1 | Vite 7.2.7 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v3.0.0-green)
+![Version](https://img.shields.io/badge/version-v3.1.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
@@ -21,16 +21,17 @@
 
 ## ✨ Features
 
+- 🎯 **NEW! Custom Metadata** - User-defined, searchable bucket tags
 - 🚀 **NEW! S3 Import [BETA]** - Migrate data from Amazon, Google, and All S3 Compatible buckets to R2 using Cloudflare's Super 
-- 📊 **NEW! Metrics Dashboard** - Monitor R2 bucket usage, request counts, and storage analytics in real-time
-- 🪝 **NEW! WebHooks** - Set up event notifications for bucket operations (uploads, deletes, migrations)
+- 📊 **Metrics Dashboard** - Monitor R2 bucket usage, request counts, and storage analytics in real-time
+- 🪝 **WebHooks** - Set up event notifications for bucket operations (uploads, deletes, migrations)
 Slurper API
 - 📋 **Job History & Audit Logging** - Complete audit trail for all operations (bulk and individual) with filterable job list and event timeline
 - 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search and RAG capabilities
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
-- 🧭 **NEW! Bucket Filtering** - Filter buckets by name, size, and creation date with preset and custom ranges
+- 🧭 **Bucket Filtering** - Filter buckets by name, size, and creation date with preset and custom ranges
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
 - 📄 **File Management** - Rename files via right-click context menu with validation
 - 🔍 **Smart Filtering** - Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)
@@ -142,13 +143,13 @@ docker run -p 8787:8787 -v "/path/to/wrangler.toml:/app/wrangler.toml" writenote
 | Tag | Description | Use Case |
 |-----|-------------|----------|
 | `latest` | Latest stable release | **Recommended for testing** |
-| `v3.0.0` | Specific version | Pin to exact version |
+| `v3.1.0` | Specific version | Pin to exact version |
 | `sha-abc1234` | Commit SHA (12-char short) | Development/traceability |
 
 **Pull a specific version:**
 
 ```bash
-docker pull writenotenow/r2-bucket-manager:v3.0.0
+docker pull writenotenow/r2-bucket-manager:v3.1.0
 ```
 
 ---

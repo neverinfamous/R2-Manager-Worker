@@ -7,10 +7,16 @@ import { auth } from './services/auth'
 import { logger } from './services/logger'
 import { ThemeToggle } from './components/ThemeToggle'
 import { CrossBucketSearch } from './components/search/CrossBucketSearch'
+import { TagSearch } from './components/search/TagSearch'
 import { AISearchPanel } from './components/ai-search'
 import { BucketFilterBar } from './components/filters/BucketFilterBar'
 import { useBucketFilters } from './hooks/useBucketFilters'
+import { UpgradeBanner } from './components/UpgradeBanner'
+import { BucketTagPicker } from './components/tags/BucketTagPicker'
+import { BucketColorPicker } from './components/colors'
+import type { BucketColor } from './utils/bucketColors'
 import './styles/metrics.css'
+import './styles/tags.css'
 import type { FileRejection, FileWithPath } from 'react-dropzone'
 
 // Lazy-loaded tab components for better code splitting
@@ -28,6 +34,7 @@ const LazyLoadingFallback = (): JSX.Element => (
 )
 
 type ActiveView = 'buckets' | 'metrics' | 's3-import' | 'job-history' | 'webhooks'
+type BucketsSubView = 'list' | 'file-search' | 'tag-search'
 
 // API response types
 interface DeleteBucketResponse {
@@ -105,6 +112,8 @@ export default function BucketManager(): JSX.Element {
   } | null>(null)
   const [showAISearch, setShowAISearch] = useState(false)
   const [activeView, setActiveView] = useState<ActiveView>('buckets')
+  const [bucketsSubView, setBucketsSubView] = useState<BucketsSubView>('list')
+  const [bucketColors, setBucketColors] = useState<Record<string, BucketColor>>({})
 
   // Debug: Log currentPath changes
   useEffect(() => {
@@ -160,6 +169,31 @@ export default function BucketManager(): JSX.Element {
       }
     }
   }, [handleLogout])
+
+  // Load bucket colors
+  const loadBucketColors = useCallback(async (): Promise<void> => {
+    try {
+      const colors = await api.getBucketColors()
+      setBucketColors(colors as Record<string, BucketColor>)
+    } catch (err) {
+      logger.error('App', 'Error loading bucket colors', err)
+      // Non-critical, don't show error to user
+    }
+  }, [])
+
+  // Handle bucket color change
+  const handleBucketColorChange = useCallback(async (bucketName: string, color: BucketColor): Promise<void> => {
+    try {
+      await api.updateBucketColor(bucketName, color)
+      setBucketColors(prev => ({
+        ...prev,
+        [bucketName]: color
+      }))
+    } catch (err) {
+      logger.error('App', 'Error updating bucket color', err)
+      setError('Failed to update bucket color')
+    }
+  }, [])
 
   const [bucketViewMode, setBucketViewMode] = useState<'list' | 'grid'>(() => {
     // Check for saved preference
@@ -342,7 +376,8 @@ export default function BucketManager(): JSX.Element {
 
   useEffect(() => {
     void loadBuckets()
-  }, [loadBuckets])
+    void loadBucketColors()
+  }, [loadBuckets, loadBucketColors])
 
   const createBucket = async (): Promise<void> => {
     if (!newBucketName.trim()) return
@@ -643,6 +678,9 @@ export default function BucketManager(): JSX.Element {
         </div>
       </header>
 
+      {/* Upgrade Banner - Show when migrations are pending */}
+      {!selectedBucket && <UpgradeBanner />}
+
       {/* Navigation Tabs - Show when not viewing a specific bucket */}
       {!selectedBucket && (
         <div className="nav-tabs">
@@ -738,447 +776,522 @@ export default function BucketManager(): JSX.Element {
       {/* Buckets View */}
       {!selectedBucket && activeView === 'buckets' && (
         <>
-          <form
-            id="createBucketForm"
-            name="createBucketForm"
-            onSubmit={handleSubmit}
-            className="bucket-controls"
-          >
-            <input
-              type="text"
-              id="newBucketName"
-              name="newBucketName"
-              value={newBucketName}
-              onChange={(e) => setNewBucketName(e.target.value)}
-              placeholder="New bucket name"
-              className="bucket-input"
-              aria-label="New bucket name"
-            />
+          {/* Sub-tabs for Buckets, File Search, Tag Search */}
+          <div className="search-sub-tabs">
             <button
-              type="submit"
-              disabled={isCreatingBucket || !newBucketName.trim()}
-              className="bucket-button"
+              type="button"
+              className={`search-sub-tab ${bucketsSubView === 'list' ? 'active' : ''}`}
+              onClick={() => setBucketsSubView('list')}
             >
-              {isCreatingBucket ? 'Creating...' : 'Create Bucket'}
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <ellipse cx="12" cy="5" rx="9" ry="3" />
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+              </svg>
+              Buckets
             </button>
-          </form>
+            <button
+              type="button"
+              className={`search-sub-tab ${bucketsSubView === 'file-search' ? 'active' : ''}`}
+              onClick={() => setBucketsSubView('file-search')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              File Search
+            </button>
+            <button
+              type="button"
+              className={`search-sub-tab ${bucketsSubView === 'tag-search' ? 'active' : ''}`}
+              onClick={() => setBucketsSubView('tag-search')}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z" />
+                <line x1="7" y1="7" x2="7.01" y2="7" />
+              </svg>
+              Tag Search
+            </button>
+          </div>
 
-          {error && <div className="error-message">{error}</div>}
-
-          <CrossBucketSearch onNavigateToBucket={handleBucketNavigate} />
-
-          <BucketFilterBar
-            filterText={filterText}
-            onFilterTextChange={setFilterText}
-            sizeFilter={sizeFilter}
-            dateFilter={dateFilter}
-            onSizeFilterChange={setSizeFilter}
-            onDateFilterChange={setDateFilter}
-            onSizePresetChange={handleSizePresetChange}
-            onCustomSizeRange={handleCustomSizeRange}
-            onDatePresetChange={handleDatePresetChange}
-            onCustomDateRange={handleCustomDateRange}
-            onClearAll={clearAllFilters}
-          />
-
-          {(selectedBuckets.length > 0 || buckets.length > 0) && (
-            <div className="bulk-action-toolbar">
-              <div className="bulk-action-info">
-                {selectedBuckets.length > 0 && (
-                  <span className="bulk-selection-count">
-                    {selectedBuckets.length} bucket{selectedBuckets.length !== 1 ? 's' : ''} selected
-                  </span>
-                )}
-              </div>
-              <div className="bulk-action-buttons">
-                {buckets.length > 0 && (
-                  <button
-                    onClick={() => setSelectedBuckets(buckets.map(b => b.name))}
-                    className="bulk-select-all-button"
-                    disabled={isBulkDeleting || bulkDownloadProgress !== null || selectedBuckets.length === buckets.length}
-                  >
-                    Select All
-                  </button>
-                )}
-                {selectedBuckets.length > 0 && (
-                  <button
-                    onClick={clearBucketSelection}
-                    className="bulk-clear-button"
-                    disabled={isBulkDeleting || bulkDownloadProgress !== null}
-                  >
-                    Deselect All
-                  </button>
-                )}
-                {selectedBuckets.length > 0 && (
-                  <>
-                    <button
-                      onClick={handleBulkDownload}
-                      className="bulk-download-button"
-                      disabled={bulkDownloadProgress !== null}
-                    >
-                      {bulkDownloadProgress ? (
-                        bulkDownloadProgress.status === 'error' ? 'Download Failed' :
-                          bulkDownloadProgress.status === 'complete' ? 'Download Complete' :
-                            bulkDownloadProgress.status === 'preparing' ? 'Preparing...' :
-                              `Downloading (${Math.round(bulkDownloadProgress.progress)}%)`
-                      ) : 'Download Selected'}
-                    </button>
-                    <button
-                      onClick={handleBulkDelete}
-                      className="bulk-delete-button"
-                      disabled={isBulkDeleting || bulkDownloadProgress !== null}
-                    >
-                      {isBulkDeleting ? 'Preparing...' : 'Delete Selected'}
-                    </button>
-                  </>
-                )}
-              </div>
-              <div className="view-toggle-container" style={{ marginLeft: 'auto' }}>
+          {/* Buckets List Sub-view */}
+          {bucketsSubView === 'list' && (
+            <>
+              <form
+                id="createBucketForm"
+                name="createBucketForm"
+                onSubmit={handleSubmit}
+                className="bucket-controls"
+              >
+                <input
+                  type="text"
+                  id="newBucketName"
+                  name="newBucketName"
+                  value={newBucketName}
+                  onChange={(e) => setNewBucketName(e.target.value)}
+                  placeholder="New bucket name"
+                  className="bucket-input"
+                  aria-label="New bucket name"
+                />
                 <button
-                  onClick={toggleBucketViewMode}
-                  className="view-mode-toggle-button"
-                  title={`Switch to ${bucketViewMode === 'list' ? 'Grid' : 'List'} view`}
+                  type="submit"
+                  disabled={isCreatingBucket || !newBucketName.trim()}
+                  className="bucket-button"
                 >
-                  {bucketViewMode === 'list' ? (
-                    <>
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="view-icon">
-                        <rect x="3" y="3" width="7" height="7" />
-                        <rect x="14" y="3" width="7" height="7" />
-                        <rect x="14" y="14" width="7" height="7" />
-                        <rect x="3" y="14" width="7" height="7" />
-                      </svg>
-                      <span>Grid</span>
-                    </>
-                  ) : (
-                    <>
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="view-icon">
-                        <line x1="8" y1="6" x2="21" y2="6" />
-                        <line x1="8" y1="12" x2="21" y2="12" />
-                        <line x1="8" y1="18" x2="21" y2="18" />
-                        <line x1="3" y1="6" x2="3.01" y2="6" />
-                        <line x1="3" y1="12" x2="3.01" y2="12" />
-                        <line x1="3" y1="18" x2="3.01" y2="18" />
-                      </svg>
-                      <span>List</span>
-                    </>
-                  )}
+                  {isCreatingBucket ? 'Creating...' : 'Create Bucket'}
                 </button>
-              </div>
-            </div>
-          )}
+              </form>
+
+              {error && <div className="error-message">{error}</div>}
+
+              <BucketFilterBar
+                filterText={filterText}
+                onFilterTextChange={setFilterText}
+                sizeFilter={sizeFilter}
+                dateFilter={dateFilter}
+                onSizeFilterChange={setSizeFilter}
+                onDateFilterChange={setDateFilter}
+                onSizePresetChange={handleSizePresetChange}
+                onCustomSizeRange={handleCustomSizeRange}
+                onDatePresetChange={handleDatePresetChange}
+                onCustomDateRange={handleCustomDateRange}
+                onClearAll={clearAllFilters}
+              />
+
+              {(selectedBuckets.length > 0 || buckets.length > 0) && (
+                <div className="bulk-action-toolbar">
+                  <div className="bulk-action-info">
+                    {selectedBuckets.length > 0 && (
+                      <span className="bulk-selection-count">
+                        {selectedBuckets.length} bucket{selectedBuckets.length !== 1 ? 's' : ''} selected
+                      </span>
+                    )}
+                  </div>
+                  <div className="bulk-action-buttons">
+                    {buckets.length > 0 && (
+                      <button
+                        onClick={() => setSelectedBuckets(buckets.map(b => b.name))}
+                        className="bulk-select-all-button"
+                        disabled={isBulkDeleting || bulkDownloadProgress !== null || selectedBuckets.length === buckets.length}
+                      >
+                        Select All
+                      </button>
+                    )}
+                    {selectedBuckets.length > 0 && (
+                      <button
+                        onClick={clearBucketSelection}
+                        className="bulk-clear-button"
+                        disabled={isBulkDeleting || bulkDownloadProgress !== null}
+                      >
+                        Deselect All
+                      </button>
+                    )}
+                    {selectedBuckets.length > 0 && (
+                      <>
+                        <button
+                          onClick={handleBulkDownload}
+                          className="bulk-download-button"
+                          disabled={bulkDownloadProgress !== null}
+                        >
+                          {bulkDownloadProgress ? (
+                            bulkDownloadProgress.status === 'error' ? 'Download Failed' :
+                              bulkDownloadProgress.status === 'complete' ? 'Download Complete' :
+                                bulkDownloadProgress.status === 'preparing' ? 'Preparing...' :
+                                  `Downloading (${Math.round(bulkDownloadProgress.progress)}%)`
+                          ) : 'Download Selected'}
+                        </button>
+                        <button
+                          onClick={handleBulkDelete}
+                          className="bulk-delete-button"
+                          disabled={isBulkDeleting || bulkDownloadProgress !== null}
+                        >
+                          {isBulkDeleting ? 'Preparing...' : 'Delete Selected'}
+                        </button>
+                      </>
+                    )}
+                  </div>
+                  <div className="view-toggle-container" style={{ marginLeft: 'auto' }}>
+                    <button
+                      onClick={toggleBucketViewMode}
+                      className="view-mode-toggle-button"
+                      title={`Switch to ${bucketViewMode === 'list' ? 'Grid' : 'List'} view`}
+                    >
+                      {bucketViewMode === 'list' ? (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="view-icon">
+                            <rect x="3" y="3" width="7" height="7" />
+                            <rect x="14" y="3" width="7" height="7" />
+                            <rect x="14" y="14" width="7" height="7" />
+                            <rect x="3" y="14" width="7" height="7" />
+                          </svg>
+                          <span>Grid</span>
+                        </>
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="view-icon">
+                            <line x1="8" y1="6" x2="21" y2="6" />
+                            <line x1="8" y1="12" x2="21" y2="12" />
+                            <line x1="8" y1="18" x2="21" y2="18" />
+                            <line x1="3" y1="6" x2="3.01" y2="6" />
+                            <line x1="3" y1="12" x2="3.01" y2="12" />
+                            <line x1="3" y1="18" x2="3.01" y2="18" />
+                          </svg>
+                          <span>List</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
 
 
 
 
-          {bucketViewMode === 'list' ? (
-            <div className="file-list">
-              <table>
-                <thead>
-                  <tr>
-                    <th>
-                      <input
-                        type="checkbox"
-                        className="file-checkbox"
-                        checked={selectedBuckets.length > 0 && selectedBuckets.length === buckets.length}
-                        onChange={() => {
-                          if (selectedBuckets.length === buckets.length) {
-                            setSelectedBuckets([])
-                          } else {
-                            setSelectedBuckets(buckets.map(b => b.name))
-                          }
-                        }}
-                        id="select-all-buckets"
-                        name="select-all-buckets"
-                        aria-label="Select all buckets"
-                      />
-                    </th>
-                    <th>Name</th>
-                    <th>Created</th>
-                    <th>Size</th>
-                    <th>Items</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+              {bucketViewMode === 'list' ? (
+                <div className="file-list">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>
+                          <input
+                            type="checkbox"
+                            className="file-checkbox"
+                            checked={selectedBuckets.length > 0 && selectedBuckets.length === buckets.length}
+                            onChange={() => {
+                              if (selectedBuckets.length === buckets.length) {
+                                setSelectedBuckets([])
+                              } else {
+                                setSelectedBuckets(buckets.map(b => b.name))
+                              }
+                            }}
+                            id="select-all-buckets"
+                            name="select-all-buckets"
+                            aria-label="Select all buckets"
+                          />
+                        </th>
+                        <th>Name</th>
+                        <th>Created</th>
+                        <th>Size</th>
+                        <th>Items</th>
+                        <th>Tags</th>
+                        <th>Color</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredBuckets.map(bucket => {
+                        const isEditing = editingBucketName === bucket.name
+                        const isSelected = selectedBuckets.includes(bucket.name)
+                        return (
+                          <tr
+                            key={bucket.name}
+                            className={`bucket-list-row ${isSelected ? 'selected' : ''}`}
+                            onClick={() => setSelectedBucket(bucket.name)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <td onClick={(e) => e.stopPropagation()}>
+                              <input
+                                type="checkbox"
+                                id={`bucket-checkbox-${bucket.name}`}
+                                name={`bucket-checkbox-${bucket.name}`}
+                                className="file-checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  e.stopPropagation()
+                                  toggleBucketSelection(bucket.name)
+                                }}
+                                aria-label={`Select bucket ${bucket.name}`}
+                              />
+                            </td>
+                            <td>
+                              {isEditing ? (
+                                <div className="bucket-edit-mode list-mode" onClick={(e) => e.stopPropagation()}>
+                                  <input
+                                    type="text"
+                                    value={editInputValue}
+                                    onChange={(e) => setEditInputValue(e.target.value)}
+                                    className="bucket-edit-input"
+                                    autoFocus
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') void saveBucketRename()
+                                      if (e.key === 'Escape') cancelEditingBucket()
+                                    }}
+                                  />
+                                  <button onClick={saveBucketRename} className="bucket-edit-save" disabled={isRenamingBucket}>✓</button>
+                                  <button onClick={cancelEditingBucket} className="bucket-edit-cancel" disabled={isRenamingBucket}>✕</button>
+                                </div>
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-primary)' }}>
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="bucket-icon">
+                                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+                                    <ellipse cx="12" cy="5" rx="9" ry="3" />
+                                    <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" />
+                                  </svg>
+                                  <span style={{ fontWeight: 500 }}>{bucket.name}</span>
+                                </div>
+                              )}
+                              {isEditing && editError && <div className="list-edit-error">{editError}</div>}
+                            </td>
+                            <td>
+                              {new Date(bucket.created).toLocaleDateString()}
+                            </td>
+                            <td>
+                              {formatFileSize(bucket.size || 0)}
+                            </td>
+                            <td>
+                              {(bucket.objectCount ?? 0).toLocaleString()}
+                            </td>
+                            <td onClick={(e) => e.stopPropagation()}>
+                              <BucketTagPicker bucketName={bucket.name} compact />
+                            </td>
+                            <td onClick={(e) => e.stopPropagation()}>
+                              <BucketColorPicker
+                                value={bucketColors[bucket.name] ?? null}
+                                onChange={(color) => handleBucketColorChange(bucket.name, color)}
+                              />
+                            </td>
+                            <td onClick={(e) => e.stopPropagation()}>
+                              {!isEditing && (
+                                <div className="file-list-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+                                  <button
+                                    onClick={() => startEditingBucket(bucket.name)}
+                                    className="bucket-list-action-btn"
+                                    title="Rename"
+                                  >
+                                    Rename
+                                  </button>
+                                  <button
+                                    onClick={() => void deleteBucket(bucket.name)}
+                                    className="bucket-list-action-btn delete"
+                                    title="Delete"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                  {buckets.length === 0 && !error && (
+                    <div className="empty-state">
+                      <p className="empty-text">No buckets found</p>
+                      <p className="empty-subtext">Create a bucket to get started</p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="bucket-grid">
                   {filteredBuckets.map(bucket => {
                     const isEditing = editingBucketName === bucket.name
                     const isSelected = selectedBuckets.includes(bucket.name)
                     return (
-                      <tr
-                        key={bucket.name}
-                        className={`bucket-list-row ${isSelected ? 'selected' : ''}`}
-                        onClick={() => setSelectedBucket(bucket.name)}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <td onClick={(e) => e.stopPropagation()}>
-                          <input
-                            type="checkbox"
-                            id={`bucket-checkbox-${bucket.name}`}
-                            name={`bucket-checkbox-${bucket.name}`}
-                            className="file-checkbox"
-                            checked={isSelected}
-                            onChange={(e) => {
-                              e.stopPropagation()
-                              toggleBucketSelection(bucket.name)
-                            }}
-                            aria-label={`Select bucket ${bucket.name}`}
-                          />
-                        </td>
-                        <td>
-                          {isEditing ? (
-                            <div className="bucket-edit-mode list-mode" onClick={(e) => e.stopPropagation()}>
-                              <input
-                                type="text"
-                                value={editInputValue}
-                                onChange={(e) => setEditInputValue(e.target.value)}
-                                className="bucket-edit-input"
-                                autoFocus
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') void saveBucketRename()
-                                  if (e.key === 'Escape') cancelEditingBucket()
-                                }}
-                              />
-                              <button onClick={saveBucketRename} className="bucket-edit-save" disabled={isRenamingBucket}>✓</button>
-                              <button onClick={cancelEditingBucket} className="bucket-edit-cancel" disabled={isRenamingBucket}>✕</button>
-                            </div>
-                          ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--text-primary)' }}>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="bucket-icon">
-                                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" />
-                                <ellipse cx="12" cy="5" rx="9" ry="3" />
-                                <path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3" />
-                              </svg>
-                              <span style={{ fontWeight: 500 }}>{bucket.name}</span>
-                            </div>
-                          )}
-                          {isEditing && editError && <div className="list-edit-error">{editError}</div>}
-                        </td>
-                        <td>
-                          {new Date(bucket.created).toLocaleDateString()}
-                        </td>
-                        <td>
-                          {formatFileSize(bucket.size || 0)}
-                        </td>
-                        <td>
-                          {(bucket.objectCount ?? 0).toLocaleString()}
-                        </td>
-                        <td onClick={(e) => e.stopPropagation()}>
-                          {!isEditing && (
-                            <div className="file-list-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+                      <div key={bucket.name} className={`bucket-item ${isEditing ? 'editing' : ''} ${isSelected ? 'selected' : ''}`}>
+                        {isEditing ? (
+                          <div className="bucket-edit-mode">
+                            <input
+                              type="text"
+                              id="bucket-edit-name"
+                              name="bucket-edit-name"
+                              value={editInputValue}
+                              onChange={(e) => setEditInputValue(e.target.value)}
+                              className="bucket-edit-input"
+                              placeholder="New bucket name"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') void saveBucketRename()
+                                if (e.key === 'Escape') cancelEditingBucket()
+                              }}
+                            />
+                            {editError && <p className="bucket-edit-error">{editError}</p>}
+                            <div className="bucket-edit-actions">
                               <button
-                                onClick={() => startEditingBucket(bucket.name)}
-                                className="bucket-list-action-btn"
-                                title="Rename"
+                                onClick={saveBucketRename}
+                                className="bucket-edit-save"
+                                disabled={isRenamingBucket}
+                              >
+                                {isRenamingBucket ? 'Renaming...' : 'Save'}
+                              </button>
+                              <button
+                                onClick={cancelEditingBucket}
+                                className="bucket-edit-cancel"
+                                disabled={isRenamingBucket}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="bucket-checkbox-container">
+                              <input
+                                type="checkbox"
+                                id={`bucket-select-${bucket.name}`}
+                                name={`bucket-select-${bucket.name}`}
+                                className="bucket-checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  e.stopPropagation()
+                                  toggleBucketSelection(bucket.name)
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                aria-label={`Select ${bucket.name}`}
+                              />
+                            </div>
+                            <div
+                              className="bucket-content"
+                              onClick={() => setSelectedBucket(bucket.name)}
+                            >
+                              <h3 className="bucket-name">{bucket.name}</h3>
+                              <p className="bucket-date">
+                                Created: {new Date(bucket.created).toLocaleDateString()}
+                              </p>
+                              <p className="bucket-size">
+                                Total Size: {formatFileSize(bucket.size || 0)}
+                              </p>
+                              <p className="bucket-count">
+                                Items: {(bucket.objectCount ?? 0).toLocaleString()}
+                              </p>
+                            </div>
+                            <div className="bucket-tags-container" onClick={(e) => e.stopPropagation()}>
+                              {/* Tags area (includes tag icon + tags) */}
+                              <BucketTagPicker bucketName={bucket.name} />
+                              {/* Color picker at bottom - aligns across all cards */}
+                              <BucketColorPicker
+                                value={bucketColors[bucket.name] ?? null}
+                                onChange={(color) => handleBucketColorChange(bucket.name, color)}
+                              />
+                            </div>
+                            <div className="bucket-actions">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  startEditingBucket(bucket.name)
+                                }}
+                                className="bucket-edit"
+                                title="Rename bucket"
                               >
                                 Rename
                               </button>
                               <button
-                                onClick={() => void deleteBucket(bucket.name)}
-                                className="bucket-list-action-btn delete"
-                                title="Delete"
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  void deleteBucket(bucket.name)
+                                }}
+                                className="bucket-delete"
                               >
                                 Delete
                               </button>
                             </div>
-                          )}
-                        </td>
-                      </tr>
+                          </>
+                        )}
+                      </div>
                     )
                   })}
-                </tbody>
-              </table>
-              {buckets.length === 0 && !error && (
-                <div className="empty-state">
-                  <p className="empty-text">No buckets found</p>
-                  <p className="empty-subtext">Create a bucket to get started</p>
+                  {buckets.length === 0 && !error && (
+                    <div className="empty-state">
+                      <p className="empty-text">No buckets found</p>
+                      <p className="empty-subtext">Create a bucket to get started</p>
+                    </div>
+                  )}
                 </div>
               )}
+            </>
+          )}
+
+          {/* File Search Sub-view */}
+          {bucketsSubView === 'file-search' && (
+            <div className="search-content">
+              <CrossBucketSearch onNavigateToBucket={handleBucketNavigate} />
             </div>
-          ) : (
-            <div className="bucket-grid">
-              {filteredBuckets.map(bucket => {
-                const isEditing = editingBucketName === bucket.name
-                const isSelected = selectedBuckets.includes(bucket.name)
-                return (
-                  <div key={bucket.name} className={`bucket-item ${isEditing ? 'editing' : ''} ${isSelected ? 'selected' : ''}`}>
-                    {isEditing ? (
-                      <div className="bucket-edit-mode">
-                        <input
-                          type="text"
-                          id="bucket-edit-name"
-                          name="bucket-edit-name"
-                          value={editInputValue}
-                          onChange={(e) => setEditInputValue(e.target.value)}
-                          className="bucket-edit-input"
-                          placeholder="New bucket name"
-                          autoFocus
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') void saveBucketRename()
-                            if (e.key === 'Escape') cancelEditingBucket()
-                          }}
-                        />
-                        {editError && <p className="bucket-edit-error">{editError}</p>}
-                        <div className="bucket-edit-actions">
-                          <button
-                            onClick={saveBucketRename}
-                            className="bucket-edit-save"
-                            disabled={isRenamingBucket}
-                          >
-                            {isRenamingBucket ? 'Renaming...' : 'Save'}
-                          </button>
-                          <button
-                            onClick={cancelEditingBucket}
-                            className="bucket-edit-cancel"
-                            disabled={isRenamingBucket}
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="bucket-checkbox-container">
-                          <input
-                            type="checkbox"
-                            id={`bucket-select-${bucket.name}`}
-                            name={`bucket-select-${bucket.name}`}
-                            className="bucket-checkbox"
-                            checked={isSelected}
-                            onChange={(e) => {
-                              e.stopPropagation()
-                              toggleBucketSelection(bucket.name)
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            aria-label={`Select ${bucket.name}`}
-                          />
-                        </div>
-                        <div
-                          className="bucket-content"
-                          onClick={() => setSelectedBucket(bucket.name)}
-                        >
-                          <h3 className="bucket-name">{bucket.name}</h3>
-                          <p className="bucket-date">
-                            Created: {new Date(bucket.created).toLocaleDateString()}
-                          </p>
-                          <p className="bucket-size">
-                            Total Size: {formatFileSize(bucket.size || 0)}
-                          </p>
-                          <p className="bucket-count">
-                            Items: {(bucket.objectCount ?? 0).toLocaleString()}
-                          </p>
-                        </div>
-                        <div className="bucket-actions">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              startEditingBucket(bucket.name)
-                            }}
-                            className="bucket-edit"
-                            title="Rename bucket"
-                          >
-                            Rename
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              void deleteBucket(bucket.name)
-                            }}
-                            className="bucket-delete"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      </>
-                    )}
+          )}
+
+          {/* Tag Search Sub-view */}
+          {bucketsSubView === 'tag-search' && (
+            <div className="search-content">
+              <TagSearch onNavigateToBucket={handleBucketNavigate} />
+            </div>
+          )}
+
+          {/* Delete confirmation modal - always render outside view-specific code */}
+          {deleteConfirmState && (
+            <div className="modal-overlay" onClick={() => !deleteConfirmState.isDeleting && setDeleteConfirmState(null)}>
+              <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+                <h2>
+                  {deleteConfirmState.bucketNames.length === 1
+                    ? 'Delete Non-Empty Bucket?'
+                    : `Delete ${deleteConfirmState.bucketNames.length} Non-Empty Buckets?`}
+                </h2>
+
+                {deleteConfirmState.bucketNames.length === 1 ? (
+                  <p>
+                    Bucket <strong>{deleteConfirmState.bucketNames[0]}</strong> contains{' '}
+                    <strong>{deleteConfirmState.totalFiles ?? 'multiple'}</strong> file(s).
+                  </p>
+                ) : (
+                  <>
+                    <div className="bucket-list-in-modal">
+                      <p><strong>Buckets to delete:</strong></p>
+                      <ul>
+                        {deleteConfirmState.bucketNames.map(name => (
+                          <li key={name}>{name}</li>
+                        ))}
+                      </ul>
+                      {deleteConfirmState.totalFiles !== null && (
+                        <p className="total-files-count">
+                          Total files: <strong>{deleteConfirmState.totalFiles}</strong>
+                        </p>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                <p style={{ color: '#ff6b6b', fontWeight: 'bold' }}>
+                  ⚠️ This will permanently delete all files and {deleteConfirmState.bucketNames.length === 1 ? 'the bucket' : 'these buckets'}. This cannot be undone.
+                </p>
+
+                {deleteConfirmState.isDeleting && deleteConfirmState.currentProgress && (
+                  <div className="bulk-delete-progress">
+                    <p>Deleting bucket {deleteConfirmState.currentProgress.current} of {deleteConfirmState.currentProgress.total}...</p>
+                    <div className="progress-bar">
+                      <div
+                        className="progress-bar-fill"
+                        style={{
+                          width: `${(deleteConfirmState.currentProgress.current / deleteConfirmState.currentProgress.total) * 100}%`
+                        }}
+                      />
+                    </div>
                   </div>
-                )
-              })}
-              {buckets.length === 0 && !error && (
-                <div className="empty-state">
-                  <p className="empty-text">No buckets found</p>
-                  <p className="empty-subtext">Create a bucket to get started</p>
+                )}
+
+                <div className="modal-actions">
+                  <button
+                    className="modal-button cancel"
+                    onClick={() => setDeleteConfirmState(null)}
+                    disabled={deleteConfirmState.isDeleting}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="modal-button delete"
+                    onClick={confirmForceBucketDelete}
+                    disabled={deleteConfirmState.isDeleting}
+                  >
+                    {deleteConfirmState.isDeleting
+                      ? 'Deleting...'
+                      : deleteConfirmState.bucketNames.length === 1
+                        ? 'Delete Bucket & All Files'
+                        : `Delete ${deleteConfirmState.bucketNames.length} Buckets & All Files`}
+                  </button>
                 </div>
-              )}
+              </div>
             </div>
           )}
         </>
       )}
 
-      {/* Delete confirmation modal - always render outside view-specific code */}
-      {deleteConfirmState && (
-        <div className="modal-overlay" onClick={() => !deleteConfirmState.isDeleting && setDeleteConfirmState(null)}>
-          <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2>
-              {deleteConfirmState.bucketNames.length === 1
-                ? 'Delete Non-Empty Bucket?'
-                : `Delete ${deleteConfirmState.bucketNames.length} Non-Empty Buckets?`}
-            </h2>
-
-            {deleteConfirmState.bucketNames.length === 1 ? (
-              <p>
-                Bucket <strong>{deleteConfirmState.bucketNames[0]}</strong> contains{' '}
-                <strong>{deleteConfirmState.totalFiles ?? 'multiple'}</strong> file(s).
-              </p>
-            ) : (
-              <>
-                <div className="bucket-list-in-modal">
-                  <p><strong>Buckets to delete:</strong></p>
-                  <ul>
-                    {deleteConfirmState.bucketNames.map(name => (
-                      <li key={name}>{name}</li>
-                    ))}
-                  </ul>
-                  {deleteConfirmState.totalFiles !== null && (
-                    <p className="total-files-count">
-                      Total files: <strong>{deleteConfirmState.totalFiles}</strong>
-                    </p>
-                  )}
-                </div>
-              </>
-            )}
-
-            <p style={{ color: '#ff6b6b', fontWeight: 'bold' }}>
-              ⚠️ This will permanently delete all files and {deleteConfirmState.bucketNames.length === 1 ? 'the bucket' : 'these buckets'}. This cannot be undone.
-            </p>
-
-            {deleteConfirmState.isDeleting && deleteConfirmState.currentProgress && (
-              <div className="bulk-delete-progress">
-                <p>Deleting bucket {deleteConfirmState.currentProgress.current} of {deleteConfirmState.currentProgress.total}...</p>
-                <div className="progress-bar">
-                  <div
-                    className="progress-bar-fill"
-                    style={{
-                      width: `${(deleteConfirmState.currentProgress.current / deleteConfirmState.currentProgress.total) * 100}%`
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="modal-actions">
-              <button
-                className="modal-button cancel"
-                onClick={() => setDeleteConfirmState(null)}
-                disabled={deleteConfirmState.isDeleting}
-              >
-                Cancel
-              </button>
-              <button
-                className="modal-button delete"
-                onClick={confirmForceBucketDelete}
-                disabled={deleteConfirmState.isDeleting}
-              >
-                {deleteConfirmState.isDeleting
-                  ? 'Deleting...'
-                  : deleteConfirmState.bucketNames.length === 1
-                    ? 'Delete Bucket & All Files'
-                    : `Delete ${deleteConfirmState.bucketNames.length} Buckets & All Files`}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
+      {/* Selected Bucket View */}
       {selectedBucket && (
         <div className="upload-overlay">
           <div className="upload-panel">

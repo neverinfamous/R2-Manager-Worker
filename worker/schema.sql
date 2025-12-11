@@ -116,3 +116,36 @@ CREATE TABLE IF NOT EXISTS webhooks (
 -- Index for querying enabled webhooks
 CREATE INDEX IF NOT EXISTS idx_webhooks_enabled ON webhooks(enabled);
 
+-- ============================================
+-- Bucket Tags Table
+-- ============================================
+
+-- Custom text tags for bucket organization and filtering
+CREATE TABLE IF NOT EXISTS bucket_tags (
+  bucket_name TEXT NOT NULL,
+  tag TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  created_by TEXT,
+  PRIMARY KEY (bucket_name, tag)
+);
+
+-- Indexes for efficient tag queries
+CREATE INDEX IF NOT EXISTS idx_bucket_tags_bucket ON bucket_tags(bucket_name);
+CREATE INDEX IF NOT EXISTS idx_bucket_tags_tag ON bucket_tags(tag);
+CREATE INDEX IF NOT EXISTS idx_bucket_tags_created ON bucket_tags(created_at DESC);
+
+-- ============================================
+-- Bucket Colors Table
+-- ============================================
+
+-- Color tags for bucket visual organization
+CREATE TABLE IF NOT EXISTS bucket_colors (
+  bucket_name TEXT PRIMARY KEY,
+  color TEXT NOT NULL,
+  updated_at TEXT DEFAULT (datetime('now')),
+  updated_by TEXT
+);
+
+-- Index for efficient color queries
+CREATE INDEX IF NOT EXISTS idx_bucket_colors_updated ON bucket_colors(updated_at DESC);
+

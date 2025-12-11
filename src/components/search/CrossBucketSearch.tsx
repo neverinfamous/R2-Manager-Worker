@@ -12,11 +12,10 @@ interface CrossBucketSearchProps {
 }
 
 export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps): JSX.Element {
-  const [isExpanded, setIsExpanded] = useState(false)
   const [extensionDropdownOpen, setExtensionDropdownOpen] = useState(false)
   const [sizeDropdownOpen, setSizeDropdownOpen] = useState(false)
   const [dateDropdownOpen, setDateDropdownOpen] = useState(false)
-  
+
   const {
     filters,
     results,
@@ -46,10 +45,6 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
     return detectExtensions(fileObjects)
   }, [results])
 
-  const handleToggleExpand = useCallback(() => {
-    setIsExpanded(prev => !prev)
-  }, [])
-
   const handleExtensionToggle = useCallback((extension: string) => {
     setExtensions(
       filters.extensions.includes(extension)
@@ -62,10 +57,10 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
     const groupExtensions = EXTENSION_GROUPS[groupName as keyof typeof EXTENSION_GROUPS]
     if (groupExtensions === undefined) return
     const availableInGroup = groupExtensions.filter(ext => availableExtensions.has(ext))
-    
+
     // Toggle: if all are selected, deselect; otherwise select all
     const allSelected = availableInGroup.every(ext => filters.extensions.includes(ext))
-    
+
     if (allSelected) {
       setExtensions(filters.extensions.filter(e => !availableInGroup.includes(e)))
     } else {
@@ -110,10 +105,9 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
 
   const handleClearAll = useCallback(() => {
     clearSearch()
-    setIsExpanded(false)
   }, [clearSearch])
 
-  const hasActiveFilters = 
+  const hasActiveFilters =
     filters.query.trim() !== '' ||
     filters.extensions.length > 0 ||
     filters.minSize !== null ||
@@ -123,112 +117,98 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
 
   return (
     <div className="cross-bucket-search">
-      <div className="search-header">
-        <button
-          className="search-expand-button"
-          onClick={handleToggleExpand}
-          aria-expanded={isExpanded}
-        >
-          <span className="search-icon">🔍</span>
-          <span>Search Across All Buckets</span>
-          <span className="expand-icon">{isExpanded ? '▼' : '▶'}</span>
-        </button>
-        {hasActiveFilters && !isExpanded && (
-          <span className="search-active-indicator">
-            {total} {total === 1 ? 'result' : 'results'}
-          </span>
-        )}
-      </div>
+      {/* Search Filters - Always visible */}
+      <div className="search-filters-bar">
+        <div className="search-input-group">
+          <input
+            type="text"
+            id="cross-bucket-search"
+            name="cross-bucket-search"
+            className="search-input"
+            placeholder="Search by filename..."
+            value={filters.query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
 
-      {isExpanded && (
-        <div className="search-expanded-content">
-          <div className="search-filters-bar">
-            <div className="search-input-group">
-              <input
-                type="text"
-                id="cross-bucket-search"
-                name="cross-bucket-search"
-                className="search-input"
-                placeholder="Search by filename..."
-                value={filters.query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
+        <div className="search-advanced-filters">
+          <ExtensionFilter
+            selectedExtensions={filters.extensions}
+            availableExtensions={availableExtensions}
+            isOpen={extensionDropdownOpen}
+            onToggle={() => setExtensionDropdownOpen(prev => !prev)}
+            onExtensionToggle={handleExtensionToggle}
+            onGroupSelect={handleExtensionGroupSelect}
+            onClear={() => setExtensions([])}
+          />
 
-            <div className="search-advanced-filters">
-              <ExtensionFilter
-                selectedExtensions={filters.extensions}
-                availableExtensions={availableExtensions}
-                isOpen={extensionDropdownOpen}
-                onToggle={() => setExtensionDropdownOpen(prev => !prev)}
-                onExtensionToggle={handleExtensionToggle}
-                onGroupSelect={handleExtensionGroupSelect}
-                onClear={() => setExtensions([])}
-              />
+          <SizeFilter
+            sizeFilter={{
+              min: filters.minSize,
+              max: filters.maxSize,
+              preset: filters.minSize !== null || filters.maxSize !== null ? 'custom' : 'all'
+            }}
+            isOpen={sizeDropdownOpen}
+            onToggle={() => setSizeDropdownOpen(prev => !prev)}
+            onPresetChange={handleSizePresetChange}
+            onCustomRange={handleCustomSizeRange}
+            onClear={() => setSizeRange(null, null)}
+          />
 
-              <SizeFilter
-                sizeFilter={{
-                  min: filters.minSize,
-                  max: filters.maxSize,
-                  preset: filters.minSize !== null || filters.maxSize !== null ? 'custom' : 'all'
-                }}
-                isOpen={sizeDropdownOpen}
-                onToggle={() => setSizeDropdownOpen(prev => !prev)}
-                onPresetChange={handleSizePresetChange}
-                onCustomRange={handleCustomSizeRange}
-                onClear={() => setSizeRange(null, null)}
-              />
-
-              <DateFilter
-                dateFilter={{
-                  start: filters.startDate,
-                  end: filters.endDate,
-                  preset: filters.startDate !== null || filters.endDate !== null ? 'custom' : 'all'
-                }}
-                isOpen={dateDropdownOpen}
-                onToggle={() => setDateDropdownOpen(prev => !prev)}
-                onPresetChange={handleDatePresetChange}
-                onCustomRange={handleCustomDateRange}
-                onClear={() => setDateRange(null, null)}
-              />
-
-              {hasActiveFilters && (
-                <button
-                  className="clear-all-button"
-                  onClick={handleClearAll}
-                >
-                  Clear All
-                </button>
-              )}
-            </div>
-          </div>
-
-          {error && (
-            <div className="search-error">
-              <p>⚠ {error}</p>
-            </div>
-          )}
+          <DateFilter
+            dateFilter={{
+              start: filters.startDate,
+              end: filters.endDate,
+              preset: filters.startDate !== null || filters.endDate !== null ? 'custom' : 'all'
+            }}
+            isOpen={dateDropdownOpen}
+            onToggle={() => setDateDropdownOpen(prev => !prev)}
+            onPresetChange={handleDatePresetChange}
+            onCustomRange={handleCustomDateRange}
+            onClear={() => setDateRange(null, null)}
+          />
 
           {hasActiveFilters && (
-            <SearchResultsTable
-              results={results}
-              isSearching={isSearching}
-              sortColumn={sortColumn}
-              sortDirection={sortDirection}
-              onSort={sortResults}
-              onRefresh={executeSearch}
-              onNavigateToBucket={onNavigateToBucket}
-            />
+            <button
+              className="clear-all-button"
+              onClick={handleClearAll}
+            >
+              Clear All
+            </button>
           )}
+        </div>
+      </div>
 
-          {!hasActiveFilters && (
-            <div className="search-instructions">
-              <p>Enter a search query or apply filters to search across all buckets</p>
-            </div>
-          )}
+      {/* Results count */}
+      {hasActiveFilters && (
+        <div className="search-results-summary">
+          <span>{total} {total === 1 ? 'result' : 'results'} found</span>
+        </div>
+      )}
+
+      {error && (
+        <div className="search-error">
+          <p>⚠ {error}</p>
+        </div>
+      )}
+
+      {hasActiveFilters && (
+        <SearchResultsTable
+          results={results}
+          isSearching={isSearching}
+          sortColumn={sortColumn}
+          sortDirection={sortDirection}
+          onSort={sortResults}
+          onRefresh={executeSearch}
+          onNavigateToBucket={onNavigateToBucket}
+        />
+      )}
+
+      {!hasActiveFilters && (
+        <div className="search-instructions">
+          <p>Enter a search query or apply filters to search across all buckets</p>
         </div>
       )}
     </div>
   )
 }
-

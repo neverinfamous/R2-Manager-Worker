@@ -496,6 +496,11 @@
   transform: translateY(-2px);
 }
 
+/* Disable hover transform when color picker is open to prevent flicker */
+.bucket-item:has(.bucket-color-picker[data-open="true"]):hover {
+  transform: none;
+}
+
 .bucket-content {
   padding: 1rem;
   padding-top: 1.75rem;

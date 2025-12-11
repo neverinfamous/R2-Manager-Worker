@@ -321,18 +321,18 @@ async function fetchWithRetry(
 ): Promise<Response> {
   let lastError: Error | null = null
   let lastResponse: Response | null = null
-  
+
   // Retry with exponential backoff for rate limits
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       const response = await fetch(url, options)
       lastResponse = response
-      
+
       // Successful response (including 2xx and error responses like 404, 500)
       if (response.ok || (response.status !== 429 && response.status !== 503 && response.status !== 504)) {
         return response
       }
-      
+
       // Handle rate limit with retry
       if (response.status === 429) {
         lastError = new Error('Rate limited (429). Please wait a moment and try again.')
@@ -343,7 +343,7 @@ async function fetchWithRetry(
           continue // Retry after backoff
         }
       }
-      
+
       // Handle service unavailable/timeout with retry
       if (response.status === 503 || response.status === 504) {
         lastError = new Error(`Service error (${response.status}). Retrying...`)
@@ -354,7 +354,7 @@ async function fetchWithRetry(
           continue
         }
       }
-      
+
       // Other errors - don't retry
       return response
     } catch (err) {
@@ -367,12 +367,12 @@ async function fetchWithRetry(
       }
     }
   }
-  
+
   // If we have a response, return it even if it failed
   if (lastResponse) {
     return lastResponse
   }
-  
+
   throw lastError ?? new Error('Request failed after retries')
 }
 
@@ -893,7 +893,7 @@ class APIService {
       }
 
       onProgress?.(100)
-      
+
       // Invalidate file list and bucket list cache after successful upload
       invalidateFileListCache(bucketName)
       invalidateBucketListCache() // Bucket sizes are included in bucket list
@@ -964,10 +964,10 @@ class APIService {
     await this.handleResponse(response);
 
     const data = await response.json() as { result: { buckets: CloudflareBucket[] } }
-    
+
     // Cache the result
     setCachedBucketList(data.result.buckets)
-    
+
     return data.result.buckets.map((bucket: CloudflareBucket) => ({
       name: bucket.name,
       creation_date: bucket.creation_date,
@@ -993,10 +993,10 @@ class APIService {
     }
 
     const data = await response.json() as { result: { name: string; creation_date: string } }
-    
+
     // Invalidate bucket list cache after creation
     invalidateBucketListCache()
-    
+
     return data.result
   }
 
@@ -1068,16 +1068,16 @@ class APIService {
       const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` })) as { error?: string }
       throw new Error(error.error ?? 'Failed to rename bucket')
     }
-    
+
     const result = await response.json() as { success: boolean; newName?: string }
-    
+
     // Invalidate both old and new bucket caches
     if (result.success) {
       invalidateBucketListCache()
       invalidateFileListCache(oldName)
       invalidateFileListCache(newName)
     }
-    
+
     return result
   }
 
@@ -1120,12 +1120,12 @@ class APIService {
     }
 
     const result = await response.json() as FileListResponse
-    
+
     // Cache first page only
     if (!cursor) {
       setCachedFileList(bucketName, result, options.prefix)
     }
-    
+
     return result
   }
 
@@ -1351,7 +1351,7 @@ class APIService {
       const errorData = await response.json().catch(() => ({ error: `Failed to move file: ${response.status}` })) as ApiErrorResponse
       throw new Error(errorData.error ?? 'Failed to move file')
     }
-    
+
     // Invalidate file list for both source and destination buckets
     invalidateFileListCache(sourceBucket)
     invalidateFileListCache(destBucket)
@@ -1393,7 +1393,7 @@ class APIService {
       const errorData = await response.json().catch(() => ({ error: `Failed to copy file: ${response.status}` })) as ApiErrorResponse
       throw new Error(errorData.error ?? 'Failed to copy file')
     }
-    
+
     // Invalidate file list cache for destination bucket
     invalidateFileListCache(destBucket)
     invalidateBucketListCache() // Bucket sizes may have changed
@@ -1447,7 +1447,7 @@ class APIService {
       })) as ApiErrorResponse
       throw new Error(errorData.error ?? 'Failed to rename file')
     }
-    
+
     // Invalidate file list cache for this bucket
     invalidateFileListCache(bucketName)
   }
@@ -1535,7 +1535,7 @@ class APIService {
       const errorData = await response.json().catch(() => ({ error: `Failed to create folder: ${response.status}` })) as ApiErrorResponse
       throw new Error(errorData.error ?? 'Failed to create folder')
     }
-    
+
     // Invalidate file list cache for this bucket
     invalidateFileListCache(bucketName)
   }
@@ -1567,7 +1567,7 @@ class APIService {
     if (onProgress && data.copied !== undefined) {
       onProgress(data.copied, data.copied + (data.failed ?? 0))
     }
-    
+
     // Invalidate file list cache for this bucket
     invalidateFileListCache(bucketName)
   }
@@ -1600,7 +1600,7 @@ class APIService {
     if (onProgress && data.copied !== undefined) {
       onProgress(data.copied, data.copied + (data.failed ?? 0))
     }
-    
+
     // Invalidate file list cache for destination bucket
     invalidateFileListCache(destBucket)
     invalidateBucketListCache() // Bucket sizes may have changed
@@ -1634,7 +1634,7 @@ class APIService {
     if (onProgress && data.moved !== undefined) {
       onProgress(data.moved, data.moved + (data.failed ?? 0))
     }
-    
+
     // Invalidate file list cache for both source and destination buckets
     invalidateFileListCache(sourceBucket)
     invalidateFileListCache(destBucket)
@@ -1661,13 +1661,13 @@ class APIService {
     }
 
     const result = await response.json() as { success: boolean, fileCount?: number, message?: string }
-    
+
     // Invalidate file list and bucket list cache
     if (result.success) {
       invalidateFileListCache(bucketName)
       invalidateBucketListCache() // Bucket sizes may have changed
     }
-    
+
     return result
   }
 
@@ -1977,9 +1977,391 @@ class APIService {
     return 'https://dash.cloudflare.com/?to=/:account/r2/slurper'
   }
 
+  // ============================================
+  // Tag Management Methods
+  // ============================================
+
+  /**
+   * Get all unique tags with bucket counts
+   */
+  async getAllTags(skipCache = false): Promise<TagSummary[]> {
+    // Check client-side cache first
+    if (!skipCache) {
+      const cached = getCachedAllTags()
+      if (cached) {
+        return cached
+      }
+    }
+
+    const url = new URL(`${WORKER_API}/api/tags`)
+    if (skipCache) {
+      url.searchParams.set('skipCache', 'true')
+    }
+
+    const response = await fetch(
+      url.toString(),
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to get tags: ${response.status}`)
+    }
+
+    const data = await response.json() as { tags: TagSummary[] }
+
+    // Cache the result
+    setCachedAllTags(data.tags)
+
+    return data.tags
+  }
+
+  /**
+   * Get tags for a specific bucket
+   */
+  async getBucketTags(bucketName: string, skipCache = false): Promise<string[]> {
+    // Check client-side cache first
+    if (!skipCache) {
+      const cached = getCachedBucketTags(bucketName)
+      if (cached) {
+        return cached
+      }
+    }
+
+    const url = new URL(`${WORKER_API}/api/buckets/${encodeURIComponent(bucketName)}/tags`)
+    if (skipCache) {
+      url.searchParams.set('skipCache', 'true')
+    }
+
+    const response = await fetch(
+      url.toString(),
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to get bucket tags: ${response.status}`)
+    }
+
+    const data = await response.json() as { bucket_name: string; tags: string[] }
+
+    // Cache the result
+    setCachedBucketTags(bucketName, data.tags)
+
+    return data.tags
+  }
+
+  /**
+   * Set all tags for a bucket (replaces existing tags)
+   */
+  async setBucketTags(bucketName: string, tags: string[]): Promise<void> {
+    const response = await fetchWithRetry(
+      `${WORKER_API}/api/buckets/${encodeURIComponent(bucketName)}/tags`,
+      this.getFetchOptions({
+        method: 'PUT',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tags })
+      })
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to set tags' })) as { error?: string }
+      throw new Error(errorData.error ?? 'Failed to set bucket tags')
+    }
+
+    // Invalidate tag cache
+    invalidateTagCache()
+  }
+
+  /**
+   * Add a single tag to a bucket
+   */
+  async addBucketTag(bucketName: string, tag: string): Promise<void> {
+    const response = await fetchWithRetry(
+      `${WORKER_API}/api/buckets/${encodeURIComponent(bucketName)}/tags`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tag })
+      })
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to add tag' })) as { error?: string }
+      throw new Error(errorData.error ?? 'Failed to add tag')
+    }
+
+    // Invalidate tag cache
+    invalidateTagCache()
+  }
+
+  /**
+   * Remove a tag from a bucket
+   */
+  async removeBucketTag(bucketName: string, tag: string): Promise<void> {
+    const response = await fetchWithRetry(
+      `${WORKER_API}/api/buckets/${encodeURIComponent(bucketName)}/tags/${encodeURIComponent(tag)}`,
+      this.getFetchOptions({
+        method: 'DELETE',
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to remove tag' })) as { error?: string }
+      throw new Error(errorData.error ?? 'Failed to remove tag')
+    }
+
+    // Invalidate tag cache
+    invalidateTagCache()
+  }
+
+  /**
+   * Search buckets by tags
+   */
+  async searchByTags(tags: string[], matchAll = false): Promise<TagSearchResult[]> {
+    const url = new URL(`${WORKER_API}/api/tags/search`)
+    url.searchParams.set('tags', tags.join(','))
+    if (matchAll) {
+      url.searchParams.set('matchAll', 'true')
+    }
+
+    const response = await fetch(
+      url.toString(),
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to search by tags: ${response.status}`)
+    }
+
+    const data = await response.json() as TagSearchResponse
+    return data.results
+  }
+
+  /**
+   * Export all tags
+   */
+  async exportTags(): Promise<BucketTag[]> {
+    const response = await fetch(
+      `${WORKER_API}/api/tags/export`,
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to export tags: ${response.status}`)
+    }
+
+    const data = await response.json() as { tags: BucketTag[] }
+    return data.tags
+  }
+
+  /**
+   * Import tags
+   */
+  async importTags(tags: { bucket_name: string; tag: string }[]): Promise<{ imported: number; skipped: number }> {
+    const response = await fetchWithRetry(
+      `${WORKER_API}/api/tags/import`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ tags })
+      })
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to import tags' })) as { error?: string }
+      throw new Error(errorData.error ?? 'Failed to import tags')
+    }
+
+    // Invalidate tag cache
+    invalidateTagCache()
+
+    const data = await response.json() as { success: boolean; imported: number; skipped: number }
+    return { imported: data.imported, skipped: data.skipped }
+  }
+
+  // ============================================
+  // Color Management Methods
+  // ============================================
+
+  /**
+   * Get all bucket colors as a map
+   */
+  async getBucketColors(): Promise<Record<string, string>> {
+    // Check client-side cache first
+    const cached = getCachedBucketColors()
+    if (cached) {
+      return cached
+    }
+
+    const response = await fetch(
+      `${WORKER_API}/api/buckets/colors`,
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      // Return empty on error (table may not exist yet)
+      return {}
+    }
+
+    const data = await response.json() as { result: Record<string, string>; success: boolean }
+
+    // Cache the result
+    setCachedBucketColors(data.result)
+
+    return data.result
+  }
+
+  /**
+   * Update a bucket's color
+   */
+  async updateBucketColor(bucketName: string, color: string | null): Promise<void> {
+    const response = await fetchWithRetry(
+      `${WORKER_API}/api/buckets/${encodeURIComponent(bucketName)}/color`,
+      this.getFetchOptions({
+        method: 'PUT',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ color })
+      })
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to update color' })) as { error?: string }
+      throw new Error(errorData.error ?? 'Failed to update bucket color')
+    }
+
+    // Invalidate color cache
+    invalidateBucketColorCache()
+  }
+
+  // ============================================
+  // Migration Methods
+  // ============================================
+
+  /**
+   * Get current migration status
+   */
+  async getMigrationStatus(): Promise<{
+    currentVersion: number
+    latestVersion: number
+    pendingMigrations: { version: number; name: string; description: string }[]
+    isUpToDate: boolean
+    legacy?: {
+      isLegacy: boolean
+      existingTables: string[]
+      suggestedVersion: number
+    }
+  }> {
+    const response = await fetch(
+      `${WORKER_API}/api/migrations/status`,
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to get migration status: ${response.status}`)
+    }
+
+    const data = await response.json() as {
+      result: {
+        currentVersion: number
+        latestVersion: number
+        pendingMigrations: { version: number; name: string; description: string }[]
+        isUpToDate: boolean
+        legacy?: {
+          isLegacy: boolean
+          existingTables: string[]
+          suggestedVersion: number
+        }
+      }
+      success: boolean
+    }
+    return data.result
+  }
+
+  /**
+   * Apply pending migrations
+   */
+  async applyMigrations(): Promise<{
+    success: boolean
+    migrationsApplied: number
+    currentVersion: number
+    errors: string[]
+  }> {
+    const response = await fetchWithRetry(
+      `${WORKER_API}/api/migrations/apply`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        }
+      })
+    )
+
+    const data = await response.json() as {
+      result: {
+        success: boolean
+        migrationsApplied: number
+        currentVersion: number
+        errors: string[]
+      }
+      success: boolean
+    }
+    return data.result
+  }
+
+  /**
+   * Mark migrations as applied for legacy installations
+   */
+  async markLegacyMigrations(version: number): Promise<void> {
+    const response = await fetchWithRetry(
+      `${WORKER_API}/api/migrations/mark-legacy`,
+      this.getFetchOptions({
+        method: 'POST',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ version })
+      })
+    )
+
+    if (!response.ok) {
+      throw new Error('Failed to mark legacy migrations')
+    }
+  }
+
 }
 
 export const api = new APIService();
+
+// ============================================
+// Tag Types (imported from types/tags.ts)
+// ============================================
+import type { TagSummary, TagSearchResult, TagSearchResponse, BucketTag } from '../types/tags'
 
 // ============================================
 // Cache Infrastructure
@@ -2053,3 +2435,82 @@ export function invalidateFileListCache(bucketName?: string): void {
 // Note: Bucket size cache is not needed as sizes are calculated on the backend
 // and included in the bucket list response. We only need to invalidate the
 // bucket list cache when sizes might change.
+
+// ============================================
+// Tag Cache (all tags + per bucket)
+// ============================================
+const TAG_CACHE_TTL = 300000 // 5 minutes
+
+// Cache for getAllTags
+let allTagsCache: { data: TagSummary[]; timestamp: number } | null = null
+
+// Cache for getBucketTags (per bucket)
+const bucketTagsCache = new Map<string, { data: string[]; timestamp: number }>()
+
+function getCachedAllTags(): TagSummary[] | null {
+  if (allTagsCache && Date.now() - allTagsCache.timestamp < TAG_CACHE_TTL) {
+    return allTagsCache.data
+  }
+  return null
+}
+
+function setCachedAllTags(data: TagSummary[]): void {
+  allTagsCache = { data, timestamp: Date.now() }
+}
+
+function getCachedBucketTags(bucketName: string): string[] | null {
+  const cached = bucketTagsCache.get(bucketName)
+  if (cached && Date.now() - cached.timestamp < TAG_CACHE_TTL) {
+    return cached.data
+  }
+  return null
+}
+
+function setCachedBucketTags(bucketName: string, data: string[]): void {
+  bucketTagsCache.set(bucketName, { data, timestamp: Date.now() })
+}
+
+/**
+ * Invalidate tag caches
+ * Call after tag mutations (add/remove/set tags)
+ */
+export function invalidateTagCache(bucketName?: string): void {
+  // Always invalidate allTags since counts may have changed
+  allTagsCache = null
+
+  if (bucketName) {
+    // Invalidate specific bucket
+    bucketTagsCache.delete(bucketName)
+  } else {
+    // Invalidate all bucket tags
+    bucketTagsCache.clear()
+  }
+}
+
+// ============================================
+// Bucket Color Cache
+// ============================================
+const COLOR_CACHE_TTL = 300000 // 5 minutes
+
+// Cache for getBucketColors
+let bucketColorsCache: { data: Record<string, string>; timestamp: number } | null = null
+
+function getCachedBucketColors(): Record<string, string> | null {
+  if (bucketColorsCache && Date.now() - bucketColorsCache.timestamp < COLOR_CACHE_TTL) {
+    return bucketColorsCache.data
+  }
+  return null
+}
+
+function setCachedBucketColors(data: Record<string, string>): void {
+  bucketColorsCache = { data, timestamp: Date.now() }
+}
+
+/**
+ * Invalidate bucket color cache
+ * Call after color mutations
+ */
+export function invalidateBucketColorCache(): void {
+  bucketColorsCache = null
+}
+

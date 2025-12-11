@@ -17,6 +17,9 @@ import { handleAuditRoutes } from './routes/audit';
 import { handleS3ImportRoutes } from './routes/s3-import';
 import { handleMetricsRoutes } from './routes/metrics';
 import { handleWebhookRoutes } from './routes/webhooks';
+import { handleTagRoutes } from './routes/tags';
+import { handleMigrationRoutes } from './routes/migrations';
+import { handleColorRoutes } from './routes/colors';
 
 async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
@@ -188,6 +191,23 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     return await handleSearchRoutes(request, env, url, corsHeaders, isLocalDev);
   }
 
+  // Handle tag routes FIRST (both /api/tags and /api/buckets/:name/tags)
+  // Must be before bucket routes so /api/buckets/:name/tags is handled correctly
+  if (url.pathname.startsWith('/api/tags') || (url.pathname.startsWith('/api/buckets/') && url.pathname.includes('/tags'))) {
+    const tagResponse = await handleTagRoutes(request, env, url, corsHeaders, isLocalDev, userEmail);
+    if (tagResponse) {
+      return tagResponse;
+    }
+  }
+
+  // Handle color routes BEFORE bucket routes (for /api/buckets/:name/color)
+  if (url.pathname === '/api/buckets/colors' || (url.pathname.startsWith('/api/buckets/') && url.pathname.endsWith('/color'))) {
+    const colorResponse = await handleColorRoutes(request, env, url, corsHeaders, isLocalDev, userEmail);
+    if (colorResponse) {
+      return colorResponse;
+    }
+  }
+
   if (url.pathname.startsWith('/api/buckets')) {
     return await handleBucketRoutes(request, env, url, corsHeaders, isLocalDev, userEmail);
   }
@@ -206,6 +226,16 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
       return webhookResponse;
     }
   }
+
+  // Handle migration routes
+  if (url.pathname.startsWith('/api/migrations')) {
+    const migrationResponse = await handleMigrationRoutes(request, env, url, corsHeaders, isLocalDev, userEmail);
+    if (migrationResponse) {
+      return migrationResponse;
+    }
+  }
+
+
 
   // Serve frontend assets
   return await serveFrontendAssets(request, env, isLocalhost);
