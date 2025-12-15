@@ -1,14 +1,33 @@
 import type { Env } from '../types';
 import { logInfo, logWarning } from './error-logger';
 
+// singleton to generate local key
+let localSigningKey: string | null = null;
+
 // URL signing functions using HMAC-SHA256
+export function getSigningKey(env: Env): string {
+  if (env.URL_SIGNING_KEY) {
+    return env.URL_SIGNING_KEY;
+  }
+
+  // if running locally and no secret is set — generate once
+  if (!localSigningKey) {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    localSigningKey = Array.from(array).map(b => String.fromCharCode(b)).join('');
+    logWarning('[DEV] Generated local URL_SIGNING_KEY', { module: 'signing', operation: 'generateLocalKey' });
+  }
+  return localSigningKey;
+}
+
 export async function generateSignature(path: string, env: Env): Promise<string> {
   const encoder = new TextEncoder();
+  const keyString = getSigningKey(env);
 
   // Import the signing key for HMAC
   const key = await crypto.subtle.importKey(
     'raw',
-    encoder.encode(env.URL_SIGNING_KEY),
+    encoder.encode(keyString),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign']
