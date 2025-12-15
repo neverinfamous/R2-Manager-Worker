@@ -1579,7 +1579,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         />
       )}
 
-      {process.env['NODE_ENV'] === 'development' && (
+      {import.meta.env.DEV && (
         <div style={{
           position: 'fixed',
           bottom: 10,
