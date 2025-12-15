@@ -107,6 +107,8 @@ interface MetricsDashboardProps {
     onClose: () => void;
 }
 
+const API_BASE = (import.meta.env['VITE_WORKER_API'] as string | undefined) ?? window.location.origin;
+
 export function MetricsDashboard({ onClose }: MetricsDashboardProps): React.JSX.Element {
     const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
     const [loading, setLoading] = useState(true);
@@ -127,7 +129,7 @@ export function MetricsDashboard({ onClose }: MetricsDashboardProps): React.JSX.
                 return;
             }
 
-            const response = await fetch(`/api/metrics?range=${timeRange}`);
+            const response = await fetch(`${API_BASE}/api/metrics?range=${timeRange}`);
             const data = await response.json() as { success: boolean; result?: MetricsResponse; message?: string };
 
             if (!data.success) {

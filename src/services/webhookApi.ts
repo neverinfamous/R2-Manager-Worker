@@ -12,7 +12,7 @@ import type {
     WebhookTestResult,
 } from '../types/webhook';
 
-const API_BASE = '/api';
+const API_BASE = (import.meta.env['VITE_WORKER_API'] as string | undefined) ?? window.location.origin;
 
 /**
  * Generic fetch wrapper with error handling
@@ -50,7 +50,7 @@ export const webhookApi = {
      * List all webhooks
      */
     async list(): Promise<Webhook[]> {
-        const data = await apiFetch<WebhooksResponse>('/webhooks');
+        const data = await apiFetch<WebhooksResponse>('/api/webhooks');
         return data.webhooks;
     },
 
@@ -58,7 +58,7 @@ export const webhookApi = {
      * Get a single webhook by ID
      */
     async get(id: string): Promise<Webhook> {
-        const data = await apiFetch<WebhookResponse>(`/webhooks/${id}`);
+        const data = await apiFetch<WebhookResponse>(`/api/webhooks/${id}`);
         return data.webhook;
     },
 
@@ -66,7 +66,7 @@ export const webhookApi = {
      * Create a new webhook
      */
     async create(input: WebhookInput): Promise<Webhook> {
-        const data = await apiFetch<WebhookResponse>('/webhooks', {
+        const data = await apiFetch<WebhookResponse>('/api/webhooks', {
             method: 'POST',
             body: JSON.stringify(input),
         });
@@ -77,7 +77,7 @@ export const webhookApi = {
      * Update an existing webhook
      */
     async update(id: string, input: Partial<WebhookInput>): Promise<Webhook> {
-        const data = await apiFetch<WebhookResponse>(`/webhooks/${id}`, {
+        const data = await apiFetch<WebhookResponse>(`/api/webhooks/${id}`, {
             method: 'PUT',
             body: JSON.stringify(input),
         });
@@ -88,14 +88,14 @@ export const webhookApi = {
      * Delete a webhook
      */
     async delete(id: string): Promise<void> {
-        await apiFetch(`/webhooks/${id}`, { method: 'DELETE' });
+        await apiFetch(`/api/webhooks/${id}`, { method: 'DELETE' });
     },
 
     /**
      * Test a webhook by sending a test payload
      */
     async test(id: string): Promise<WebhookTestResult> {
-        return apiFetch<WebhookTestResult>(`/webhooks/${id}/test`, {
+        return apiFetch<WebhookTestResult>(`/api/webhooks/${id}/test`, {
             method: 'POST',
         });
     },
