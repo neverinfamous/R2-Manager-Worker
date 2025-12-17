@@ -113,9 +113,13 @@ jobs:
           echo "📊 Scan completed successfully"
           cat scout_output.txt
           
-          # Check if critical or high vulnerabilities are present in the output
-          if grep -E "(CRITICAL|HIGH)" scout_output.txt | grep -v "0  " > /dev/null; then
-            echo "❌ Critical or high severity vulnerabilities detected"
+          # Check for CRITICAL or HIGH vulnerabilities by counting actual vulnerability lines
+          # The summary line shows "CRITICAL  0" or "HIGH      0" - we need to check if counts > 0
+          CRITICAL_COUNT=$(grep -oP 'CRITICAL\s+\K\d+' scout_output.txt | head -1 || echo "0")
+          HIGH_COUNT=$(grep -oP 'HIGH\s+\K\d+' scout_output.txt | head -1 || echo "0")
+          
+          if [ "${CRITICAL_COUNT:-0}" -gt 0 ] || [ "${HIGH_COUNT:-0}" -gt 0 ]; then
+            echo "❌ Critical ($CRITICAL_COUNT) or high ($HIGH_COUNT) severity vulnerabilities detected"
             echo "🚨 Build blocked due to unacceptable security risk"
             exit 1
           else
