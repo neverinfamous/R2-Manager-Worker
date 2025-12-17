@@ -36,8 +36,8 @@
     "globals": "^16.5.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.49.0",
-    "vite": "^7.2.7",
-    "wrangler": "^4.54.0"
+    "vite": "^7.3.0",
+    "wrangler": "^4.55.0"
   },
   "overrides": {
     "cross-spawn": "^7.0.5",

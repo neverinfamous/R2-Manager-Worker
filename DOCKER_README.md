@@ -2,8 +2,6 @@
 
 **Last Updated:** December 11, 2025 | **Version:** 3.1.0
 
-**Tech Stack:** React 19.2.1 | Vite 7.2.7 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
-
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
@@ -16,6 +14,8 @@
  R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to manage Cloudflare R2 buckets and objects. Supports job history tracking, AI-powered search, drag-and-drop uploads with verification, batch copy/move/delete, multi-file ZIP downloads, signed share links, folder hierarchies, advanced search + filters (extension, size, date), S3 import, and GitHub SSO via Cloudflare Zero Trust.
 
 **[Live Demo](https://r2.adamic.tech/)** • **[GitHub](https://github.com/neverinfamous/R2-Manager-Worker)** • **[Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki)** • **[Changelog](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Changelog)** • **[Release Article](https://adamic.tech/articles/r2-manager)**
+
+**Tech Stack:** React 19.2.3 | Vite 7.3.0 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 ---
 
