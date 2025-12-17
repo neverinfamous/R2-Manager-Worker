@@ -20,7 +20,7 @@ export function S3ImportPanel({ buckets, onClose, onJobCreated }: S3ImportPanelP
     const [error, setError] = useState<string | null>(null)
 
     // Load jobs with optional cache bypass (skipCache=true for manual refresh)
-    const loadJobs = useCallback(async (skipCache = false) => {
+    const loadJobs = useCallback(async (skipCache?: boolean) => {
         setIsLoading(true)
         setError(null)
         try {

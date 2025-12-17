@@ -12,7 +12,9 @@ import type {
     WebhookTestResult,
 } from '../types/webhook';
 
-const API_BASE = '/api';
+// API base URL - uses env variable or falls back to current origin
+const WORKER_API = (import.meta.env['VITE_WORKER_API'] as string | undefined) ?? window.location.origin;
+const API_BASE = `${WORKER_API}/api`;
 
 /**
  * Generic fetch wrapper with error handling

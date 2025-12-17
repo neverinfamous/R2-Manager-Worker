@@ -7,7 +7,7 @@ export interface Env {
   API_KEY: string
   ACCOUNT_ID: string
   REGISTRATION_CODE: string
-  URL_SIGNING_KEY: string
+  URL_SIGNING_KEY?: string  // Optional - auto-generated in local dev
   TEAM_DOMAIN: string
   POLICY_AUD: string
   RATE_LIMITER_READ: RateLimit

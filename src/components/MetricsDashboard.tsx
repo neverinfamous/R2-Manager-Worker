@@ -107,13 +107,16 @@ interface MetricsDashboardProps {
     onClose: () => void;
 }
 
+// API base URL - uses env variable or falls back to current origin
+const WORKER_API = (import.meta.env['VITE_WORKER_API'] as string | undefined) ?? window.location.origin;
+
 export function MetricsDashboard({ onClose }: MetricsDashboardProps): React.JSX.Element {
     const [metrics, setMetrics] = useState<MetricsResponse | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [timeRange, setTimeRange] = useState<MetricsTimeRange>('7d');
 
-    const loadMetrics = useCallback(async (skipCache = false) => {
+    const loadMetrics = useCallback(async (skipCache?: boolean) => {
         setLoading(true);
         setError(null);
 
@@ -127,7 +130,7 @@ export function MetricsDashboard({ onClose }: MetricsDashboardProps): React.JSX.
                 return;
             }
 
-            const response = await fetch(`/api/metrics?range=${timeRange}`);
+            const response = await fetch(`${WORKER_API}/api/metrics?range=${timeRange}`);
             const data = await response.json() as { success: boolean; result?: MetricsResponse; message?: string };
 
             if (!data.success) {

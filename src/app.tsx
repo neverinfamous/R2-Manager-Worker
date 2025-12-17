@@ -154,7 +154,7 @@ export default function BucketManager(): JSX.Element {
     setBuckets([])
   }, [])
 
-  const loadBuckets = useCallback(async (forceRefresh = false): Promise<void> => {
+  const loadBuckets = useCallback(async (forceRefresh?: boolean): Promise<void> => {
     try {
       setError('')
       // Use skipCache when user explicitly refreshes
@@ -232,12 +232,13 @@ export default function BucketManager(): JSX.Element {
   const updateProgress = useCallback((
     fileName: string,
     progress: number,
-    status: UploadProgress['status'] = 'uploading',
+    status?: UploadProgress['status'],
     currentChunk?: number,
     totalChunks?: number,
     retryAttempt?: number,
     error?: string
   ) => {
+    const actualStatus = status ?? 'uploading'
     setUploadProgress(prev => {
       const existing = prev.find(p => p.fileName === fileName)
       if (existing) {
@@ -246,7 +247,7 @@ export default function BucketManager(): JSX.Element {
             ? {
               ...p,
               progress,
-              status,
+              status: actualStatus,
               currentChunk,
               totalChunks,
               retryAttempt,
@@ -258,7 +259,7 @@ export default function BucketManager(): JSX.Element {
       return [...prev, {
         fileName,
         progress,
-        status,
+        status: actualStatus,
         currentChunk,
         totalChunks,
         retryAttempt,

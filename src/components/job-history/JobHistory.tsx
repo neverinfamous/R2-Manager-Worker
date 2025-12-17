@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, type JSX } from 'react'
-import { 
-  api, 
-  type JobListItem, 
-  type JobOperationType 
+import {
+  api,
+  type JobListItem,
+  type JobOperationType
 } from '../../services/api'
 import { logger } from '../../services/logger'
 import { JobHistoryDialog } from './JobHistoryDialog'
@@ -190,7 +190,7 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
     return () => clearTimeout(timer)
   }, [jobIdInput])
 
-  const loadJobs = useCallback(async (reset = false) => {
+  const loadJobs = useCallback(async (reset?: boolean) => {
     try {
       setLoading(true)
       setError('')
@@ -230,7 +230,7 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
       if (datePreset !== 'all') {
         const now = new Date()
         let startDate: Date
-        
+
         switch (datePreset) {
           case '24h':
             startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000)
@@ -244,7 +244,7 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
           default:
             startDate = now
         }
-        
+
         options.start_date = startDate.toISOString()
       }
 
@@ -448,9 +448,9 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
           <h2>Job History</h2>
           <p>View history and event timeline for all bulk operations</p>
         </div>
-        <button 
+        <button
           className={`job-history-refresh-btn ${loading ? 'spinning' : ''}`}
-          onClick={() => void loadJobs(true)} 
+          onClick={() => void loadJobs(true)}
           disabled={loading}
         >
           <RefreshIcon />
@@ -464,10 +464,10 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
           {/* Status Filter */}
           <div className="job-filter-group">
             <label htmlFor="status-filter">Status</label>
-            <select 
+            <select
               id="status-filter"
               className="job-filter-select"
-              value={statusFilter} 
+              value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
               <option value="all">All Statuses</option>
@@ -482,10 +482,10 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
           {/* Operation Type Filter */}
           <div className="job-filter-group">
             <label htmlFor="operation-filter">Operation Type</label>
-            <select 
+            <select
               id="operation-filter"
               className="job-filter-select"
-              value={operationFilter} 
+              value={operationFilter}
               onChange={(e) => setOperationFilter(e.target.value)}
             >
               <option value="all">All Operations</option>
@@ -523,10 +523,10 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
           {/* Bucket Filter */}
           <div className="job-filter-group">
             <label htmlFor="bucket-filter">Bucket</label>
-            <select 
+            <select
               id="bucket-filter"
               className="job-filter-select"
-              value={bucketFilter} 
+              value={bucketFilter}
               onChange={(e) => setBucketFilter(e.target.value)}
             >
               <option value="all">All Buckets</option>
@@ -541,10 +541,10 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
           {/* Date Range Filter */}
           <div className="job-filter-group">
             <label htmlFor="date-filter">Date Range</label>
-            <select 
+            <select
               id="date-filter"
               className="job-filter-select"
-              value={datePreset} 
+              value={datePreset}
               onChange={(e) => setDatePreset(e.target.value)}
             >
               <option value="all">All Time</option>
@@ -587,10 +587,10 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
           {/* Sort By */}
           <div className="job-filter-group">
             <label htmlFor="sort-by">Sort By</label>
-            <select 
+            <select
               id="sort-by"
               className="job-filter-select"
-              value={sortBy} 
+              value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
             >
               <option value="started_at">Started At</option>
@@ -604,14 +604,14 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
 
         {/* Filter Actions */}
         <div className="job-filter-actions">
-          <button 
+          <button
             className="job-sort-order-btn"
             onClick={toggleSortOrder}
           >
             {sortOrder === 'desc' ? <ArrowDownIcon /> : <ArrowUpIcon />}
             {sortOrder === 'desc' ? 'Descending' : 'Ascending'}
           </button>
-          <button 
+          <button
             className="job-clear-filters-btn"
             onClick={handleResetFilters}
           >
@@ -669,7 +669,7 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
                 </div>
                 {getStatusBadge(job.status)}
               </div>
-              
+
               <div className="job-card-stats">
                 <div className="job-stat">
                   <span className="job-stat-label">Started</span>
@@ -696,7 +696,7 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
                   </div>
                 )}
               </div>
-              
+
               <div className="job-card-id">
                 Job ID: {job.job_id}
               </div>
@@ -706,9 +706,9 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
           {/* Load More Button */}
           {hasMore && (
             <div className="job-history-load-more">
-              <button 
-                className="job-load-more-btn" 
-                onClick={handleLoadMore} 
+              <button
+                className="job-load-more-btn"
+                onClick={handleLoadMore}
                 disabled={loading}
               >
                 {loading ? 'Loading...' : `Load More (${jobs.length} of ${total})`}

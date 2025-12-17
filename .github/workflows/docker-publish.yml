@@ -164,7 +164,7 @@ jobs:
         password: ${{ secrets.DOCKER_PASSWORD }}
         repository: ${{ env.IMAGE_NAME }}
         readme-filepath: ./DOCKER_README.md
-        short-description: "Cloudflare R2 Manager - Batch Ops, Cross-Bucket Search, Share Links, S3 Import, GitHub SSO."
+        short-description: "Cloudflare R2 Manager - Batch Ops, Cross-Bucket Search, Share Links, S3 Import, Tags, GitHub SSO."
     
     - name: Deployment Summary
       if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -299,7 +299,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
     setFailedImages(prev => new Set(prev).add(fileName))
   }, [])
 
-  const loadFiles = useCallback(async (reset = false) => {
+  const loadFiles = useCallback(async (reset?: boolean) => {
     if (!bucketName || loadingRef.current.isLoading) return
 
     const now = Date.now()
@@ -1579,7 +1579,7 @@ export function FileGrid({ bucketName, onBack, onFilesChange, refreshTrigger = 0
         />
       )}
 
-      {process.env['NODE_ENV'] === 'development' && (
+      {import.meta.env.DEV && (
         <div style={{
           position: 'fixed',
           bottom: 10,
