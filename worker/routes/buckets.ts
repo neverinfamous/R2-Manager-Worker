@@ -54,7 +54,7 @@ export async function handleBucketRoutes(
 
       // With Zero Trust auth, show all R2 buckets to authenticated users
       // Exclude system/internal buckets
-      const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki', 'kv-manager-backups', 'do-manager-backups', 'd1-manager-backups', 'container-manager-helloworld', 'container-manager-snapshots'];
+      const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki', 'kv-manager-backups', 'do-manager-backups', 'd1-manager-backups', 'container-manager-helloworld', 'container-manager-snapshots', 'worker-manager-backups'];
       const buckets = data.result?.buckets ?? [];
       const filteredBuckets = buckets.filter((b) =>
         !systemBuckets.includes(b.name)
