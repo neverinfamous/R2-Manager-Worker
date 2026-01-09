@@ -4,6 +4,7 @@ import { type CorsHeaders } from '../utils/cors';
 import { getBucketStats, getCloudflareHeaders } from '../utils/helpers';
 import { logAuditEvent } from './audit';
 import { logError, logInfo, logWarning } from '../utils/error-logger';
+import { triggerWebhooks, createBucketRenamePayload } from '../utils/webhooks';
 
 export async function handleBucketRoutes(
   request: Request,
@@ -417,6 +418,13 @@ export async function handleBucketRoutes(
             metadata: { objectsCopied: totalCopied, objectsFailed: totalFailed }
           }, isLocalDev);
         }
+
+        // Trigger webhook for bucket rename
+        void triggerWebhooks(env, 'bucket_rename', createBucketRenamePayload(
+          oldBucketName,
+          newBucketName ?? '',
+          userEmail
+        ), isLocalDev);
 
         return new Response(JSON.stringify({ success: true, newName: newBucketName }), { status: 200, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
       } catch (err) {

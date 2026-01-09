@@ -496,8 +496,16 @@ export type WebhookEventType =
   | 'file_upload'
   | 'file_download'
   | 'file_delete'
+  | 'file_move'
+  | 'file_copy'
+  | 'file_rename'
   | 'bucket_create'
   | 'bucket_delete'
+  | 'bucket_rename'
+  | 'folder_create'
+  | 'folder_delete'
+  | 'bulk_download_complete'
+  | 's3_import_complete'
   | 'job_failed'
   | 'job_completed';
 

@@ -300,3 +300,146 @@ export function createJobCompletedPayload(
         user_email: userEmail,
     };
 }
+
+/**
+ * Create webhook payload for file move events
+ */
+export function createFileMovePayload(
+    sourceBucket: string,
+    sourceFile: string,
+    destBucket: string,
+    destPath: string,
+    userEmail: string | null
+): Record<string, unknown> {
+    return {
+        source_bucket: sourceBucket,
+        source_file: sourceFile,
+        destination_bucket: destBucket,
+        destination_path: destPath,
+        user_email: userEmail,
+    };
+}
+
+/**
+ * Create webhook payload for file copy events
+ */
+export function createFileCopyPayload(
+    sourceBucket: string,
+    sourceFile: string,
+    destBucket: string,
+    destPath: string,
+    userEmail: string | null
+): Record<string, unknown> {
+    return {
+        source_bucket: sourceBucket,
+        source_file: sourceFile,
+        destination_bucket: destBucket,
+        destination_path: destPath,
+        user_email: userEmail,
+    };
+}
+
+/**
+ * Create webhook payload for file rename events
+ */
+export function createFileRenamePayload(
+    bucketName: string,
+    oldFileName: string,
+    newFileName: string,
+    userEmail: string | null
+): Record<string, unknown> {
+    return {
+        bucket_name: bucketName,
+        old_file_name: oldFileName,
+        new_file_name: newFileName,
+        user_email: userEmail,
+    };
+}
+
+/**
+ * Create webhook payload for bucket rename events
+ */
+export function createBucketRenamePayload(
+    oldBucketName: string,
+    newBucketName: string,
+    userEmail: string | null
+): Record<string, unknown> {
+    return {
+        old_bucket_name: oldBucketName,
+        new_bucket_name: newBucketName,
+        user_email: userEmail,
+    };
+}
+
+/**
+ * Create webhook payload for folder creation events
+ */
+export function createFolderCreatePayload(
+    bucketName: string,
+    folderPath: string,
+    userEmail: string | null
+): Record<string, unknown> {
+    return {
+        bucket_name: bucketName,
+        folder_path: folderPath,
+        user_email: userEmail,
+    };
+}
+
+/**
+ * Create webhook payload for folder deletion events
+ */
+export function createFolderDeletePayload(
+    bucketName: string,
+    folderPath: string,
+    filesDeleted: number,
+    userEmail: string | null
+): Record<string, unknown> {
+    return {
+        bucket_name: bucketName,
+        folder_path: folderPath,
+        files_deleted: filesDeleted,
+        user_email: userEmail,
+    };
+}
+
+/**
+ * Create webhook payload for bulk download completion events
+ */
+export function createBulkDownloadCompletePayload(
+    bucketName: string | null,
+    filesDownloaded: number,
+    totalSizeBytes: number,
+    userEmail: string | null
+): Record<string, unknown> {
+    return {
+        bucket_name: bucketName,
+        files_downloaded: filesDownloaded,
+        total_size_bytes: totalSizeBytes,
+        user_email: userEmail,
+    };
+}
+
+/**
+ * Create webhook payload for S3 import completion events
+ */
+export function createS3ImportCompletePayload(
+    jobId: string,
+    sourceBucket: string,
+    destBucket: string,
+    objectsCopied: number,
+    objectsFailed: number,
+    bytesCopied: number,
+    userEmail: string | null
+): Record<string, unknown> {
+    return {
+        job_id: jobId,
+        source_bucket: sourceBucket,
+        destination_bucket: destBucket,
+        objects_copied: objectsCopied,
+        objects_failed: objectsFailed,
+        bytes_copied: bytesCopied,
+        user_email: userEmail,
+    };
+}
+

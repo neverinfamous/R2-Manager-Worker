@@ -3,6 +3,7 @@ import { CF_API } from '../types';
 import { getCloudflareHeaders } from '../utils/helpers';
 import { logAuditEvent } from './audit';
 import { logInfo, logError } from '../utils/error-logger';
+import { triggerWebhooks, createFolderCreatePayload, createFolderDeletePayload } from '../utils/webhooks';
 
 interface R2ObjectInfo {
   key: string;
@@ -115,6 +116,13 @@ export async function handleFolderRoutes(
           status: 'success'
         }, isLocalDev);
       }
+
+      // Trigger webhook for folder creation
+      void triggerWebhooks(env, 'folder_create', createFolderCreatePayload(
+        bucketName ?? '',
+        folderPath,
+        userEmail
+      ), isLocalDev);
 
       return new Response(JSON.stringify({ success: true, folderPath }), {
         headers: {
@@ -770,6 +778,14 @@ export async function handleFolderRoutes(
           metadata: { filesDeleted: totalDeleted, force }
         }, isLocalDev);
       }
+
+      // Trigger webhook for folder deletion
+      void triggerWebhooks(env, 'folder_delete', createFolderDeletePayload(
+        bucketName ?? '',
+        folderPathWithSlash,
+        totalDeleted,
+        userEmail
+      ), isLocalDev);
 
       return new Response(JSON.stringify({
         success: true,

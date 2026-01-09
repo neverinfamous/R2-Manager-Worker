@@ -6,6 +6,7 @@ import { getCloudflareHeaders } from '../utils/helpers';
 import { generateJobId, createJob, updateJobProgress, completeJob, logJobEvent } from './jobs';
 import { logAuditEvent } from './audit';
 import { logError, logInfo, logWarning } from '../utils/error-logger';
+import { triggerWebhooks, createFileMovePayload, createFileCopyPayload, createFileRenamePayload } from '../utils/webhooks';
 
 interface MultiBucketDownloadBody {
   buckets: { bucketName: string; files: string[] }[];
@@ -827,6 +828,15 @@ export async function handleFileRoutes(
         }, isLocalDev);
       }
 
+      // Trigger webhook for file move
+      void triggerWebhooks(env, 'file_move', createFileMovePayload(
+        bucketName ?? '',
+        sourceKey,
+        destBucket,
+        destKey,
+        userEmail
+      ), isLocalDev);
+
       return new Response(JSON.stringify({ success: true }), {
         headers: {
           'Content-Type': 'application/json',
@@ -947,6 +957,15 @@ export async function handleFileRoutes(
           destinationKey: destKey
         }, isLocalDev);
       }
+
+      // Trigger webhook for file copy
+      void triggerWebhooks(env, 'file_copy', createFileCopyPayload(
+        bucketName ?? '',
+        sourceKey,
+        destBucket,
+        destKey,
+        userEmail
+      ), isLocalDev);
 
       return new Response(JSON.stringify({ success: true }), {
         headers: {
@@ -1070,6 +1089,14 @@ export async function handleFileRoutes(
           destinationKey: newKey
         }, isLocalDev);
       }
+
+      // Trigger webhook for file rename
+      void triggerWebhooks(env, 'file_rename', createFileRenamePayload(
+        bucketName ?? '',
+        sourceKey,
+        newKey,
+        userEmail
+      ), isLocalDev);
 
       return new Response(JSON.stringify({ success: true, newKey }), {
         headers: {
