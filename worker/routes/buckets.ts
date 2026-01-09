@@ -5,6 +5,7 @@ import { getBucketStats, getCloudflareHeaders } from '../utils/helpers';
 import { logAuditEvent } from './audit';
 import { logError, logInfo, logWarning } from '../utils/error-logger';
 import { triggerWebhooks, createBucketRenamePayload } from '../utils/webhooks';
+import { createErrorResponse } from '../utils/error-response';
 
 export async function handleBucketRoutes(
   request: Request,
@@ -212,16 +213,12 @@ export async function handleBucketRoutes(
           logInfo(`Object deletion complete - deleted ${String(totalDeleted)} of ${String(totalAttempted)} attempted`, { module: 'buckets', operation: 'delete', bucketName, metadata: { deleted: totalDeleted, attempted: totalAttempted } });
         } catch (deleteErr) {
           void logError(env, deleteErr instanceof Error ? deleteErr : new Error(String(deleteErr)), { module: 'buckets', operation: 'delete', bucketName }, isLocalDev);
-          return new Response(JSON.stringify({
-            error: 'Failed to delete objects from bucket',
-            details: deleteErr instanceof Error ? deleteErr.message : 'Unknown error'
-          }), {
-            status: 500,
-            headers: {
-              'Content-Type': 'application/json',
-              ...corsHeaders
-            }
-          });
+          return createErrorResponse(
+            'Failed to delete objects from bucket',
+            corsHeaders,
+            500,
+            { details: deleteErr instanceof Error ? deleteErr.message : 'Unknown error' }
+          );
         }
       }
 
@@ -346,7 +343,7 @@ export async function handleBucketRoutes(
         const createResponse = await fetch(CF_API + '/accounts/' + env.ACCOUNT_ID + '/r2/buckets', { method: 'POST', headers: cfHeaders, body: JSON.stringify({ name: newBucketName }) });
         if (!createResponse.ok) {
           const createError = await createResponse.json() as CloudflareApiResponse;
-          return new Response(JSON.stringify({ error: createError.errors?.[0]?.message ?? 'Failed to create new bucket' }), { status: createResponse.status, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+          return createErrorResponse(createError.errors?.[0]?.message ?? 'Failed to create new bucket', corsHeaders, createResponse.status);
         }
         logInfo('New bucket created, copying objects...', { module: 'buckets', operation: 'rename', bucketName: oldBucketName });
         let cursor: string | undefined;
@@ -442,18 +439,12 @@ export async function handleBucketRoutes(
           }, isLocalDev);
         }
 
-        return new Response(JSON.stringify({ error: 'Rename failed' }), { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+        return createErrorResponse('Rename failed', corsHeaders, 500);
       }
     }
   } catch (err) {
     void logError(env, err instanceof Error ? err : new Error(String(err)), { module: 'buckets', operation: 'handle' }, isLocalDev);
-    return new Response(JSON.stringify({ error: 'Bucket operation failed' }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        ...corsHeaders
-      }
-    });
+    return createErrorResponse('Bucket operation failed', corsHeaders, 500);
   }
 
   return new Response('Not Found', { status: 404, headers: corsHeaders });

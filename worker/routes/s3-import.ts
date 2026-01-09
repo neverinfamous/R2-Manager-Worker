@@ -3,6 +3,7 @@ import { CF_API } from '../types';
 import { type CorsHeaders } from '../utils/cors';
 import { getCloudflareHeaders } from '../utils/helpers';
 import { logInfo, logError, logWarning } from '../utils/error-logger';
+import { SUPPORT_EMAIL } from '../utils/error-response';
 
 // Cloudflare Super Slurper API response types
 interface SlurperJobApiResponse {
@@ -180,7 +181,8 @@ export async function handleS3ImportRoutes(
             if (!body.sourceBucketName || !body.sourceAccessKeyId || !body.sourceSecretAccessKey || !body.destinationBucketName) {
                 return new Response(JSON.stringify({
                     success: false,
-                    error: 'Missing required fields: sourceBucketName, sourceAccessKeyId, sourceSecretAccessKey, destinationBucketName'
+                    error: 'Missing required fields: sourceBucketName, sourceAccessKeyId, sourceSecretAccessKey, destinationBucketName',
+                    support: SUPPORT_EMAIL
                 }), {
                     status: 400,
                     headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -249,7 +251,8 @@ export async function handleS3ImportRoutes(
                     return new Response(JSON.stringify({
                         success: false,
                         error: 'Failed to create migration job. Try using Cloudflare Dashboard instead.',
-                        dashboardUrl
+                        dashboardUrl,
+                        support: SUPPORT_EMAIL
                     } as S3ImportJobResponse), {
                         status: response.status,
                         headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -269,7 +272,8 @@ export async function handleS3ImportRoutes(
                 return new Response(JSON.stringify({
                     success: false,
                     error: 'Unexpected API response',
-                    dashboardUrl
+                    dashboardUrl,
+                    support: SUPPORT_EMAIL
                 } as S3ImportJobResponse), {
                     status: 500,
                     headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -279,7 +283,8 @@ export async function handleS3ImportRoutes(
                 return new Response(JSON.stringify({
                     success: false,
                     error: 'Failed to create migration job',
-                    dashboardUrl
+                    dashboardUrl,
+                    support: SUPPORT_EMAIL
                 } as S3ImportJobResponse), {
                     status: 500,
                     headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -331,7 +336,8 @@ export async function handleS3ImportRoutes(
                     return new Response(JSON.stringify({
                         jobs: [],
                         error: 'Failed to fetch migration jobs. Check Cloudflare Dashboard.',
-                        dashboardUrl
+                        dashboardUrl,
+                        support: SUPPORT_EMAIL
                     }), {
                         headers: { 'Content-Type': 'application/json', ...corsHeaders }
                     });
@@ -350,7 +356,8 @@ export async function handleS3ImportRoutes(
                 await logError(env, err instanceof Error ? err : String(err), { module: 's3-import', operation: 'list_jobs' }, isLocalDev);
                 return new Response(JSON.stringify({
                     jobs: [],
-                    error: 'Failed to fetch migration jobs'
+                    error: 'Failed to fetch migration jobs',
+                    support: SUPPORT_EMAIL
                 }), {
                     headers: { 'Content-Type': 'application/json', ...corsHeaders }
                 });
@@ -390,7 +397,8 @@ export async function handleS3ImportRoutes(
                 if (!response.ok) {
                     return new Response(JSON.stringify({
                         success: false,
-                        error: 'Failed to get job status'
+                        error: 'Failed to get job status',
+                        support: SUPPORT_EMAIL
                     } as S3ImportJobResponse), {
                         status: response.status,
                         headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -409,7 +417,8 @@ export async function handleS3ImportRoutes(
 
                 return new Response(JSON.stringify({
                     success: false,
-                    error: 'Job not found'
+                    error: 'Job not found',
+                    support: SUPPORT_EMAIL
                 } as S3ImportJobResponse), {
                     status: 404,
                     headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -418,7 +427,8 @@ export async function handleS3ImportRoutes(
                 await logError(env, err instanceof Error ? err : String(err), { module: 's3-import', operation: 'get_job_status', metadata: { jobId } }, isLocalDev);
                 return new Response(JSON.stringify({
                     success: false,
-                    error: 'Failed to get job status'
+                    error: 'Failed to get job status',
+                    support: SUPPORT_EMAIL
                 } as S3ImportJobResponse), {
                     status: 500,
                     headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -451,7 +461,8 @@ export async function handleS3ImportRoutes(
                 if (!response.ok) {
                     return new Response(JSON.stringify({
                         success: false,
-                        error: 'Failed to abort job'
+                        error: 'Failed to abort job',
+                        support: SUPPORT_EMAIL
                     }), {
                         status: response.status,
                         headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -465,7 +476,8 @@ export async function handleS3ImportRoutes(
                 await logError(env, err instanceof Error ? err : String(err), { module: 's3-import', operation: 'abort_job', metadata: { jobId } }, isLocalDev);
                 return new Response(JSON.stringify({
                     success: false,
-                    error: 'Failed to abort job'
+                    error: 'Failed to abort job',
+                    support: SUPPORT_EMAIL
                 }), {
                     status: 500,
                     headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -485,7 +497,7 @@ export async function handleS3ImportRoutes(
 
     } catch (err) {
         await logError(env, err instanceof Error ? err : String(err), { module: 's3-import', operation: 'handle_request' }, isLocalDev);
-        return new Response(JSON.stringify({ error: 'S3 Import operation failed' }), {
+        return new Response(JSON.stringify({ error: 'S3 Import operation failed', support: SUPPORT_EMAIL }), {
             status: 500,
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });

@@ -7,6 +7,7 @@
 
 import type { Env } from '../types';
 import { logInfo, logWarning, createErrorContext } from '../utils/error-logger';
+import { SUPPORT_EMAIL } from '../utils/error-response';
 
 // ============================================================================
 // TYPES
@@ -110,7 +111,7 @@ function jsonResponse(data: unknown, corsHeaders: CorsHeaders): Response {
 }
 
 function errorResponse(message: string, corsHeaders: CorsHeaders, status = 500): Response {
-    return new Response(JSON.stringify({ error: message }), {
+    return new Response(JSON.stringify({ error: message, support: SUPPORT_EMAIL }), {
         status,
         headers: { 'Content-Type': 'application/json', ...corsHeaders },
     });

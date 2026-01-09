@@ -17,6 +17,7 @@ import {
     type LegacyInstallationInfo
 } from '../utils/migrations';
 import { logInfo, logWarning, logError } from '../utils/error-logger';
+import { SUPPORT_EMAIL } from '../utils/error-response';
 
 interface ErrorContext {
     module: string;
@@ -100,7 +101,8 @@ export async function handleMigrationRoutes(
         if (!db) {
             return new Response(JSON.stringify({
                 error: 'Database not configured',
-                success: false
+                success: false,
+                support: SUPPORT_EMAIL
             }), {
                 status: 500,
                 headers: jsonHeaders(corsHeaders)
@@ -128,7 +130,8 @@ export async function handleMigrationRoutes(
 
             return new Response(JSON.stringify({
                 error: 'Failed to get migration status',
-                success: false
+                success: false,
+                support: SUPPORT_EMAIL
             }), {
                 status: 500,
                 headers: jsonHeaders(corsHeaders)
@@ -161,7 +164,8 @@ export async function handleMigrationRoutes(
         if (!db) {
             return new Response(JSON.stringify({
                 error: 'Database not configured',
-                success: false
+                success: false,
+                support: SUPPORT_EMAIL
             }), {
                 status: 500,
                 headers: jsonHeaders(corsHeaders)
@@ -206,7 +210,8 @@ export async function handleMigrationRoutes(
 
             return new Response(JSON.stringify({
                 error: 'Failed to apply migrations',
-                success: false
+                success: false,
+                support: SUPPORT_EMAIL
             }), {
                 status: 500,
                 headers: jsonHeaders(corsHeaders)
@@ -236,7 +241,8 @@ export async function handleMigrationRoutes(
                 return new Response(JSON.stringify({
                     error: 'Invalid version',
                     message: 'Please provide a valid version number to mark as applied',
-                    success: false
+                    success: false,
+                    support: SUPPORT_EMAIL
                 }), {
                     status: 400,
                     headers: jsonHeaders(corsHeaders)
@@ -247,7 +253,8 @@ export async function handleMigrationRoutes(
             if (!db) {
                 return new Response(JSON.stringify({
                     error: 'Database not configured',
-                    success: false
+                    success: false,
+                    support: SUPPORT_EMAIL
                 }), {
                     status: 500,
                     headers: jsonHeaders(corsHeaders)
@@ -261,7 +268,8 @@ export async function handleMigrationRoutes(
                 return new Response(JSON.stringify({
                     error: 'Not a legacy installation',
                     message: 'This installation does not appear to have pre-existing tables. Use the regular apply endpoint instead.',
-                    success: false
+                    success: false,
+                    support: SUPPORT_EMAIL
                 }), {
                     status: 400,
                     headers: jsonHeaders(corsHeaders)
@@ -287,7 +295,8 @@ export async function handleMigrationRoutes(
 
             return new Response(JSON.stringify({
                 error: 'Failed to mark migrations',
-                success: false
+                success: false,
+                support: SUPPORT_EMAIL
             }), {
                 status: 500,
                 headers: jsonHeaders(corsHeaders)

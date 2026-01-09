@@ -10,6 +10,7 @@ import type {
   AuditLogEntry
 } from '../types';
 import { logInfo, logError } from '../utils/error-logger';
+import { SUPPORT_EMAIL } from '../utils/error-response';
 
 interface APIResponse {
   success: boolean;
@@ -553,7 +554,7 @@ export async function handleJobRoutes(
       }
 
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to list jobs' }),
+        JSON.stringify({ success: false, error: 'Failed to list jobs', support: SUPPORT_EMAIL }),
         { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
@@ -565,7 +566,7 @@ export async function handleJobRoutes(
   if (jobMatch !== null && request.method === 'GET') {
     const requestedJobId = jobMatch[1];
     if (!requestedJobId) {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid job ID' }), {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid job ID', support: SUPPORT_EMAIL }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
@@ -603,7 +604,7 @@ export async function handleJobRoutes(
       ).bind(requestedJobId).first();
 
       if (!job) {
-        return new Response(JSON.stringify({ success: false, error: 'Job not found' }), {
+        return new Response(JSON.stringify({ success: false, error: 'Job not found', support: SUPPORT_EMAIL }), {
           status: 404,
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
@@ -623,14 +624,14 @@ export async function handleJobRoutes(
 
       // If table doesn't exist, return 404 instead of 500
       if (errorMessage.includes('no such table') || errorMessage.includes('bulk_jobs')) {
-        return new Response(JSON.stringify({ success: false, error: 'Job not found' }), {
+        return new Response(JSON.stringify({ success: false, error: 'Job not found', support: SUPPORT_EMAIL }), {
           status: 404,
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
       }
 
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to get job status' }),
+        JSON.stringify({ success: false, error: 'Failed to get job status', support: SUPPORT_EMAIL }),
         { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }
@@ -642,7 +643,7 @@ export async function handleJobRoutes(
   if (eventsMatch !== null && request.method === 'GET') {
     const requestedJobId = eventsMatch[1];
     if (!requestedJobId) {
-      return new Response(JSON.stringify({ success: false, error: 'Invalid job ID' }), {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid job ID', support: SUPPORT_EMAIL }), {
         status: 400,
         headers: { 'Content-Type': 'application/json', ...corsHeaders }
       });
@@ -735,7 +736,7 @@ export async function handleJobRoutes(
       }
 
       return new Response(
-        JSON.stringify({ success: false, error: 'Failed to get job events' }),
+        JSON.stringify({ success: false, error: 'Failed to get job events', support: SUPPORT_EMAIL }),
         { status: 500, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
       );
     }

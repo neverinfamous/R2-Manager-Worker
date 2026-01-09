@@ -7,6 +7,7 @@ import { generateJobId, createJob, updateJobProgress, completeJob, logJobEvent }
 import { logAuditEvent } from './audit';
 import { logError, logInfo, logWarning } from '../utils/error-logger';
 import { triggerWebhooks, createFileMovePayload, createFileCopyPayload, createFileRenamePayload } from '../utils/webhooks';
+import { createErrorResponse } from '../utils/error-response';
 
 interface MultiBucketDownloadBody {
   buckets: { bucketName: string; files: string[] }[];
@@ -171,15 +172,7 @@ export async function handleFileRoutes(
         });
       }
 
-      return new Response(JSON.stringify({
-        error: 'Failed to create multi-bucket zip file'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
+      return createErrorResponse('Failed to create multi-bucket zip file', corsHeaders, 500);
     }
   }
 
@@ -297,15 +290,7 @@ export async function handleFileRoutes(
         });
       }
 
-      return new Response(JSON.stringify({
-        error: 'Failed to create zip file'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
+      return createErrorResponse('Failed to create zip file', corsHeaders, 500);
     }
   }
 
@@ -437,15 +422,7 @@ export async function handleFileRoutes(
 
     } catch (err) {
       void logError(env, err instanceof Error ? err : new Error(String(err)), { module: 'files', operation: 'list', bucketName: bucketName ?? 'unknown' }, isLocalDev);
-      return new Response(JSON.stringify({
-        error: 'Failed to list files'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
+      return createErrorResponse('Failed to list files', corsHeaders, 500);
     }
   }
 
@@ -589,15 +566,7 @@ export async function handleFileRoutes(
         }, isLocalDev);
       }
 
-      return new Response(JSON.stringify({
-        error: 'Upload failed'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
+      return createErrorResponse('Upload failed', corsHeaders, 500);
     }
   }
 
@@ -606,10 +575,7 @@ export async function handleFileRoutes(
     try {
       const keyPart = parts[5];
       if (keyPart === undefined) {
-        return new Response(JSON.stringify({ error: 'Missing file key' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders }
-        });
+        return createErrorResponse('Missing file key', corsHeaders, 400);
       }
       const key = decodeURIComponent(keyPart);
       logInfo(`Generating signed URL for: ${key}`, { module: 'files', operation: 'signed_url', bucketName: bucketName ?? 'unknown', fileName: key });
@@ -647,15 +613,7 @@ export async function handleFileRoutes(
 
     } catch (err) {
       void logError(env, err instanceof Error ? err : new Error(String(err)), { module: 'files', operation: 'signed_url', bucketName: bucketName ?? 'unknown' }, isLocalDev);
-      return new Response(JSON.stringify({
-        error: 'Failed to generate signed URL'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
+      return createErrorResponse('Failed to generate signed URL', corsHeaders, 500);
     }
   }
 
@@ -665,10 +623,7 @@ export async function handleFileRoutes(
     try {
       const keyPart = parts[5];
       if (keyPart === undefined) {
-        return new Response(JSON.stringify({ error: 'Missing file key' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders }
-        });
+        return createErrorResponse('Missing file key', corsHeaders, 400);
       }
       fileKey = decodeURIComponent(keyPart);
       logInfo(`Deleting file: ${fileKey}`, { module: 'files', operation: 'delete', bucketName: bucketName ?? 'unknown', fileName: fileKey });
@@ -718,15 +673,7 @@ export async function handleFileRoutes(
         }, isLocalDev);
       }
 
-      return new Response(JSON.stringify({
-        error: 'Delete failed'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
+      return createErrorResponse('Delete failed', corsHeaders, 500);
     }
   }
 
@@ -739,13 +686,7 @@ export async function handleFileRoutes(
       const destPath = body.destinationPath ?? '';
 
       if (destBucket === undefined || destBucket === '') {
-        return new Response(JSON.stringify({ error: 'Missing destination bucket' }), {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
-        });
+        return createErrorResponse('Missing destination bucket', corsHeaders, 400);
       }
 
       // Allow same-bucket operations if destination path is different
@@ -753,13 +694,7 @@ export async function handleFileRoutes(
       const destKey = destPath !== '' ? `${destPath}${destPath.endsWith('/') ? '' : '/'}${fileName}` : fileName;
 
       if (bucketName === destBucket && sourceKey === destKey) {
-        return new Response(JSON.stringify({ error: 'Source and destination must be different' }), {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
-        });
+        return createErrorResponse('Source and destination must be different', corsHeaders, 400);
       }
 
       logInfo(`Moving file: ${sourceKey} to ${destBucket}/${destKey}`, { module: 'files', operation: 'move', bucketName: bucketName ?? 'unknown', fileName: sourceKey, metadata: { destination: `${destBucket}/${destKey}` } });
@@ -770,13 +705,7 @@ export async function handleFileRoutes(
 
       if (!getResponse.ok) {
         if (getResponse.status === 404) {
-          return new Response(JSON.stringify({ error: 'Source file not found' }), {
-            status: 404,
-            headers: {
-              'Content-Type': 'application/json',
-              ...corsHeaders
-            }
-          });
+          return createErrorResponse('Source file not found', corsHeaders, 404);
         }
         throw new Error('Failed to fetch file: ' + String(getResponse.status));
       }
@@ -860,15 +789,7 @@ export async function handleFileRoutes(
         }, isLocalDev);
       }
 
-      return new Response(JSON.stringify({
-        error: 'Move failed'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
+      return createErrorResponse('Move failed', corsHeaders, 500);
     }
   }
 
@@ -881,13 +802,7 @@ export async function handleFileRoutes(
       const destPath = body.destinationPath ?? '';
 
       if (destBucket === undefined || destBucket === '') {
-        return new Response(JSON.stringify({ error: 'Missing destination bucket' }), {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
-        });
+        return createErrorResponse('Missing destination bucket', corsHeaders, 400);
       }
 
       // Allow same-bucket operations if destination path is different
@@ -895,13 +810,7 @@ export async function handleFileRoutes(
       const destKey = destPath !== '' ? `${destPath}${destPath.endsWith('/') ? '' : '/'}${fileName}` : fileName;
 
       if (bucketName === destBucket && sourceKey === destKey) {
-        return new Response(JSON.stringify({ error: 'Source and destination must be different' }), {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
-        });
+        return createErrorResponse('Source and destination must be different', corsHeaders, 400);
       }
 
       logInfo(`Copying file: ${sourceKey} to ${destBucket}/${destKey}`, { module: 'files', operation: 'copy', bucketName: bucketName ?? 'unknown', fileName: sourceKey, metadata: { destination: `${destBucket}/${destKey}` } });
@@ -912,13 +821,7 @@ export async function handleFileRoutes(
 
       if (!getResponse.ok) {
         if (getResponse.status === 404) {
-          return new Response(JSON.stringify({ error: 'Source file not found' }), {
-            status: 404,
-            headers: {
-              'Content-Type': 'application/json',
-              ...corsHeaders
-            }
-          });
+          return createErrorResponse('Source file not found', corsHeaders, 404);
         }
         throw new Error('Failed to fetch file: ' + String(getResponse.status));
       }
@@ -990,15 +893,7 @@ export async function handleFileRoutes(
         }, isLocalDev);
       }
 
-      return new Response(JSON.stringify({
-        error: 'Copy failed'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
+      return createErrorResponse('Copy failed', corsHeaders, 500);
     }
   }
 
@@ -1010,10 +905,7 @@ export async function handleFileRoutes(
       const newKey = body.newKey?.trim();
 
       if (newKey === undefined || newKey === '') {
-        return new Response(JSON.stringify({ error: 'New key is required' }), {
-          status: 400,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders }
-        });
+        return createErrorResponse('New key is required', corsHeaders, 400);
       }
 
       // Prevent overwriting existing files
@@ -1021,10 +913,7 @@ export async function handleFileRoutes(
       const checkResponse = await fetch(checkUrl, { method: 'HEAD', headers: cfHeaders });
 
       if (checkResponse.ok) {
-        return new Response(JSON.stringify({ error: 'File with that name already exists' }), {
-          status: 409,
-          headers: { 'Content-Type': 'application/json', ...corsHeaders }
-        });
+        return createErrorResponse('File with that name already exists', corsHeaders, 409);
       }
 
       logInfo(`Renaming file: ${sourceKey} to ${newKey}`, { module: 'files', operation: 'rename', bucketName: bucketName ?? 'unknown', fileName: sourceKey, metadata: { newKey } });
@@ -1035,10 +924,7 @@ export async function handleFileRoutes(
 
       if (!getResponse.ok) {
         if (getResponse.status === 404) {
-          return new Response(JSON.stringify({ error: 'Source file not found' }), {
-            status: 404,
-            headers: { 'Content-Type': 'application/json', ...corsHeaders }
-          });
+          return createErrorResponse('Source file not found', corsHeaders, 404);
         }
         throw new Error('Failed to fetch file: ' + String(getResponse.status));
       }
@@ -1121,15 +1007,7 @@ export async function handleFileRoutes(
         }, isLocalDev);
       }
 
-      return new Response(JSON.stringify({
-        error: 'Failed to rename file'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
+      return createErrorResponse('Failed to rename file', corsHeaders, 500);
     }
   }
 

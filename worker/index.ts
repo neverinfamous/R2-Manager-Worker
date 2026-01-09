@@ -7,6 +7,7 @@ import { getCorsHeaders, handleCorsPreflightRequest, isLocalDevelopment } from '
 import { getCloudflareHeaders } from './utils/helpers';
 import { handleSiteWebmanifest, handleStaticAsset, serveFrontendAssets } from './utils/assets';
 import { checkRateLimit, createRateLimitResponse } from './utils/ratelimit';
+import { SUPPORT_EMAIL } from './utils/error-response';
 import { handleBucketRoutes } from './routes/buckets';
 import { handleFileRoutes } from './routes/files';
 import { handleFolderRoutes } from './routes/folders';
@@ -91,7 +92,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
       } catch (err) {
         void logError(env, err instanceof Error ? err : new Error(String(err)), { module: 'worker', operation: 'download_check' }, isLocalDev);
         return new Response(JSON.stringify({
-          error: 'Download failed'
+          error: 'Download failed',
+          support: SUPPORT_EMAIL
         }), {
           status: 500,
           headers: {
@@ -103,7 +105,8 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     } else {
       void logError(env, new Error('Invalid signature'), { module: 'worker', operation: 'download_check', metadata: { path: url.pathname } }, isLocalDev);
       return new Response(JSON.stringify({
-        error: 'Invalid signature'
+        error: 'Invalid signature',
+        support: SUPPORT_EMAIL
       }), {
         status: 403,
         headers: {
@@ -257,7 +260,7 @@ export default {
       return await handleApiRequest(request, env);
     } catch (e) {
       void logError(env, e instanceof Error ? e : new Error(String(e)), { module: 'worker', operation: 'fetch' }, false);
-      return new Response('Internal Server Error: ' + (e as Error).message, {
+      return new Response('Internal Server Error: ' + (e as Error).message + ' | Support: ' + SUPPORT_EMAIL, {
         status: 500,
         headers: {
           'Access-Control-Allow-Origin': '*'

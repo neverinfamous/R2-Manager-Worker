@@ -4,6 +4,7 @@ import { getCloudflareHeaders } from '../utils/helpers';
 import { logAuditEvent } from './audit';
 import { logInfo, logError } from '../utils/error-logger';
 import { triggerWebhooks, createFolderCreatePayload, createFolderDeletePayload } from '../utils/webhooks';
+import { createErrorResponse } from '../utils/error-response';
 
 interface R2ObjectInfo {
   key: string;
@@ -47,27 +48,17 @@ export async function handleFolderRoutes(
       const folderName = body.folderName?.trim();
 
       if (folderName === undefined || folderName === '') {
-        return new Response(JSON.stringify({ error: 'Folder name is required' }), {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
-        });
+        return createErrorResponse('Folder name is required', corsHeaders, 400);
       }
 
       // Validate folder name
       const validFolderPattern = /^[a-zA-Z0-9-_/]+$/;
       if (!validFolderPattern.test(folderName)) {
-        return new Response(JSON.stringify({
-          error: 'Invalid folder name. Use only letters, numbers, hyphens, underscores, and forward slashes'
-        }), {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
-        });
+        return createErrorResponse(
+          'Invalid folder name. Use only letters, numbers, hyphens, underscores, and forward slashes',
+          corsHeaders,
+          400
+        );
       }
 
       // Ensure folder path ends with /
@@ -145,15 +136,7 @@ export async function handleFolderRoutes(
         }, isLocalDev);
       }
 
-      return new Response(JSON.stringify({
-        error: 'Failed to create folder'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
+      return createErrorResponse('Failed to create folder', corsHeaders, 500);
     }
   }
 
@@ -165,13 +148,7 @@ export async function handleFolderRoutes(
       const newPath = body.newPath?.trim();
 
       if (oldPath === undefined || oldPath === '' || newPath === undefined || newPath === '') {
-        return new Response(JSON.stringify({ error: 'Both old and new paths are required' }), {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
-        });
+        return createErrorResponse('Both old and new paths are required', corsHeaders, 400);
       }
 
       // Ensure paths end with /
@@ -331,15 +308,7 @@ export async function handleFolderRoutes(
         }, isLocalDev);
       }
 
-      return new Response(JSON.stringify({
-        error: 'Failed to rename folder'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
+      return createErrorResponse('Failed to rename folder', corsHeaders, 500);
     }
   }
 
@@ -352,13 +321,7 @@ export async function handleFolderRoutes(
       const destPath = body.destinationPath ?? folderPath;
 
       if (destBucket === undefined || destBucket === '') {
-        return new Response(JSON.stringify({ error: 'Destination bucket is required' }), {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
-        });
+        return createErrorResponse('Destination bucket is required', corsHeaders, 400);
       }
 
       // Ensure paths end with /
@@ -482,15 +445,7 @@ export async function handleFolderRoutes(
         }, isLocalDev);
       }
 
-      return new Response(JSON.stringify({
-        error: 'Failed to copy folder'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
+      return createErrorResponse('Failed to copy folder', corsHeaders, 500);
     }
   }
 
@@ -503,13 +458,7 @@ export async function handleFolderRoutes(
       const destPath = body.destinationPath ?? folderPath;
 
       if (destBucket === undefined || destBucket === '') {
-        return new Response(JSON.stringify({ error: 'Destination bucket is required' }), {
-          status: 400,
-          headers: {
-            'Content-Type': 'application/json',
-            ...corsHeaders
-          }
-        });
+        return createErrorResponse('Destination bucket is required', corsHeaders, 400);
       }
 
       // Ensure paths end with /
@@ -671,15 +620,7 @@ export async function handleFolderRoutes(
         }, isLocalDev);
       }
 
-      return new Response(JSON.stringify({
-        error: 'Failed to move folder'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
+      return createErrorResponse('Failed to move folder', corsHeaders, 500);
     }
   }
 
@@ -813,15 +754,7 @@ export async function handleFolderRoutes(
         }, isLocalDev);
       }
 
-      return new Response(JSON.stringify({
-        error: 'Failed to delete folder'
-      }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json',
-          ...corsHeaders
-        }
-      });
+      return createErrorResponse('Failed to delete folder', corsHeaders, 500);
     }
   }
 
