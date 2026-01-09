@@ -1,11 +1,11 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** January 9, 2026 | **Version:** 3.1.0
+**Last Updated:** January 9, 2026 | **Version:** 3.2.0
  
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v3.1.0-green)
+![Version](https://img.shields.io/badge/version-v3.2.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
@@ -279,9 +279,9 @@ Intelligent, per-user rate limiting prevents abuse while ensuring fair resource 
 
 | Tier | Operations | Limit | Period | Scope |
 | :--- | :--- | :--- | :--- | :--- |
-| **READ** | List, Search, Signed URLs | 100 req | 60s | High-volume access |
-| **WRITE** | Upload, Rename, Move | 30 req | 60s | Modification safety |
-| **DELETE** | Remove Files/Buckets | 10 req | 60s | Destructive actions |
+| **READ** | List, Search, Signed URLs | 300 req | 60s | High-volume access |
+| **WRITE** | Upload, Rename, Move | 100 req | 60s | Modification safety |
+| **DELETE** | Remove Files/Buckets | 30 req | 60s | Destructive actions |
 
 **Note:** Rate limiting returns standard `429 Too Many Requests` headers and can be configured or disabled via `wrangler.toml`.
 
@@ -379,8 +379,8 @@ The following operations return simulated success responses for UI testing:
 
 | Component | Technology | Version |
 |-----------|-----------|---------|
-| Frontend | React | 19.2.1 |
-| Build Tool | Vite | 7.2.7 |
+| Frontend | React | 19.2.3 |
+| Build Tool | Vite | 7.3.1 |
 | Language | TypeScript | 5.9.3 |
 | Backend | Cloudflare Workers | Runtime API |
 | Storage | Cloudflare R2 | S3-compatible |
