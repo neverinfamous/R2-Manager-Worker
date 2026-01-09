@@ -65,6 +65,35 @@ We aim to:
 - Release a fix as soon as possible (timeline depends on severity)
 - Notify reporters when the fix is released
 
+## Known Vulnerabilities
+
+### CVE-2026-22184 (zlib - CRITICAL)
+
+**Status:** Documented & Acknowledged | **Risk:** Not Exploitable in This Context
+
+| Field | Value |
+|-------|-------|
+| Package | zlib 1.3.1-r2 (Alpine) |
+| Severity | CRITICAL |
+| Fix Available | No |
+| Affected Component | Docker container base image |
+
+**Why This Is Not Exploitable:**
+
+R2 Bucket Manager's container does not:
+- Process untrusted compressed data through zlib
+- Accept arbitrary compressed input from users
+- Use zlib for network protocol decompression
+
+The zlib library is present in the Alpine base image but is not used in a way that exposes the vulnerability. This CVE requires an attacker to supply malicious compressed data, which is not possible in R2 Manager's architecture.
+
+**Mitigation:**
+- Monitoring for upstream fix from Alpine
+- CVE is allowlisted in Docker security scan workflow
+- Will be removed from allowlist when fix is available
+
+---
+
 ## Security Updates
 
 - Subscribe to release notifications to stay informed about security updates

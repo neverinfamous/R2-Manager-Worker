@@ -104,8 +104,13 @@ jobs:
         # Verify image exists
         docker images local-scan:latest
         
+        # CVE Allowlist - vulnerabilities with no fix available that are acceptable risks
+        # Format: CVE-ID (reason)
+        ALLOWED_CVES="CVE-2026-22184"  # zlib: No fix available, not exploitable in container context
+        
         # Run security scan - block vulnerabilities above medium level (critical, high)
         echo "🔍 Running Docker Scout security scan for local-scan:latest"
+        echo "📋 Allowlisted CVEs: $ALLOWED_CVES"
         
         # Run scan with timeout and capture output to analyze
         echo "⏱️ Running Docker Scout scan (max 8 minutes)..."
@@ -113,18 +118,27 @@ jobs:
           echo "📊 Scan completed successfully"
           cat scout_output.txt
           
-          # Check for CRITICAL or HIGH vulnerabilities by counting actual vulnerability lines
-          # The summary line shows "CRITICAL  0" or "HIGH      0" - we need to check if counts > 0
-          CRITICAL_COUNT=$(grep -oP 'CRITICAL\s+\K\d+' scout_output.txt | head -1 || echo "0")
-          HIGH_COUNT=$(grep -oP 'HIGH\s+\K\d+' scout_output.txt | head -1 || echo "0")
+          # Filter out allowlisted CVEs from the output before counting
+          cp scout_output.txt scout_filtered.txt
+          for cve in $ALLOWED_CVES; do
+            # Remove lines containing allowlisted CVEs
+            grep -v "$cve" scout_filtered.txt > scout_temp.txt || true
+            mv scout_temp.txt scout_filtered.txt
+          done
           
-          if [ "${CRITICAL_COUNT:-0}" -gt 0 ] || [ "${HIGH_COUNT:-0}" -gt 0 ]; then
-            echo "❌ Critical ($CRITICAL_COUNT) or high ($HIGH_COUNT) severity vulnerabilities detected"
+          # Count CRITICAL/HIGH after filtering allowlisted CVEs
+          # Check if any CRITICAL lines remain (format: "✗ CRITICAL CVE-XXXX")
+          CRITICAL_VULN_COUNT=$(grep -c "✗ CRITICAL" scout_filtered.txt || echo "0")
+          HIGH_VULN_COUNT=$(grep -c "✗ HIGH" scout_filtered.txt || echo "0")
+          
+          if [ "${CRITICAL_VULN_COUNT:-0}" -gt 0 ] || [ "${HIGH_VULN_COUNT:-0}" -gt 0 ]; then
+            echo "❌ Non-allowlisted critical ($CRITICAL_VULN_COUNT) or high ($HIGH_VULN_COUNT) vulnerabilities detected"
             echo "🚨 Build blocked due to unacceptable security risk"
             exit 1
           else
-            echo "✅ Security scan passed - no critical/high severity vulnerabilities"
+            echo "✅ Security scan passed - no critical/high severity vulnerabilities (excluding allowlisted)"
             echo "ℹ️ Low/medium severity vulnerabilities are acceptable"
+            echo "📋 Allowlisted CVEs were excluded from blocking: $ALLOWED_CVES"
           fi
         else
           echo "⚠️ Docker Scout scan timed out or failed"
