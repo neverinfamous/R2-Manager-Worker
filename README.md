@@ -24,8 +24,7 @@
 - 🎯 **NEW! Custom Metadata** - User-defined, searchable bucket tags
 - 🚀 **NEW! S3 Import [BETA]** - Migrate data from Amazon, Google, and All S3 Compatible buckets to R2 using Cloudflare's Super Slurper API.
 - 📊 **Metrics Dashboard** - Monitor R2 bucket usage, request counts, and storage analytics in real-time
-- 🪝 **WebHooks** - Set up event notifications for bucket operations (uploads, deletes, migrations)
-Slurper API
+- 🪝 **WebHooks** - 15 event types for bucket operations (file uploads, moves, copies, renames, folder lifecycle, bucket operations, job status)
 - 📋 **Job History & Audit Logging** - Complete audit trail for all operations (bulk and individual) with filterable job list and event timeline
 - 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search and RAG capabilities
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
@@ -341,9 +340,12 @@ Open your browser to `http://localhost:5173` - the frontend will automatically c
 
 ### Development Configuration Files
 
-- `.env` - Frontend environment variables (points to `http://localhost:8787`)
+- `.env.development` - **Auto-loaded by Vite in dev mode** (sets `VITE_WORKER_API=http://localhost:8787`)
+- `.env` - Base environment variables (optional overrides)
 - `wrangler.dev.toml` - Development-specific Worker config (skips frontend build, adds mock data support)
 - `wrangler.toml` - Production Worker config (includes build step)
+
+> **Note:** The `.env.development` file is automatically loaded by Vite when running `npm run dev`. No manual switching between dev and production URLs required.
 
 ### What's Different in Local Development
 
