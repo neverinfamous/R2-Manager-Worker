@@ -309,7 +309,7 @@ export interface SupportedFileTypesResponse {
 // AI Search indexing job types (based on actual Cloudflare API response)
 export interface AISearchIndexingJob {
   id: string;
-  source: 'user' | 'schedule' | string;
+  source: string;
   started_at: string;
   ended_at?: string;
   last_seen_at?: string;

@@ -887,7 +887,7 @@ export async function handleAISearchRoutes(
           .slice(0, 10);
 
         // Find last completed job (has ended_at but no end_reason indicating error)
-        const lastCompletedJob = sortedJobs.find(j => j.ended_at && !j.end_reason);
+        const lastCompletedJob = sortedJobs.find(j => j.ended_at !== undefined && (j.end_reason === null || j.end_reason === undefined));
 
         const status: AISearchInstanceStatus = {
           name: instanceData.id ?? instanceData.name ?? instanceName,
