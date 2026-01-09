@@ -16,10 +16,12 @@ import { handleJobRoutes } from './routes/jobs';
 import { handleAuditRoutes } from './routes/audit';
 import { handleS3ImportRoutes } from './routes/s3-import';
 import { handleMetricsRoutes } from './routes/metrics';
+import { handleHealthRoutes } from './routes/health';
 import { handleWebhookRoutes } from './routes/webhooks';
 import { handleTagRoutes } from './routes/tags';
 import { handleMigrationRoutes } from './routes/migrations';
 import { handleColorRoutes } from './routes/colors';
+
 
 async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
@@ -162,6 +164,13 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     const metricsResponse = await handleMetricsRoutes(request, env, url, corsHeaders, isLocalDev);
     if (metricsResponse) {
       return metricsResponse;
+    }
+  }
+
+  if (url.pathname === '/api/health') {
+    const healthResponse = await handleHealthRoutes(request, env, url, corsHeaders, isLocalDev, userEmail);
+    if (healthResponse) {
+      return healthResponse;
     }
   }
 

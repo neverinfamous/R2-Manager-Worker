@@ -1,6 +1,6 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** December 29, 2025 | **Version:** 3.1.0
+**Last Updated:** January 9, 2026 | **Version:** 3.1.0
 
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
@@ -15,19 +15,19 @@
 
 **[Live Demo](https://r2.adamic.tech/)** • **[GitHub](https://github.com/neverinfamous/R2-Manager-Worker)** • **[Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki)** • **[Changelog](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Changelog)** • **[Release Article](https://adamic.tech/articles/r2-manager)**
 
-**Tech Stack:** React 19.2.3 | Vite 7.3.0 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
+**Tech Stack:** React 19.2.3 | Vite 7.3.1 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 ---
 
 ## ✨ Features
 
-- 🎯 **NEW! Custom Metadata** - User-defined, searchable bucket tags
-- 🚀 **NEW! S3 Import [BETA]** - Migrate data from Amazon, Google, and All S3 Compatible buckets to R2 using Cloudflare's Super Slurper API.
+- 🎯 **Custom Metadata** `NEW` - User-defined, searchable bucket tags
+- 🚀 **S3 Import** `BETA` - Migrate data from Amazon, Google, and All S3 Compatible buckets to R2 using Cloudflare's Super Slurper API.
 - 📊 **Metrics Dashboard** - Monitor R2 bucket usage, request counts, and storage analytics in real-time
-- 🪝 **WebHooks** - Set up event notifications for bucket operations (uploads, deletes, migrations)
-Slurper API
+- 🏥 **Health Dashboard** `NEW` - At-a-glance operational status with health score, job monitoring, and bucket organization metrics
+- 🪝 **WebHooks** - 15 event types for bucket operations (file uploads, moves, copies, renames, folder lifecycle, bucket operations, job status)
 - 📋 **Job History & Audit Logging** - Complete audit trail for all operations (bulk and individual) with filterable job list and event timeline
-- 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search and RAG capabilities
+- 🤖 **AI Search Integration** `NEW` - Connect R2 buckets to Cloudflare AI Search for semantic search, natural language queries, and RAG capabilities. Supports PDF, DOCX, and 20+ file formats with automatic indexing and real-time status monitoring.
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
@@ -58,16 +58,17 @@ Slurper API
 
 - **Archives** (7Z, GZ, RAR, TAR, ZIP) - up to 500MB
 - **Audio** (AAC, FLAC, M4A, MP3, OGG, OPUS, WAV) - up to 100MB
-- **Code** (CSS, GO, HTML, Java, JS, Rust, TS, Python, etc.) - up to 10MB
-- **Config & Metadata** (CONF, ENV, INI, JSON, JSONC, LOCK, TOML, etc.) - up to 10MB
+- **Code** (CSS, GO, HTML, HTM, Java, JS, JSX, Rust, SH, TS, TSX, Python, etc.) - up to 10MB
+- **Config & Metadata** (CONF, ENV, INI, JSON, JSONC, LOCK, PROPERTIES, TOML, XML, YAML, YML, etc.) - up to 10MB
 - **Data Formats** (AVRO, FEATHER, NDJSON) - up to 50MB
 - **Databases** (DB, PARQUET, SQL) - up to 50MB
 - **Dev Environment** (Dockerfile, editorconfig, .gitignore, nvmrc, etc.) - up to 1MB
-- **Documents** (CSV, Excel, Markdown, PDF, PowerPoint, TXT, Word, etc.) - up to 50MB
+- **Documents** (CSV, Excel, LaTeX, Markdown, MDX, ODT, PDF, PowerPoint, RST, SGML, TXT, Word, etc.) - up to 50MB
 - **Documentation** (NFO) - up to 10MB
 - **Fonts** (EOT, OTF, TTF, WOFF, WOFF2) - up to 10MB
 - **Images** (AVIF, BMP, GIF, HEIC, JPG, PNG, PSD, SVG, WebP) - up to 15MB
 - **Jupyter Notebooks** (.ipynb) - up to 10MB
+- **Scripts** (BAT, PS1, SH) - up to 10MB
 - **Videos** (3GP, AVI, FLV, M4V, MKV, MOV, MP4, MPEG, OGG, WebM, WMV) - up to 500MB
 
 ---

@@ -1,8 +1,16 @@
-import type { Env, CloudflareApiResponse, R2ObjectInfo, AISearchCompatibility, AISearchFileInfo, AISearchInstance, AISearchInstancesListResult, AISearchQueryRequest, AISearchResponse, CreateAISearchBody, AISearchSyncResponse } from '../types';
+import type { Env, CloudflareApiResponse, R2ObjectInfo, AISearchCompatibility, AISearchFileInfo, AISearchInstance, AISearchInstancesListResult, AISearchQueryRequest, AISearchResponse, CreateAISearchBody, AISearchSyncResponse, SupportedFileType, SupportedFileTypesResponse, AISearchIndexingJob, AISearchInstanceStatus } from '../types';
 import { CF_API } from '../types';
 import { type CorsHeaders } from '../utils/cors';
 import { getCloudflareHeaders } from '../utils/helpers';
 import { logInfo, logError, logWarning } from '../utils/error-logger';
+
+// Cache for supported file types (5-minute TTL per Cloudflare Manager Rules)
+interface SupportedTypesCache {
+  types: SupportedFileType[];
+  timestamp: number;
+}
+const supportedTypesCache: SupportedTypesCache = { types: [], timestamp: 0 };
+const SUPPORTED_TYPES_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 // AI Search supported file extensions and size limits (per Cloudflare docs)
 const AI_SEARCH_SUPPORTED_EXTENSIONS: Record<string, { maxSize: number; mimeType: string }> = {
@@ -45,6 +53,15 @@ const AI_SEARCH_SUPPORTED_EXTENSIONS: Record<string, { maxSize: number; mimeType
   '.py': { maxSize: 4 * 1024 * 1024, mimeType: 'text/x-python' },
   '.css': { maxSize: 4 * 1024 * 1024, mimeType: 'text/css' },
   '.xml': { maxSize: 4 * 1024 * 1024, mimeType: 'application/xml' },
+  // Document formats (added per Cloudflare October 2025 update)
+  '.pdf': { maxSize: 4 * 1024 * 1024, mimeType: 'application/pdf' },
+  '.docx': { maxSize: 4 * 1024 * 1024, mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+  '.odt': { maxSize: 4 * 1024 * 1024, mimeType: 'application/vnd.oasis.opendocument.text' },
+  // Image formats (added per Cloudflare October 2025 update)
+  '.jpeg': { maxSize: 4 * 1024 * 1024, mimeType: 'image/jpeg' },
+  '.jpg': { maxSize: 4 * 1024 * 1024, mimeType: 'image/jpeg' },
+  '.png': { maxSize: 4 * 1024 * 1024, mimeType: 'image/png' },
+  '.webp': { maxSize: 4 * 1024 * 1024, mimeType: 'image/webp' },
 };
 
 function getFileExtension(key: string): string {
@@ -207,26 +224,40 @@ export async function handleAISearchRoutes(
 
       // Try to fetch AI Search instances from Cloudflare API
       try {
-        const response = await fetch(
-          `${CF_API}/accounts/${env.ACCOUNT_ID}/autorag/rags`,
-          { headers: cfHeaders }
-        );
+        const apiUrl = `${CF_API}/accounts/${env.ACCOUNT_ID}/autorag/rags`;
+        logInfo('Fetching AI Search instances', { module: 'ai_search', operation: 'list_instances', metadata: { apiUrl } });
+
+        const response = await fetch(apiUrl, { headers: cfHeaders });
+
+        const responseText = await response.text();
+        logInfo('AI Search API response', { module: 'ai_search', operation: 'list_instances', metadata: { status: response.status, body: responseText.substring(0, 500) } });
 
         if (!response.ok) {
           // API might not be available or require different permissions
-          logWarning('Failed to list instances', { module: 'ai_search', operation: 'list_instances', metadata: { status: response.status } });
+          logWarning('Failed to list instances', { module: 'ai_search', operation: 'list_instances', metadata: { status: response.status, body: responseText } });
           return new Response(JSON.stringify({
             instances: [],
-            error: 'AI Search management API not available. Create instances via Cloudflare Dashboard.',
+            error: `AI Search API returned ${response.status}. Ensure API key has 'AI Search - Read' permission.`,
             dashboardUrl: `https://dash.cloudflare.com/?to=/:account/ai/ai-search`
           }), {
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
           });
         }
 
-        const data = await response.json() as CloudflareApiResponse<AISearchInstancesListResult>;
+        const data = JSON.parse(responseText) as CloudflareApiResponse<AISearchInstance[] | AISearchInstancesListResult>;
+
+        // Handle both response formats: array directly or { rags: [...] }
+        let instances: AISearchInstance[];
+        if (Array.isArray(data.result)) {
+          instances = data.result;
+        } else {
+          instances = data.result?.rags ?? [];
+        }
+
+        logInfo('Found AI Search instances', { module: 'ai_search', operation: 'list_instances', metadata: { count: instances.length, names: instances.map(i => i.name ?? i.id) } });
+
         return new Response(JSON.stringify({
-          instances: data.result?.rags ?? []
+          instances
         }), {
           headers: { 'Content-Type': 'application/json', ...corsHeaders }
         });
@@ -373,22 +404,23 @@ export async function handleAISearchRoutes(
       }
 
       try {
-        const response = await fetch(
-          `${CF_API}/accounts/${env.ACCOUNT_ID}/autorag/rags/${instanceName}/sync`,
-          { method: 'POST', headers: cfHeaders }
-        );
+        const syncUrl = `${CF_API}/accounts/${env.ACCOUNT_ID}/autorag/rags/${instanceName}/sync`;
 
-        const data = await response.json() as CloudflareApiResponse<AISearchSyncResponse>;
+        const response = await fetch(syncUrl, { method: 'PATCH', headers: cfHeaders });
+
+        const responseText = await response.text();
 
         if (!response.ok) {
           return new Response(JSON.stringify({
             success: false,
-            error: 'Failed to trigger sync'
+            error: `Sync failed: ${response.status} - ${responseText}`
           }), {
             status: response.status,
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
           });
         }
+
+        const data = JSON.parse(responseText) as CloudflareApiResponse<AISearchSyncResponse>;
 
         return new Response(JSON.stringify({
           success: true,
@@ -474,18 +506,24 @@ export async function handleAISearchRoutes(
           });
         }
       } else {
-        // Fall back to REST API
+        // Fall back to REST API (no AI binding available)
         try {
-          const response = await fetch(
-            `${CF_API}/accounts/${env.ACCOUNT_ID}/autorag/rags/${instanceName}/search`,
-            {
-              method: 'POST',
-              headers: cfHeaders,
-              body: JSON.stringify(body)
-            }
-          );
+          const searchUrl = `${CF_API}/accounts/${env.ACCOUNT_ID}/autorag/rags/${instanceName}/search`;
+          const response = await fetch(searchUrl, {
+            method: 'POST',
+            headers: { ...cfHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
 
-          const data = await response.json();
+          const responseText = await response.text();
+
+          const cfResponse = JSON.parse(responseText) as { success: boolean; result?: AISearchResponse; errors?: unknown[] };
+
+          // Transform Cloudflare response format to match frontend expectations
+          // Cloudflare returns: { success: true, result: { data, ... } }
+          // Frontend expects: { data, ... }
+          const data = cfResponse.result ?? { error: 'Empty response from Search' };
+
           return new Response(JSON.stringify(data), {
             status: response.status,
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -605,18 +643,24 @@ export async function handleAISearchRoutes(
           });
         }
       } else {
-        // Fall back to REST API
+        // Fall back to REST API (no AI binding available)
         try {
-          const response = await fetch(
-            `${CF_API}/accounts/${env.ACCOUNT_ID}/autorag/rags/${instanceName}/ai-search`,
-            {
-              method: 'POST',
-              headers: cfHeaders,
-              body: JSON.stringify(body)
-            }
-          );
+          const aiSearchUrl = `${CF_API}/accounts/${env.ACCOUNT_ID}/autorag/rags/${instanceName}/ai-search`;
+          const response = await fetch(aiSearchUrl, {
+            method: 'POST',
+            headers: { ...cfHeaders, 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
 
-          const data = await response.json();
+          const responseText = await response.text();
+
+          const cfResponse = JSON.parse(responseText) as { success: boolean; result?: AISearchResponse; errors?: unknown[] };
+
+          // Transform Cloudflare response format to match frontend expectations
+          // Cloudflare returns: { success: true, result: { response, data, ... } }
+          // Frontend expects: { response, data, ... }
+          const data = cfResponse.result ?? { error: 'Empty response from AI Search' };
+
           return new Response(JSON.stringify(data), {
             status: response.status,
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
@@ -630,6 +674,240 @@ export async function handleAISearchRoutes(
             headers: { 'Content-Type': 'application/json', ...corsHeaders }
           });
         }
+      }
+    }
+
+    // GET /api/ai-search/supported-types - Get supported file types from Cloudflare toMarkdown API
+    if (request.method === 'GET' && url.pathname === '/api/ai-search/supported-types') {
+      logInfo('Fetching supported file types', { module: 'ai_search', operation: 'get_supported_types' });
+      const skipCache = url.searchParams.get('skipCache') === 'true';
+
+      // Check cache first (5-min TTL)
+      const now = Date.now();
+      if (!skipCache && supportedTypesCache.types.length > 0 && (now - supportedTypesCache.timestamp) < SUPPORTED_TYPES_CACHE_TTL) {
+        const response: SupportedFileTypesResponse = {
+          types: supportedTypesCache.types,
+          cached: true,
+          fetchedAt: new Date(supportedTypesCache.timestamp).toISOString()
+        };
+        return new Response(JSON.stringify(response), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      if (isLocalDev) {
+        // Return mock data for local development
+        const mockTypes: SupportedFileType[] = [
+          { extension: '.pdf', mimeType: 'application/pdf' },
+          { extension: '.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' },
+          { extension: '.odt', mimeType: 'application/vnd.oasis.opendocument.text' },
+          { extension: '.txt', mimeType: 'text/plain' },
+          { extension: '.md', mimeType: 'text/markdown' },
+          { extension: '.json', mimeType: 'application/json' },
+          { extension: '.html', mimeType: 'text/html' },
+          { extension: '.xml', mimeType: 'application/xml' },
+          { extension: '.yaml', mimeType: 'application/x-yaml' },
+          { extension: '.yml', mimeType: 'application/x-yaml' },
+          { extension: '.js', mimeType: 'text/javascript' },
+          { extension: '.ts', mimeType: 'text/typescript' },
+          { extension: '.py', mimeType: 'text/x-python' },
+          { extension: '.css', mimeType: 'text/css' },
+          { extension: '.jpeg', mimeType: 'image/jpeg' },
+          { extension: '.jpg', mimeType: 'image/jpeg' },
+          { extension: '.png', mimeType: 'image/png' },
+          { extension: '.webp', mimeType: 'image/webp' }
+        ];
+        const response: SupportedFileTypesResponse = {
+          types: mockTypes,
+          cached: false,
+          fetchedAt: new Date().toISOString()
+        };
+        return new Response(JSON.stringify(response), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      // Try AI binding first (toMarkdown().supported())
+      if (env.AI) {
+        try {
+          const aiBinding = env.AI as unknown as { toMarkdown: () => { supported: () => Promise<SupportedFileType[]> } };
+          if (typeof aiBinding.toMarkdown === 'function') {
+            const supportedTypes = await aiBinding.toMarkdown().supported();
+            // Update cache
+            supportedTypesCache.types = supportedTypes;
+            supportedTypesCache.timestamp = now;
+
+            const response: SupportedFileTypesResponse = {
+              types: supportedTypes,
+              cached: false,
+              fetchedAt: new Date().toISOString()
+            };
+            return new Response(JSON.stringify(response), {
+              headers: { 'Content-Type': 'application/json', ...corsHeaders }
+            });
+          }
+        } catch (err) {
+          logWarning('toMarkdown binding not available, falling back to REST API', {
+            module: 'ai_search',
+            operation: 'get_supported_types',
+            metadata: { error: err instanceof Error ? err.message : String(err) }
+          });
+        }
+      }
+
+      // Fallback to REST API
+      try {
+        const response = await fetch(
+          `${CF_API}/accounts/${env.ACCOUNT_ID}/ai/tomarkdown/supported`,
+          { headers: cfHeaders }
+        );
+
+        if (response.ok) {
+          const data = await response.json() as CloudflareApiResponse<SupportedFileType[]>;
+          const types = data.result ?? [];
+          // Update cache
+          supportedTypesCache.types = types;
+          supportedTypesCache.timestamp = now;
+
+          const apiResponse: SupportedFileTypesResponse = {
+            types,
+            cached: false,
+            fetchedAt: new Date().toISOString()
+          };
+          return new Response(JSON.stringify(apiResponse), {
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
+        }
+
+        // If API fails, return fallback hardcoded list
+        logWarning('toMarkdown API unavailable, using fallback list', {
+          module: 'ai_search',
+          operation: 'get_supported_types',
+          metadata: { status: response.status }
+        });
+
+        const fallbackTypes: SupportedFileType[] = Object.entries(AI_SEARCH_SUPPORTED_EXTENSIONS).map(
+          ([ext, config]) => ({ extension: ext, mimeType: config.mimeType })
+        );
+
+        const fallbackResponse: SupportedFileTypesResponse = {
+          types: fallbackTypes,
+          cached: false,
+          fetchedAt: new Date().toISOString()
+        };
+        return new Response(JSON.stringify(fallbackResponse), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      } catch (err) {
+        await logError(env, err instanceof Error ? err : String(err), { module: 'ai_search', operation: 'get_supported_types' }, isLocalDev);
+        // Return fallback on error
+        const fallbackTypes: SupportedFileType[] = Object.entries(AI_SEARCH_SUPPORTED_EXTENSIONS).map(
+          ([ext, config]) => ({ extension: ext, mimeType: config.mimeType })
+        );
+        const fallbackResponse: SupportedFileTypesResponse = {
+          types: fallbackTypes,
+          cached: false,
+          fetchedAt: new Date().toISOString()
+        };
+        return new Response(JSON.stringify(fallbackResponse), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+    }
+
+    // GET /api/ai-search/instances/:instanceName/status - Get detailed instance status with jobs
+    const statusRegex = /^\/api\/ai-search\/instances\/([^/]+)\/status$/;
+    const statusMatch = statusRegex.exec(url.pathname);
+    if (request.method === 'GET' && statusMatch?.[1] !== undefined) {
+      const instanceName = decodeURIComponent(statusMatch[1]);
+      logInfo('Getting instance status', { module: 'ai_search', operation: 'get_instance_status', metadata: { instanceName } });
+
+      if (isLocalDev) {
+        const mockStatus: AISearchInstanceStatus = {
+          name: instanceName,
+          status: 'active',
+          last_sync: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+          files_indexed: 142,
+          recentJobs: [
+            {
+              id: 'mock-job-1',
+              source: 'user',
+              started_at: new Date(Date.now() - 3600000).toISOString(),
+              ended_at: new Date(Date.now() - 3500000).toISOString()
+            },
+            {
+              id: 'mock-job-2',
+              source: 'schedule',
+              started_at: new Date(Date.now() - 86400000).toISOString(),
+              ended_at: new Date(Date.now() - 86300000).toISOString()
+            }
+          ]
+        };
+        return new Response(JSON.stringify(mockStatus), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      }
+
+      try {
+        // Fetch instance details and jobs in parallel
+        const [instanceResponse, jobsResponse] = await Promise.all([
+          fetch(`${CF_API}/accounts/${env.ACCOUNT_ID}/autorag/rags/${instanceName}`, { headers: cfHeaders }),
+          fetch(`${CF_API}/accounts/${env.ACCOUNT_ID}/autorag/rags/${instanceName}/jobs`, { headers: cfHeaders })
+        ]);
+
+        let instanceData: AISearchInstance | null = null;
+        let jobs: AISearchIndexingJob[] = [];
+
+        if (instanceResponse.ok) {
+          const data = await instanceResponse.json() as CloudflareApiResponse<AISearchInstance>;
+          instanceData = data.result ?? null;
+        }
+
+        if (jobsResponse.ok) {
+          const jobsText = await jobsResponse.text();
+          const data = JSON.parse(jobsText) as CloudflareApiResponse<{ jobs: AISearchIndexingJob[] }>;
+          // Handle both array format and { jobs: [...] } format
+          if (Array.isArray(data.result)) {
+            jobs = data.result as unknown as AISearchIndexingJob[];
+          } else {
+            jobs = data.result?.jobs ?? [];
+          }
+        }
+
+        if (!instanceData) {
+          return new Response(JSON.stringify({ error: 'Instance not found' }), {
+            status: 404,
+            headers: { 'Content-Type': 'application/json', ...corsHeaders }
+          });
+        }
+
+        // Sort jobs by started_at descending and take last 10
+        const sortedJobs = jobs
+          .sort((a, b) => new Date(b.started_at).getTime() - new Date(a.started_at).getTime())
+          .slice(0, 10);
+
+        // Find last completed job (has ended_at but no end_reason indicating error)
+        const lastCompletedJob = sortedJobs.find(j => j.ended_at && !j.end_reason);
+
+        const status: AISearchInstanceStatus = {
+          name: instanceData.id ?? instanceData.name ?? instanceName,
+          status: instanceData.status ?? 'unknown',
+          // Use ended_at as last_sync (Cloudflare API uses ended_at, not completed_at)
+          ...(lastCompletedJob?.ended_at && { last_sync: lastCompletedJob.ended_at }),
+          // files_indexed not available in jobs API response
+          ...(instanceData.vectorize_index && { vectorize_index_status: instanceData.vectorize_index }),
+          recentJobs: sortedJobs
+        };
+
+        return new Response(JSON.stringify(status), {
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
+      } catch (err) {
+        await logError(env, err instanceof Error ? err : String(err), { module: 'ai_search', operation: 'get_instance_status' }, isLocalDev);
+        return new Response(JSON.stringify({ error: 'Failed to fetch instance status' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json', ...corsHeaders }
+        });
       }
     }
 

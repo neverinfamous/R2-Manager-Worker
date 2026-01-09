@@ -121,7 +121,9 @@
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .ai-search-error {
@@ -554,6 +556,31 @@
   color: var(--text-tertiary);
 }
 
+/* Instance Status (last sync, files indexed) */
+.ai-search-instance-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.ai-search-last-sync,
+.ai-search-files-indexed {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.ai-search-last-sync svg,
+.ai-search-files-indexed svg {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
 .ai-search-instance-actions {
   display: flex;
   gap: 0.5rem;
@@ -893,4 +920,3 @@
     flex-direction: column;
   }
 }
-

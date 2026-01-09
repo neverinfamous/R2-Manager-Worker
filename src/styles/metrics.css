@@ -383,3 +383,206 @@
     font-size: 0.75rem;
   }
 }
+
+/* ============================================ */
+/* Health Dashboard Specific Styles */
+/* ============================================ */
+
+/* Info Banner */
+.info-banner {
+  padding: 0.75rem 1rem;
+  background: var(--accent-blue-bg);
+  border: 1px solid var(--accent-blue-light);
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.info-banner p {
+  font-size: 0.875rem;
+  color: var(--accent-blue-light);
+  margin: 0;
+}
+
+/* Last Updated */
+.last-updated {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+/* Health Score Banner */
+.health-score-banner {
+  border-radius: 0.75rem;
+  border: 1px solid var(--border-color);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.health-score-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.health-score-content h3 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin: 0 0 0.25rem 0;
+}
+
+.health-score-number {
+  text-align: right;
+}
+
+.health-score-number .score {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.health-score-number .out-of {
+  display: block;
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+}
+
+/* Alert Cards */
+.alert-card {
+  border-radius: 0.5rem;
+  border: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+}
+
+.alert-card.alert-error {
+  border-color: var(--accent-red-light);
+}
+
+.alert-card.alert-warning {
+  border-color: var(--accent-orange-light, #f59e0b);
+}
+
+.alert-card.alert-success {
+  border-color: var(--accent-green-light);
+}
+
+.alert-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 1.25rem;
+  font-weight: 600;
+  font-size: 1rem;
+  background: var(--bg-secondary);
+}
+
+.alert-card.alert-error .alert-header {
+  color: var(--accent-red-light);
+}
+
+.alert-card.alert-warning .alert-header {
+  color: var(--accent-orange-light, #f59e0b);
+}
+
+.alert-card.alert-success .alert-header {
+  color: var(--accent-green-light);
+}
+
+.alert-content {
+  padding: 1rem 1.25rem;
+  background: var(--bg-tertiary);
+}
+
+.alert-content p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+.alert-description {
+  margin-bottom: 1rem !important;
+}
+
+.alert-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.alert-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 0.375rem;
+}
+
+.alert-item-title {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin: 0 0 0.25rem 0;
+  font-size: 0.875rem;
+}
+
+.alert-item-detail {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+.alert-item-time {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+/* Organization Stats */
+.organization-stat {
+  padding: 1rem;
+  background: var(--bg-tertiary);
+  border-radius: 0.5rem;
+  margin-top: 1rem;
+}
+
+.organization-stat .stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.organization-stat .stat-percent {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  margin-top: 0.25rem;
+}
+
+/* Chart card title with icon */
+.chart-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chart-card h3 svg {
+  color: var(--text-secondary);
+}
+
+/* Color classes for health score */
+.text-green-500 {
+  color: #22c55e;
+}
+
+.text-blue-500 {
+  color: #3b82f6;
+}
+
+.text-yellow-500 {
+  color: #eab308;
+}
+
+.text-red-500 {
+  color: #ef4444;
+}

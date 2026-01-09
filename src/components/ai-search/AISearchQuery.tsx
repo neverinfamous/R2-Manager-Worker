@@ -45,7 +45,7 @@ export function AISearchQuery({ instanceName, onBack }: AISearchQueryProps): JSX
         })
       }
 
-      setResults(response.data)
+      setResults(response.data ?? [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Search failed')
     } finally {
@@ -120,10 +120,10 @@ export function AISearchQuery({ instanceName, onBack }: AISearchQueryProps): JSX
         <div className="ai-search-options">
           <label className="ai-search-option">
             <span>Max Results:</span>
-            <select 
+            <select
               id="ai-search-max-results"
               name="ai-search-max-results"
-              value={maxResults} 
+              value={maxResults}
               onChange={(e) => setMaxResults(Number(e.target.value))}
               disabled={isSearching}
             >

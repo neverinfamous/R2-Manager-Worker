@@ -21,6 +21,7 @@ import type { FileRejection, FileWithPath } from 'react-dropzone'
 
 // Lazy-loaded tab components for better code splitting
 const MetricsDashboard = lazy(() => import('./components/MetricsDashboard').then(m => ({ default: m.MetricsDashboard })))
+const HealthDashboard = lazy(() => import('./components/HealthDashboard').then(m => ({ default: m.HealthDashboard })))
 const S3ImportPanel = lazy(() => import('./components/s3-import').then(m => ({ default: m.S3ImportPanel })))
 const JobHistory = lazy(() => import('./components/job-history').then(m => ({ default: m.JobHistory })))
 const WebhookManager = lazy(() => import('./components/webhooks/WebhookManager').then(m => ({ default: m.WebhookManager })))
@@ -33,7 +34,7 @@ const LazyLoadingFallback = (): JSX.Element => (
   </div>
 )
 
-type ActiveView = 'buckets' | 'metrics' | 's3-import' | 'job-history' | 'webhooks'
+type ActiveView = 'buckets' | 'metrics' | 'health' | 's3-import' | 'job-history' | 'webhooks'
 type BucketsSubView = 'list' | 'file-search' | 'tag-search'
 
 // API response types
@@ -707,6 +708,15 @@ export default function BucketManager(): JSX.Element {
             Metrics
           </button>
           <button
+            className={`nav-tab ${activeView === 'health' ? 'active' : ''}`}
+            onClick={() => setActiveView('health')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+            </svg>
+            Health
+          </button>
+          <button
             className={`nav-tab ${activeView === 's3-import' ? 'active' : ''}`}
             onClick={() => setActiveView('s3-import')}
           >
@@ -744,6 +754,13 @@ export default function BucketManager(): JSX.Element {
       {!selectedBucket && activeView === 'metrics' && (
         <Suspense fallback={<LazyLoadingFallback />}>
           <MetricsDashboard onClose={() => setActiveView('buckets')} />
+        </Suspense>
+      )}
+
+      {/* Health Dashboard View */}
+      {!selectedBucket && activeView === 'health' && (
+        <Suspense fallback={<LazyLoadingFallback />}>
+          <HealthDashboard onClose={() => setActiveView('buckets')} />
         </Suspense>
       )}
 

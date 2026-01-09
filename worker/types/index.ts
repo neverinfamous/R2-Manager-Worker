@@ -86,19 +86,25 @@ export interface BatchDeleteBody {
 
 // AI Search Types
 export interface AISearchInstance {
-  name: string;
+  id?: string;  // API returns 'id' as the instance identifier
+  name?: string; // For backwards compatibility
   description?: string;
   created_at?: string;
   modified_at?: string;
-  status?: 'active' | 'indexing' | 'paused' | 'error';
+  status?: 'active' | 'indexing' | 'paused' | 'error' | 'waiting';
+  enable?: boolean;
+  type?: 'r2' | 'website';
+  source?: string;  // Bucket name when type is 'r2'
   data_source?: {
     type: 'r2' | 'website';
     bucket_name?: string;
     domain?: string;
   };
+  vectorize_name?: string;
   vectorize_index?: string;
   embedding_model?: string;
   generation_model?: string;
+  last_activity?: string;
 }
 
 export interface AISearchInstancesListResult {
@@ -286,6 +292,49 @@ export interface AISearchSyncResponse {
   success: boolean;
   message?: string;
   job_id?: string;
+}
+
+// Dynamic file type support (from Cloudflare toMarkdown API)
+export interface SupportedFileType {
+  extension: string;
+  mimeType: string;
+}
+
+export interface SupportedFileTypesResponse {
+  types: SupportedFileType[];
+  cached: boolean;
+  fetchedAt: string;
+}
+
+// AI Search indexing job types (based on actual Cloudflare API response)
+export interface AISearchIndexingJob {
+  id: string;
+  source: 'user' | 'schedule' | string;
+  started_at: string;
+  ended_at?: string;
+  last_seen_at?: string;
+  end_reason?: string | null;
+  // Legacy fields (may not be present in actual API)
+  status?: 'pending' | 'running' | 'completed' | 'failed';
+  completed_at?: string;
+  files_indexed?: number;
+  files_failed?: number;
+  error?: string;
+}
+
+export interface AISearchJobsResponse {
+  jobs: AISearchIndexingJob[];
+  instance_name: string;
+}
+
+export interface AISearchInstanceStatus {
+  name: string;
+  status: string;
+  last_sync?: string;
+  next_sync?: string;
+  files_indexed?: number;
+  vectorize_index_status?: string;
+  recentJobs?: AISearchIndexingJob[];
 }
 
 // Job History Types

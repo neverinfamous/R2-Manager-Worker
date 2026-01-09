@@ -95,16 +95,21 @@ export interface AISearchFileInfo {
 }
 
 export interface AISearchInstance {
-  name: string
+  id?: string  // API returns 'id' as the instance identifier
+  name?: string // For backwards compatibility
   description?: string
   created_at?: string
   modified_at?: string
-  status?: 'active' | 'indexing' | 'paused' | 'error'
+  status?: 'active' | 'indexing' | 'paused' | 'error' | 'waiting'
+  enable?: boolean
+  type?: 'r2' | 'website'
+  source?: string  // Bucket name when type is 'r2'
   data_source?: {
     type: 'r2' | 'website'
     bucket_name?: string
     domain?: string
   }
+  last_activity?: string
 }
 
 export interface AISearchInstancesResponse {
@@ -125,6 +130,39 @@ export interface AISearchSyncResponse {
   message?: string
   job_id?: string
   error?: string
+}
+
+// Dynamic file type support (from Cloudflare toMarkdown API)
+export interface SupportedFileType {
+  extension: string
+  mimeType: string
+}
+
+export interface SupportedFileTypesResponse {
+  types: SupportedFileType[]
+  cached: boolean
+  fetchedAt: string
+}
+
+// AI Search indexing job types
+export interface AISearchIndexingJob {
+  id: string
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  started_at: string
+  completed_at?: string
+  files_indexed?: number
+  files_failed?: number
+  error?: string
+}
+
+export interface AISearchInstanceStatus {
+  name: string
+  status: string
+  last_sync?: string
+  next_sync?: string
+  files_indexed?: number
+  vectorize_index_status?: string
+  recentJobs?: AISearchIndexingJob[]
 }
 
 export interface AISearchQueryParams {
@@ -156,9 +194,9 @@ export interface AISearchResult {
 
 export interface AISearchResponse {
   response?: string
-  data: AISearchResult[]
-  has_more: boolean
-  next_page: string | null
+  data?: AISearchResult[]
+  has_more?: boolean
+  next_page?: string | null
   error?: string
 }
 
@@ -1834,6 +1872,41 @@ class APIService {
     }
 
     return response.json() as Promise<AISearchResponse>
+  }
+
+  async getAISearchSupportedTypes(skipCache = false): Promise<SupportedFileTypesResponse> {
+    const url = new URL(`${WORKER_API}/api/ai-search/supported-types`)
+    if (skipCache) {
+      url.searchParams.set('skipCache', 'true')
+    }
+
+    const response = await fetch(
+      url.toString(),
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to get supported file types: ${response.status}`)
+    }
+
+    return response.json() as Promise<SupportedFileTypesResponse>
+  }
+
+  async getAISearchInstanceStatus(instanceName: string): Promise<AISearchInstanceStatus> {
+    const response = await fetch(
+      `${WORKER_API}/api/ai-search/instances/${encodeURIComponent(instanceName)}/status`,
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      throw new Error(`Failed to get instance status: ${response.status}`)
+    }
+
+    return response.json() as Promise<AISearchInstanceStatus>
   }
 
   getAISearchDashboardUrl(): string {
