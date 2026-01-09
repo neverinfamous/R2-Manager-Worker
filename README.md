@@ -81,7 +81,7 @@
 ### Prerequisites
 
 - [Cloudflare account](https://dash.cloudflare.com/sign-up) (Free tier works!)
-- [Node.js](https://nodejs.org/) 18+ and npm
+- [Node.js](https://nodejs.org/) 20+ and npm
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) (4.36.0+ for rate limiting)
 - Domain managed by Cloudflare (optional - can use Workers.dev subdomain)
 
