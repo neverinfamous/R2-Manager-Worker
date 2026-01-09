@@ -189,6 +189,7 @@ export interface StorageDataPoint {
   date: string;
   bucketName: string;
   storageBytes: number;
+  objectCount?: number;
 }
 
 /**
@@ -217,6 +218,7 @@ export interface MetricsSummary {
   totalBytesUploaded: number;
   totalBytesDownloaded: number;
   totalStorageBytes: number;
+  totalObjectCount?: number;
   bucketCount: number;
 }
 
@@ -262,6 +264,7 @@ export interface R2AnalyticsResult {
         max: {
           metadataSize: number;
           payloadSize: number;
+          objectCount: number;
         };
         dimensions: {
           date: string;

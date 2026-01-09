@@ -49,14 +49,15 @@ function getDateRange(timeRange: MetricsTimeRange): { start: string; end: string
 /**
  * Build GraphQL query for R2 analytics
  */
-function buildAnalyticsQuery(accountId: string, start: string, end: string): string {
+function buildAnalyticsQuery(accountId: string, start: string, end: string, bucketName?: string): string {
+    const bucketFilter = bucketName ? `, bucketName: "${bucketName}"` : '';
     return `
     query R2Metrics {
       viewer {
         accounts(filter: { accountTag: "${accountId}" }) {
           r2OperationsAdaptiveGroups(
             limit: 10000
-            filter: { date_geq: "${start}", date_leq: "${end}" }
+            filter: { date_geq: "${start}", date_leq: "${end}"${bucketFilter} }
             orderBy: [date_DESC]
           ) {
             sum {
@@ -70,7 +71,7 @@ function buildAnalyticsQuery(accountId: string, start: string, end: string): str
           }
           r2StorageAdaptiveGroups(
             limit: 10000
-            filter: { date_geq: "${start}", date_leq: "${end}" }
+            filter: { date_geq: "${start}", date_leq: "${end}"${bucketFilter} }
             orderBy: [date_DESC]
           ) {
             max {
@@ -274,7 +275,8 @@ function processMetricsData(
     const storageSeries: StorageDataPoint[] = storageData.map(s => ({
         date: s.dimensions.date,
         bucketName: s.dimensions.bucketName,
-        storageBytes: (s.max.payloadSize ?? 0) + (s.max.metadataSize ?? 0)
+        storageBytes: (s.max.payloadSize ?? 0) + (s.max.metadataSize ?? 0),
+        objectCount: s.max.objectCount ?? 0
     }));
     storageSeries.sort((a, b) => a.date.localeCompare(b.date));
 
@@ -282,6 +284,15 @@ function processMetricsData(
     const totalReadOperations = byBucket.reduce((sum, b) => sum + b.totalReadOperations, 0);
     const totalWriteOperations = byBucket.reduce((sum, b) => sum + b.totalWriteOperations, 0);
     const totalStorageBytes = byBucket.reduce((sum, b) => sum + (b.currentStorageBytes ?? 0), 0);
+
+    // Calculate total object count from latest storage data per bucket
+    const latestObjectCounts = new Map<string, number>();
+    for (const s of storageData) {
+        if (!latestObjectCounts.has(s.dimensions.bucketName)) {
+            latestObjectCounts.set(s.dimensions.bucketName, s.max.objectCount ?? 0);
+        }
+    }
+    const totalObjectCount = Array.from(latestObjectCounts.values()).reduce((sum, count) => sum + count, 0);
 
     return {
         summary: {
@@ -293,6 +304,7 @@ function processMetricsData(
             totalBytesUploaded: 0, // Not available in current API
             totalBytesDownloaded: 0, // Not available in current API
             totalStorageBytes,
+            totalObjectCount,
             bucketCount: byBucket.length
         },
         byBucket,
@@ -369,7 +381,8 @@ function generateMockMetrics(timeRange: MetricsTimeRange): MetricsResponse {
             storageSeries.push({
                 date: dateStr,
                 bucketName: bucket,
-                storageBytes: Math.floor(Math.random() * 10 * 1024 * 1024 * 1024)
+                storageBytes: Math.floor(Math.random() * 10 * 1024 * 1024 * 1024),
+                objectCount: Math.floor(Math.random() * 200) + 50
             });
         }
     }
@@ -390,6 +403,7 @@ function generateMockMetrics(timeRange: MetricsTimeRange): MetricsResponse {
             totalBytesUploaded,
             totalBytesDownloaded,
             totalStorageBytes,
+            totalObjectCount: mockBuckets.length * 150, // ~150 objects per bucket
             bucketCount: mockBuckets.length
         },
         byBucket,
@@ -411,6 +425,7 @@ export async function handleMetricsRoutes(
     // GET /api/metrics - Get R2 analytics
     if (request.method === 'GET' && url.pathname === '/api/metrics') {
         const timeRange = (url.searchParams.get('range') ?? '7d') as MetricsTimeRange;
+        const bucketName = url.searchParams.get('bucketName') ?? undefined;
 
         // Validate time range
         if (!['24h', '7d', '30d'].includes(timeRange)) {
@@ -423,7 +438,7 @@ export async function handleMetricsRoutes(
             });
         }
 
-        logInfo(`Fetching R2 metrics for range: ${timeRange}`, { module: 'metrics', operation: 'get_metrics', metadata: { timeRange } });
+        logInfo(`Fetching R2 metrics for range: ${timeRange}${bucketName ? ` (filtered: ${bucketName})` : ''}`, { module: 'metrics', operation: 'get_metrics', metadata: { timeRange, bucketName } });
 
         // Return mock data for local development
         if (isLocalDev) {
@@ -438,7 +453,7 @@ export async function handleMetricsRoutes(
         }
 
         const { start, end } = getDateRange(timeRange);
-        const query = buildAnalyticsQuery(env.ACCOUNT_ID, start, end);
+        const query = buildAnalyticsQuery(env.ACCOUNT_ID, start, end, bucketName);
 
         const analyticsData = await executeGraphQLQuery(env, query, isLocalDev);
 

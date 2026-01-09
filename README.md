@@ -23,7 +23,7 @@
 
 - 🎯 **Custom Metadata** `NEW` - User-defined, searchable bucket tags
 - 🚀 **S3 Import** `BETA` - Migrate data from Amazon, Google, and All S3 Compatible buckets to R2 using Cloudflare's Super Slurper API.
-- 📊 **Metrics Dashboard** - Monitor R2 bucket usage, request counts, and storage analytics in real-time
+- 📊 **Metrics Dashboard** `ENHANCED` - Comprehensive R2 analytics with tabbed interface (Overview | Storage), bucket-level filtering, storage trends, object count tracking, and Class A/B operation breakdowns powered by Cloudflare's GraphQL Analytics API
 - 🏥 **Health Dashboard** `NEW` - At-a-glance operational status with health score, job monitoring, and bucket organization metrics
 - 🪝 **WebHooks** - 15 event types for bucket operations (file uploads, moves, copies, renames, folder lifecycle, bucket operations, job status)
 - 📋 **Job History & Audit Logging** - Complete audit trail for all operations (bulk and individual) with filterable job list and event timeline

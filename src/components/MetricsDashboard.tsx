@@ -8,6 +8,7 @@ import {
     Package
 } from 'lucide-react';
 import { MetricsChart, MetricsBarChart } from './MetricsChart';
+import { StorageTab } from './StorageTab';
 
 // Types
 type MetricsTimeRange = '24h' | '7d' | '30d';
@@ -44,10 +45,19 @@ interface MetricsResponse {
         totalBytesUploaded: number;
         totalBytesDownloaded: number;
         totalStorageBytes: number;
+        totalObjectCount?: number;
         bucketCount: number;
     };
     byBucket: BucketMetricsSummary[];
     timeSeries: MetricsDataPoint[];
+    storageSeries?: StorageDataPoint[];
+}
+
+interface StorageDataPoint {
+    date: string;
+    bucketName: string;
+    storageBytes: number;
+    objectCount?: number;
 }
 
 /**
@@ -115,13 +125,15 @@ export function MetricsDashboard({ onClose }: MetricsDashboardProps): React.JSX.
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [timeRange, setTimeRange] = useState<MetricsTimeRange>('7d');
+    const [activeTab, setActiveTab] = useState<'overview' | 'storage'>('overview');
+    const [bucketFilter, setBucketFilter] = useState<string>('');
 
     const loadMetrics = useCallback(async (skipCache?: boolean) => {
         setLoading(true);
         setError(null);
 
         try {
-            const cacheKey = `r2-metrics-${timeRange}`;
+            const cacheKey = `r2-metrics-${timeRange}${bucketFilter ? `-${bucketFilter}` : ''}`;
             const cached = !skipCache ? sessionStorage.getItem(cacheKey) : null;
 
             if (cached) {
@@ -130,7 +142,11 @@ export function MetricsDashboard({ onClose }: MetricsDashboardProps): React.JSX.
                 return;
             }
 
-            const response = await fetch(`${WORKER_API}/api/metrics?range=${timeRange}`);
+            const url = new URL(`${WORKER_API}/api/metrics`);
+            url.searchParams.set('range', timeRange);
+            if (bucketFilter) url.searchParams.set('bucketName', bucketFilter);
+
+            const response = await fetch(url.toString());
             const data = await response.json() as { success: boolean; result?: MetricsResponse; message?: string };
 
             if (!data.success) {
@@ -146,7 +162,7 @@ export function MetricsDashboard({ onClose }: MetricsDashboardProps): React.JSX.
         } finally {
             setLoading(false);
         }
-    }, [timeRange]);
+    }, [timeRange, bucketFilter]);
 
     useEffect(() => {
         void loadMetrics(false);
@@ -188,6 +204,20 @@ export function MetricsDashboard({ onClose }: MetricsDashboardProps): React.JSX.
                 </div>
                 <div className="metrics-controls">
                     <select
+                        id="metrics-bucket-filter"
+                        name="metrics-bucket-filter"
+                        value={bucketFilter}
+                        onChange={(e) => setBucketFilter(e.target.value)}
+                        disabled={loading}
+                        aria-label="Filter by bucket"
+                        style={{ minWidth: '150px' }}
+                    >
+                        <option value="">All Buckets</option>
+                        {metrics?.byBucket.map(b => (
+                            <option key={b.bucketName} value={b.bucketName}>{b.bucketName}</option>
+                        ))}
+                    </select>
+                    <select
                         id="metrics-time-range"
                         name="metrics-time-range"
                         value={timeRange}
@@ -224,8 +254,50 @@ export function MetricsDashboard({ onClose }: MetricsDashboardProps): React.JSX.
                 </div>
             )}
 
-            {/* Summary Cards */}
+            {/* Tab Navigation */}
             {metrics && (
+                <div className="metrics-tabs" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <button
+                        className={`tab-button ${activeTab === 'overview' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('overview')}
+                        style={{
+                            padding: '0.5rem 1rem',
+                            border: 'none',
+                            background: activeTab === 'overview' ? 'var(--accent-color, #3b82f6)' : 'var(--card-bg, #1f2937)',
+                            color: 'white',
+                            borderRadius: '0.375rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.375rem'
+                        }}
+                    >
+                        <BarChart3 style={{ width: '16px', height: '16px' }} />
+                        Overview
+                    </button>
+                    <button
+                        className={`tab-button ${activeTab === 'storage' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('storage')}
+                        style={{
+                            padding: '0.5rem 1rem',
+                            border: 'none',
+                            background: activeTab === 'storage' ? 'var(--accent-color, #3b82f6)' : 'var(--card-bg, #1f2937)',
+                            color: 'white',
+                            borderRadius: '0.375rem',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.375rem'
+                        }}
+                    >
+                        <HardDrive style={{ width: '16px', height: '16px' }} />
+                        Storage
+                    </button>
+                </div>
+            )}
+
+            {/* Summary Cards */}
+            {metrics && activeTab === 'overview' && (
                 <>
                     <div className="metrics-grid">
                         <div className="metric-card">
@@ -378,6 +450,16 @@ export function MetricsDashboard({ onClose }: MetricsDashboardProps): React.JSX.
                         </div>
                     </div>
                 </>
+            )}
+
+            {/* Storage Tab Content */}
+            {metrics && activeTab === 'storage' && (
+                <StorageTab
+                    storageSeries={metrics.storageSeries ?? []}
+                    byBucket={metrics.byBucket}
+                    totalStorageBytes={metrics.summary.totalStorageBytes}
+                    totalObjectCount={metrics.summary.totalObjectCount ?? 0}
+                />
             )}
         </div>
     );
