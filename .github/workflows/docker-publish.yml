@@ -20,27 +20,83 @@ permissions:
   attestations: write    # For generating attestations
 
 jobs:
-  build:
+  # Gate: Lint and build must pass before Docker images are created
+  lint:
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '25.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Build worker
+        run: npx wrangler deploy --dry-run
+
+  # Gate: CodeQL security analysis must pass
+  codeql:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: javascript-typescript
+          queries: security-extended,security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v4
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          upload: always
+          fail-on: error
+
+  # Build each platform on native architecture (avoids QEMU emulation issues)
+  build-platform:
+    needs: [lint, codeql]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-latest
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    
+    runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
-      security-events: write
-      pull-requests: write
       id-token: write
       attestations: write
-      deployments: write  # Required for deployment tracking
     
-    environment:
-      name: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && 'production' || '' }}
-      url: https://hub.docker.com/r/writenotenow/r2-bucket-manager
-
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    
     steps:
     - name: Checkout repository
       uses: actions/checkout@v6
-
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -48,7 +104,7 @@ jobs:
     - name: Log in to Docker Hub
       if: github.event_name != 'pull_request'
       uses: docker/login-action@v3
-      continue-on-error: true  # Don't fail if Docker Hub credentials are missing
+      continue-on-error: true
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ secrets.DOCKER_USERNAME }}
@@ -57,16 +113,163 @@ jobs:
     - name: Read version from VERSION file
       id: version
       run: |
-        # Extract version from VERSION file
         if [ -f "VERSION" ]; then
-          VERSION=$(cat VERSION | tr -d '[:space:]')
-        else
-          VERSION="3.1.0"
+          VERSION=$(head -1 VERSION | tr -d '[:space:]')
+        fi
+        if [ -z "$VERSION" ]; then
+          VERSION=$(grep -oP '"version":\s*"\K[0-9.]+' package.json | head -1)
+        fi
+        if [ -z "$VERSION" ]; then
+          VERSION="1.0.0"
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "Detected version: $VERSION"
-    
+
     - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+        flavor: |
+          latest=false
+          suffix=-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+        tags: |
+          type=sha,prefix=sha-,format=short
+
+    - name: Build and push platform image
+      id: build
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: Dockerfile
+        platforms: ${{ matrix.platform }}
+        push: ${{ github.event_name != 'pull_request' }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha,scope=${{ matrix.platform }}
+        cache-to: type=gha,scope=${{ matrix.platform }},mode=max
+        provenance: mode=max
+        sbom: true
+
+    - name: Export digest
+      if: github.event_name != 'pull_request'
+      run: |
+        mkdir -p /tmp/digests
+        digest="${{ steps.build.outputs.digest }}"
+        touch "/tmp/digests/${digest#sha256:}"
+
+    - name: Upload digest
+      if: github.event_name != 'pull_request'
+      uses: actions/upload-artifact@v6
+      with:
+        name: digests-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+        path: /tmp/digests/*
+        if-no-files-found: error
+        retention-days: 1
+
+  # Security scan on amd64 image with strict gates (blocks on critical/high fixable vulns)
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: build-platform
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      security-events: write
+      pull-requests: write
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Build image for scanning
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: Dockerfile
+        platforms: linux/amd64
+        push: false
+        load: true
+        tags: local-scan:latest
+        cache-from: type=gha,scope=linux/amd64
+
+    - name: Docker Scout CVE Scan
+      uses: docker/scout-action@v1
+      with:
+        command: cves
+        image: local://local-scan:latest
+        exit-code: true
+        only-severities: critical,high
+        only-fixed: true
+        sarif-file: scout-results.sarif
+
+    - name: Upload Scout results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v4
+      if: always()
+      with:
+        sarif_file: scout-results.sarif
+
+  # Merge platform images into multi-arch manifest
+  merge-and-push:
+    runs-on: ubuntu-latest
+    needs: [build-platform, security-scan]
+    if: github.event_name != 'pull_request'
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      deployments: write
+    
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || '' }}
+      url: https://hub.docker.com/r/writenotenow/r2-bucket-manager
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v6
+
+    - name: Download digests
+      uses: actions/download-artifact@v7
+      with:
+        path: /tmp/digests
+        pattern: digests-*
+        merge-multiple: true
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+
+    - name: Read version
+      id: version
+      run: |
+        if [ -f "VERSION" ]; then
+          VERSION=$(head -1 VERSION | tr -d '[:space:]')
+        fi
+        if [ -z "$VERSION" ]; then
+          VERSION=$(grep -oP '"version":\s*"\K[0-9.]+' package.json | head -1)
+        fi
+        if [ -z "$VERSION" ]; then
+          VERSION="1.0.0"
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Extract metadata for manifest
       id: meta
       uses: docker/metadata-action@v5
       with:
@@ -74,106 +277,24 @@ jobs:
         flavor: |
           latest=auto
         tags: |
-          # When pushing Git tag v3.1.0, create only: v3.1.0 (exact version)
           type=semver,pattern=v{{version}}
-          # When pushing to main branch, use version from VERSION file + latest
           type=raw,value=v${{ steps.version.outputs.version }},enable={{is_default_branch}}
           type=raw,value=latest,enable={{is_default_branch}}
-          # SHA-pinned tags for security (reduced to first 12 chars for faster upload)
           type=sha,prefix=sha-,format=short
 
-    # Build locally first for security scanning (single platform)
-    - name: Build Docker image for scanning
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        file: Dockerfile
-        platforms: linux/amd64  # Single platform for scanning
-        push: false
-        load: true
-        tags: local-scan:latest
-        cache-from: type=gha
-
-    # Security scanning with Docker Scout CLI
-    - name: Docker Scout security scan
-      timeout-minutes: 10  # Prevent hanging
+    - name: Create and push manifest
+      working-directory: /tmp/digests
       run: |
-        # Install Docker Scout CLI
-        curl -sSfL https://raw.githubusercontent.com/docker/scout-cli/main/install.sh | sh -s --
-        
-        # Verify image exists
-        docker images local-scan:latest
-        
-        # CVE Allowlist - vulnerabilities with no fix available that are acceptable risks
-        # Format: CVE-ID (reason)
-        ALLOWED_CVES="CVE-2026-22184"  # zlib: No fix available, not exploitable in container context
-        
-        # Run security scan - block vulnerabilities above medium level (critical, high)
-        echo "🔍 Running Docker Scout security scan for local-scan:latest"
-        echo "📋 Allowlisted CVEs: $ALLOWED_CVES"
-        
-        # Run scan with timeout and capture output to analyze
-        echo "⏱️ Running Docker Scout scan (max 8 minutes)..."
-        if timeout 480 docker scout cves local-scan:latest > scout_output.txt 2>&1; then
-          echo "📊 Scan completed successfully"
-          cat scout_output.txt
-          
-          # Filter out allowlisted CVEs from the output before counting
-          cp scout_output.txt scout_filtered.txt
-          for cve in $ALLOWED_CVES; do
-            # Remove lines containing allowlisted CVEs
-            grep -v "$cve" scout_filtered.txt > scout_temp.txt || true
-            mv scout_temp.txt scout_filtered.txt
-          done
-          
-          # Count CRITICAL/HIGH after filtering allowlisted CVEs
-          # Check if any CRITICAL lines remain (format: "✗ CRITICAL CVE-XXXX")
-          CRITICAL_VULN_COUNT=$(grep -c "✗ CRITICAL" scout_filtered.txt || echo "0")
-          HIGH_VULN_COUNT=$(grep -c "✗ HIGH" scout_filtered.txt || echo "0")
-          
-          if [ "${CRITICAL_VULN_COUNT:-0}" -gt 0 ] || [ "${HIGH_VULN_COUNT:-0}" -gt 0 ]; then
-            echo "❌ Non-allowlisted critical ($CRITICAL_VULN_COUNT) or high ($HIGH_VULN_COUNT) vulnerabilities detected"
-            echo "🚨 Build blocked due to unacceptable security risk"
-            exit 1
-          else
-            echo "✅ Security scan passed - no critical/high severity vulnerabilities (excluding allowlisted)"
-            echo "ℹ️ Low/medium severity vulnerabilities are acceptable"
-            echo "📋 Allowlisted CVEs were excluded from blocking: $ALLOWED_CVES"
-          fi
-        else
-          echo "⚠️ Docker Scout scan timed out or failed"
-          echo "🔄 Continuing build - scan timeout is not a security failure"
-          echo "ℹ️ Consider running scout scan locally for large images"
-        fi
+        docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+          $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
 
-    # Test local image before pushing to Docker Hub
-    - name: Test Docker image functionality
+    - name: Inspect manifest
       run: |
-        echo "Testing local image before push..."
-        docker run --rm local-scan:latest node --version
-        echo "✅ Image tests passed - safe to push"
+        docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
 
-    # Only push if security scan AND functionality test pass
-    - name: Build and push Docker image
-      if: success()  # Only runs if scan AND test passed
-      id: build
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        file: Dockerfile
-        platforms: linux/amd64,linux/arm64
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        # Enable attestations for supply chain security
-        provenance: mode=max
-        sbom: true
-
-    # Update Docker Hub description (optional - can be done manually)
+    # Update Docker Hub description
     - name: Update Docker Hub Description
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: github.ref == 'refs/heads/main'
       uses: peter-evans/dockerhub-description@v5
       continue-on-error: true
       timeout-minutes: 5
@@ -183,13 +304,12 @@ jobs:
         repository: ${{ env.IMAGE_NAME }}
         readme-filepath: ./DOCKER_README.md
         short-description: "Cloudflare R2 Manager - Batch Ops, Cross-Bucket Search, Share Links, S3 Import, Tags, GitHub SSO."
-    
+
     - name: Deployment Summary
-      if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      if: github.ref == 'refs/heads/main'
       run: |
         echo "✅ Successfully published Docker images to production"
         echo "🐳 Registry: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
         echo "🏷️ Tags: ${{ steps.meta.outputs.tags }}"
         echo "📝 Commit: ${{ github.sha }}"
         echo "👤 Published by: ${{ github.actor }}"
-
