@@ -20,3 +20,7 @@ pnpm-debug.log*
 *.swo
 *~
 .turbo/
+
+# Docker Scout diagnostic artifacts
+scout-sbom.json
+scout_*.txt
