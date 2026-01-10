@@ -223,8 +223,6 @@ export class ChatRoom {
 
 const worker = {
   async fetch(request, env) {
-    const url = new URL(request.url);
-    
     if (request.headers.get('Upgrade')?.toLowerCase() === 'websocket') {
       const id = env.CHATROOM.idFromName("default");
       const room = env.CHATROOM.get(id);

@@ -145,7 +145,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
         logWarning('Request blocked by rate limit', {
           module: 'worker',
           operation: 'rate_limit',
-          metadata: { userEmail: userEmail ?? undefined, method: request.method, pathname: url.pathname, tier: rateLimitResult.tier }
+          metadata: { userEmail, method: request.method, pathname: url.pathname, tier: rateLimitResult.tier }
         });
 
         return createRateLimitResponse(rateLimitResult, corsHeaders);

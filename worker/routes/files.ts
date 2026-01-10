@@ -559,7 +559,7 @@ export async function handleFileRoutes(
         await logAuditEvent(env, {
           operationType: 'file_upload',
           bucketName: bucketName ?? undefined,
-          objectKey: fileName !== null ? decodeURIComponent(fileName) : undefined,
+          objectKey: decodeURIComponent(fileName),
           userEmail,
           status: 'failed',
           metadata: { error: String(err) }

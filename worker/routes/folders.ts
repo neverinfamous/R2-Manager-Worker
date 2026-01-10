@@ -180,7 +180,6 @@ export async function handleFolderRoutes(
         const objects: R2ObjectInfo[] = Array.isArray(listData.result) ? listData.result : [];
 
         if (objects.length === 0) {
-          hasMore = false;
           break;
         }
 
@@ -352,7 +351,6 @@ export async function handleFolderRoutes(
         const objects: R2ObjectInfo[] = Array.isArray(listData.result) ? listData.result : [];
 
         if (objects.length === 0) {
-          hasMore = false;
           break;
         }
 
@@ -490,7 +488,6 @@ export async function handleFolderRoutes(
         const objects: R2ObjectInfo[] = Array.isArray(listData.result) ? listData.result : [];
 
         if (objects.length === 0) {
-          hasMore = false;
           break;
         }
 
