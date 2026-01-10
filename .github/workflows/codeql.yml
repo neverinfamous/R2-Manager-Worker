@@ -43,3 +43,4 @@ jobs:
         with:
           upload: always
           wait-for-processing: false
+          fail-on: error
