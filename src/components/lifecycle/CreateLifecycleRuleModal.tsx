@@ -1,7 +1,6 @@
 import { useState, type JSX, type FormEvent } from 'react'
 import { api } from '../../services/api'
-import type { LifecycleRule, LifecycleRuleAction } from '../../types/lifecycle'
-import { daysToSeconds } from '../../types/lifecycle'
+import type { LifecycleRule } from '../../types/lifecycle'
 
 interface CreateLifecycleRuleModalProps {
     bucketName: string
@@ -22,7 +21,6 @@ export function CreateLifecycleRuleModal({
     const [ruleType, setRuleType] = useState<RuleType>('expiration')
     const [days, setDays] = useState(30)
     const [prefix, setPrefix] = useState('')
-    const [suffix, setSuffix] = useState('')
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
@@ -56,21 +54,25 @@ export function CreateLifecycleRuleModal({
             const existing = await api.getLifecycleRules(bucketName)
             const existingRules = existing.result?.rules ?? []
 
-            // Build the action based on rule type
-            const actions: LifecycleRuleAction[] = ruleType === 'expiration'
-                ? [{ type: 'Delete' }]
-                : [{ type: 'SetStorageClass', storageClass: 'InfrequentAccess' }]
-
-            // Create the new rule
+            // Create the new rule using Cloudflare API format
+            // maxAge is in DAYS (not seconds) per Cloudflare REST API
             const newRule: LifecycleRule = {
                 id: ruleId,
                 enabled: true,
-                conditions: {
-                    maxAgeSeconds: daysToSeconds(days),
-                    ...(prefix.length > 0 ? { prefix } : {}),
-                    ...(suffix.length > 0 ? { suffix } : {})
-                },
-                actions
+                ...(prefix.length > 0 ? { conditions: { prefix } } : {}),
+                ...(ruleType === 'expiration'
+                    ? {
+                        deleteObjectsTransition: {
+                            condition: { maxAge: days, type: 'Age' as const }
+                        }
+                    }
+                    : {
+                        storageClassTransitions: [{
+                            condition: { maxAge: days, type: 'Age' as const },
+                            storageClass: 'InfrequentAccess' as const
+                        }]
+                    }
+                )
             }
 
             // Add new rule to existing rules
@@ -153,7 +155,7 @@ export function CreateLifecycleRuleModal({
                         </div>
 
                         <div className="lifecycle-form-section">
-                            <h4>Filters (Optional)</h4>
+                            <h4>Filter (Optional)</h4>
                             <p className="lifecycle-form-section-help">
                                 Leave empty to apply to all objects in the bucket
                             </p>
@@ -166,18 +168,6 @@ export function CreateLifecycleRuleModal({
                                     value={prefix}
                                     onChange={e => setPrefix(e.target.value)}
                                     placeholder="e.g., temp/ or logs/"
-                                    disabled={isSubmitting}
-                                />
-                            </div>
-
-                            <div className="lifecycle-form-group">
-                                <label htmlFor="suffix">Suffix</label>
-                                <input
-                                    id="suffix"
-                                    type="text"
-                                    value={suffix}
-                                    onChange={e => setSuffix(e.target.value)}
-                                    placeholder="e.g., .tmp or .log"
                                     disabled={isSubmitting}
                                 />
                             </div>

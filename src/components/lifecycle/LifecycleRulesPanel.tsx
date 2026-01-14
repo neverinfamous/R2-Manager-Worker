@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, type JSX } from 'react'
 import { api } from '../../services/api'
 import type { LifecycleRule, LifecycleRulesResponse } from '../../types/lifecycle'
-import { secondsToDays } from '../../types/lifecycle'
+import { getExpirationDays, getTransitionDays } from '../../types/lifecycle'
 import { CreateLifecycleRuleModal } from './CreateLifecycleRuleModal'
 import './lifecycle.css'
 
@@ -71,26 +71,40 @@ export function LifecycleRulesPanel({ bucketName, onClose }: LifecycleRulesPanel
         if (rule.conditions?.prefix) {
             parts.push(`prefix "${rule.conditions.prefix}"`)
         }
-        if (rule.conditions?.suffix) {
-            parts.push(`suffix "${rule.conditions.suffix}"`)
+
+        const expirationDays = getExpirationDays(rule)
+        if (expirationDays !== null) {
+            parts.push(`delete after ${expirationDays} days`)
         }
 
-        const actions = rule.actions ?? []
-        for (const action of actions) {
-            if (action.type === 'Delete') {
-                const days = rule.conditions?.maxAgeSeconds
-                    ? secondsToDays(rule.conditions.maxAgeSeconds)
-                    : 0
-                parts.push(`delete after ${days} days`)
-            } else if (action.type === 'SetStorageClass') {
-                const days = rule.conditions?.maxAgeSeconds
-                    ? secondsToDays(rule.conditions.maxAgeSeconds)
-                    : 0
-                parts.push(`transition to ${action.storageClass ?? 'IA'} after ${days} days`)
-            }
+        const transitionDays = getTransitionDays(rule)
+        if (transitionDays !== null) {
+            parts.push(`transition to IA after ${transitionDays} days`)
         }
 
         return parts.join(', ') || 'No conditions'
+    }
+
+    const getRuleBadges = (rule: LifecycleRule): JSX.Element[] => {
+        const badges: JSX.Element[] = []
+
+        if (rule.deleteObjectsTransition !== undefined) {
+            badges.push(
+                <div key="expire" className="lifecycle-rule-badge expire">
+                    ⏳ Expiration
+                </div>
+            )
+        }
+
+        if (rule.storageClassTransitions !== undefined && rule.storageClassTransitions.length > 0) {
+            badges.push(
+                <div key="transition" className="lifecycle-rule-badge transition">
+                    📦 Transition to IA
+                </div>
+            )
+        }
+
+        return badges
     }
 
     return (
@@ -191,11 +205,7 @@ export function LifecycleRulesPanel({ bucketName, onClose }: LifecycleRulesPanel
                                 <div className="lifecycle-rule-description">
                                     {getRuleDescription(rule)}
                                 </div>
-                                {rule.actions?.map((action, i) => (
-                                    <div key={i} className={`lifecycle-rule-badge ${action.type === 'Delete' ? 'expire' : 'transition'}`}>
-                                        {action.type === 'Delete' ? '⏳ Expiration' : '📦 Transition to IA'}
-                                    </div>
-                                ))}
+                                {getRuleBadges(rule)}
                             </div>
                         ))}
                     </div>

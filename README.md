@@ -1,6 +1,6 @@
 # R2 Bucket Manager for Cloudflare
 
-**Last Updated:** January 12, 2026 | **Version:** 3.2.0
+**Last Updated:** January 14, 2026 | **Version:** 3.2.0
  
 [![GitHub](https://img.shields.io/badge/GitHub-neverinfamous/R2--Manager--Worker-blue?logo=github)](https://github.com/neverinfamous/R2-Manager-Worker)
 [![Docker Pulls](https://img.shields.io/docker/pulls/writenotenow/r2-bucket-manager)](https://hub.docker.com/r/writenotenow/r2-bucket-manager)
