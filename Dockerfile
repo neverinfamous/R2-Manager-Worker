@@ -8,7 +8,7 @@
 # -----------------
 # Stage 1: Builder
 # -----------------
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -55,7 +55,7 @@ RUN npm run build
 # -----------------
 # Stage 2: Runtime
 # -----------------
-FROM node:20-alpine AS runtime
+FROM node:24-alpine AS runtime
 
 WORKDIR /app
 
@@ -85,9 +85,10 @@ RUN cd /tmp && \
 # Security Notes:
 # - Application dependencies: glob@11.1.0, tar@7.5.2 (patched via package.json overrides)
 # - npm CLI dependencies: glob@11.1.0, tar@7.5.2 (manually patched in npm's installation)
-# - curl 8.14.1-r2 has CVE-2025-10966 (MEDIUM) with no fix available yet (Alpine base package)
-# - busybox 1.37.0-r19 has CVE-2025-46394 & CVE-2024-58251 (LOW) with no fixes available yet (Alpine base package)
-# Alpine base package vulnerabilities (curl, busybox) are accepted risks with no available patches
+# - curl 8.17.0-r1 has CVE-2025-14819, CVE-2025-14524, CVE-2025-14017 (MEDIUM)
+#   Fix version 8.18.0-r0 not yet available in Alpine repos (upstream availability gap)
+# - busybox has CVE-2025-46394 & CVE-2024-58251 (LOW) with no fixes available yet
+# These are accepted upstream risks - will upgrade when Alpine publishes patched packages
 RUN apk add --no-cache \
     curl \
     ca-certificates
