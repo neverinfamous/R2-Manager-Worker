@@ -2451,9 +2451,76 @@ class APIService {
     }
   }
 
+  // ============================================
+  // Lifecycle Management Methods
+  // ============================================
+
+  /**
+   * Get lifecycle rules for a bucket
+   */
+  async getLifecycleRules(bucketName: string): Promise<LifecycleRulesResponse> {
+    const response = await fetch(
+      `${WORKER_API}/api/lifecycle/${encodeURIComponent(bucketName)}`,
+      this.getFetchOptions({
+        headers: this.getHeaders()
+      })
+    )
+
+    if (!response.ok) {
+      // Return empty rules on error (no lifecycle configured is common)
+      return { success: true, result: { rules: [] } }
+    }
+
+    return await response.json() as LifecycleRulesResponse
+  }
+
+  /**
+   * Set lifecycle rules for a bucket
+   */
+  async setLifecycleRules(bucketName: string, rules: LifecycleRule[]): Promise<LifecycleRulesResponse> {
+    const response = await fetchWithRetry(
+      `${WORKER_API}/api/lifecycle/${encodeURIComponent(bucketName)}`,
+      this.getFetchOptions({
+        method: 'PUT',
+        headers: {
+          ...this.getHeaders(),
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ rules })
+      })
+    )
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Failed to update lifecycle rules' })) as { error?: string }
+      throw new Error(errorData.error ?? 'Failed to update lifecycle rules')
+    }
+
+    return await response.json() as LifecycleRulesResponse
+  }
+
+  /**
+   * Delete a specific lifecycle rule from a bucket
+   */
+  async deleteLifecycleRule(bucketName: string, ruleId: string): Promise<void> {
+    // Get current rules
+    const current = await this.getLifecycleRules(bucketName)
+    const rules = current.result?.rules ?? []
+
+    // Filter out the rule to delete
+    const updatedRules = rules.filter(r => r.id !== ruleId)
+
+    // Set the updated rules
+    await this.setLifecycleRules(bucketName, updatedRules)
+  }
+
 }
 
 export const api = new APIService();
+
+// ============================================
+// Lifecycle Types (imported from types/lifecycle.ts)
+// ============================================
+import type { LifecycleRule, LifecycleRulesResponse } from '../types/lifecycle'
 
 // ============================================
 // Tag Types (imported from types/tags.ts)

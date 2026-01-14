@@ -32,6 +32,7 @@
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
 - 🧭 **Bucket Filtering** - Filter buckets by name, size, and creation date with preset and custom ranges
+- ⏳ **Object Lifecycle Management** `NEW` - Configure automated expiration and storage class transitions for cost optimization (33% savings with Infrequent Access)
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
 - 📄 **File Management** - Rename files via right-click context menu with validation
 - 🔍 **Smart Filtering** - Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)

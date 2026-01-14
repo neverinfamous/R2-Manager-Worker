@@ -658,3 +658,57 @@ export interface StructuredError {
   context: ErrorContext;
   stack?: string | undefined;
 }
+
+// ============================================
+// Object Lifecycle Types
+// ============================================
+
+/**
+ * Individual lifecycle rule condition
+ */
+export interface LifecycleRuleCondition {
+  maxAgeSeconds?: number;
+  prefix?: string;
+  suffix?: string;
+}
+
+/**
+ * Lifecycle rule action - expiration or transition
+ */
+export interface LifecycleRuleAction {
+  type: 'Delete' | 'SetStorageClass';
+  storageClass?: 'InfrequentAccess';
+}
+
+/**
+ * Single lifecycle rule from Cloudflare API
+ */
+export interface LifecycleRule {
+  id: string;
+  enabled: boolean;
+  conditions?: LifecycleRuleCondition;
+  actions?: LifecycleRuleAction[];
+  abortMultipartUploadsAfterDays?: number;
+}
+
+/**
+ * Lifecycle configuration - collection of rules
+ */
+export interface LifecycleConfiguration {
+  rules: LifecycleRule[];
+}
+
+/**
+ * Request body for creating/updating lifecycle rules
+ */
+export interface LifecycleRulesUpdateBody {
+  rules: LifecycleRule[];
+}
+
+/**
+ * Lifecycle API response wrapper
+ */
+export interface LifecycleRulesResponse {
+  rules: LifecycleRule[];
+  bucketName: string;
+}

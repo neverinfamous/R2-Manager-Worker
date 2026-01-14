@@ -22,6 +22,7 @@ import { handleWebhookRoutes } from './routes/webhooks';
 import { handleTagRoutes } from './routes/tags';
 import { handleMigrationRoutes } from './routes/migrations';
 import { handleColorRoutes } from './routes/colors';
+import { handleLifecycleRoutes } from './routes/lifecycle';
 
 
 async function handleApiRequest(request: Request, env: Env): Promise<Response> {
@@ -245,6 +246,11 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     if (migrationResponse) {
       return migrationResponse;
     }
+  }
+
+  // Handle lifecycle routes
+  if (url.pathname.startsWith('/api/lifecycle')) {
+    return await handleLifecycleRoutes(request, env, url, corsHeaders, isLocalDev, userEmail);
   }
 
 
