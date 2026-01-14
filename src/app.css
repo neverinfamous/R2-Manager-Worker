@@ -574,9 +574,38 @@
   gap: 0;
 }
 
+.bucket-lifecycle,
 .bucket-edit,
 .bucket-delete {
   flex: 1;
+}
+
+.bucket-lifecycle {
+  background: var(--accent-gray);
+  color: var(--text-primary);
+  border: none;
+  padding: 0.375rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.813rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  border-radius: 0.25rem;
+}
+
+.bucket-lifecycle:hover {
+  background: var(--accent-blue);
+  color: var(--text-inverse);
+}
+
+/* Lifecycle Modal Container */
+.lifecycle-modal-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 800px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 /* Bucket Selection Styles */

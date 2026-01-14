@@ -14,6 +14,7 @@ import { useBucketFilters } from './hooks/useBucketFilters'
 import { UpgradeBanner } from './components/UpgradeBanner'
 import { BucketTagPicker } from './components/tags/BucketTagPicker'
 import { BucketColorPicker } from './components/colors'
+import { LifecycleRulesPanel } from './components/lifecycle'
 import type { BucketColor } from './utils/bucketColors'
 import './styles/metrics.css'
 import './styles/tags.css'
@@ -115,6 +116,7 @@ export default function BucketManager(): JSX.Element {
   const [activeView, setActiveView] = useState<ActiveView>('buckets')
   const [bucketsSubView, setBucketsSubView] = useState<BucketsSubView>('list')
   const [bucketColors, setBucketColors] = useState<Record<string, BucketColor>>({})
+  const [lifecycleBucket, setLifecycleBucket] = useState<string | null>(null)
 
   // Debug: Log currentPath changes
   useEffect(() => {
@@ -1071,6 +1073,13 @@ export default function BucketManager(): JSX.Element {
                               {!isEditing && (
                                 <div className="file-list-actions" style={{ display: 'flex', gap: '0.5rem' }}>
                                   <button
+                                    onClick={() => setLifecycleBucket(bucket.name)}
+                                    className="bucket-list-action-btn"
+                                    title="Lifecycle Rules"
+                                  >
+                                    Lifecycle
+                                  </button>
+                                  <button
                                     onClick={() => startEditingBucket(bucket.name)}
                                     className="bucket-list-action-btn"
                                     title="Rename"
@@ -1185,6 +1194,16 @@ export default function BucketManager(): JSX.Element {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
+                                  setLifecycleBucket(bucket.name)
+                                }}
+                                className="bucket-lifecycle"
+                                title="Lifecycle Rules"
+                              >
+                                Lifecycle
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
                                   startEditingBucket(bucket.name)
                                 }}
                                 className="bucket-edit"
@@ -1229,6 +1248,18 @@ export default function BucketManager(): JSX.Element {
           {bucketsSubView === 'tag-search' && (
             <div className="search-content">
               <TagSearch onNavigateToBucket={handleBucketNavigate} />
+            </div>
+          )}
+
+          {/* Lifecycle Rules Modal */}
+          {lifecycleBucket !== null && (
+            <div className="modal-overlay" onClick={() => setLifecycleBucket(null)}>
+              <div className="lifecycle-modal-container" onClick={(e) => e.stopPropagation()}>
+                <LifecycleRulesPanel
+                  bucketName={lifecycleBucket}
+                  onClose={() => setLifecycleBucket(null)}
+                />
+              </div>
             </div>
           )}
 
