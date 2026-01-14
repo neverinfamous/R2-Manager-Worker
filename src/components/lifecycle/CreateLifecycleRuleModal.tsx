@@ -54,6 +54,54 @@ export function CreateLifecycleRuleModal({
             const existing = await api.getLifecycleRules(bucketName)
             const existingRules = existing.result?.rules ?? []
 
+            // Normalize existing rules - convert maxAge from seconds to days if needed
+            // The GET endpoint may return maxAge in seconds, but PUT expects days
+            const normalizedExisting: LifecycleRule[] = existingRules.map(rule => {
+                const normalize = (maxAge: number): number => {
+                    // If maxAge > 3650 (10 years in days), assume it's in seconds and convert
+                    if (maxAge > 3650) {
+                        return Math.round(maxAge / 86400)
+                    }
+                    return maxAge
+                }
+
+                const normalized: LifecycleRule = {
+                    id: rule.id,
+                    enabled: rule.enabled,
+                    // Only include conditions if it has a prefix
+                    ...(rule.conditions?.prefix ? { conditions: { prefix: rule.conditions.prefix } } : {}),
+                    // Normalize deleteObjectsTransition
+                    ...(rule.deleteObjectsTransition ? {
+                        deleteObjectsTransition: {
+                            condition: {
+                                type: 'Age' as const,
+                                maxAge: normalize(rule.deleteObjectsTransition.condition.maxAge)
+                            }
+                        }
+                    } : {}),
+                    // Normalize storageClassTransitions
+                    ...(rule.storageClassTransitions ? {
+                        storageClassTransitions: rule.storageClassTransitions.map(t => ({
+                            condition: {
+                                type: 'Age' as const,
+                                maxAge: normalize(t.condition.maxAge)
+                            },
+                            storageClass: t.storageClass
+                        }))
+                    } : {}),
+                    // Normalize abortMultipartUploadsTransition
+                    ...(rule.abortMultipartUploadsTransition ? {
+                        abortMultipartUploadsTransition: {
+                            condition: {
+                                type: 'Age' as const,
+                                maxAge: normalize(rule.abortMultipartUploadsTransition.condition.maxAge)
+                            }
+                        }
+                    } : {})
+                }
+                return normalized
+            })
+
             // Create the new rule using Cloudflare API format
             // maxAge is in DAYS (not seconds) per Cloudflare REST API
             const newRule: LifecycleRule = {
@@ -75,8 +123,8 @@ export function CreateLifecycleRuleModal({
                 )
             }
 
-            // Add new rule to existing rules
-            await api.setLifecycleRules(bucketName, [...existingRules, newRule])
+            // Add new rule to normalized existing rules
+            await api.setLifecycleRules(bucketName, [...normalizedExisting, newRule])
             onCreated()
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to create lifecycle rule')
