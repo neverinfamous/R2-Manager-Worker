@@ -183,7 +183,6 @@ export async function handleLifecycleRoutes(
 
             // Cloudflare REST API call
             const payload = { rules: body.rules };
-            console.log('[lifecycle] DEBUG payload:', JSON.stringify(payload, null, 2));
 
             const response = await fetch(
                 `${CF_API}/accounts/${env.ACCOUNT_ID}/r2/buckets/${encodeURIComponent(bucketName)}/lifecycle`,

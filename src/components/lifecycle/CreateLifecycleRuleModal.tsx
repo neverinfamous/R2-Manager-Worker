@@ -50,81 +50,34 @@ export function CreateLifecycleRuleModal({
         setError(null)
 
         try {
-            // Get existing rules first
+            // Get existing rules first (Read-Modify-Write pattern)
             const existing = await api.getLifecycleRules(bucketName)
             const existingRules = existing.result?.rules ?? []
 
-            // Normalize existing rules - convert maxAge from seconds to days if needed
-            // The GET endpoint may return maxAge in seconds, but PUT expects days
-            const normalizedExisting: LifecycleRule[] = existingRules.map(rule => {
-                const normalize = (maxAge: number): number => {
-                    // If maxAge > 3650 (10 years in days), assume it's in seconds and convert
-                    if (maxAge > 3650) {
-                        return Math.round(maxAge / 86400)
-                    }
-                    return maxAge
-                }
-
-                const normalized: LifecycleRule = {
-                    id: rule.id,
-                    enabled: rule.enabled,
-                    // Only include conditions if it has a prefix
-                    ...(rule.conditions?.prefix ? { conditions: { prefix: rule.conditions.prefix } } : {}),
-                    // Normalize deleteObjectsTransition
-                    ...(rule.deleteObjectsTransition ? {
-                        deleteObjectsTransition: {
-                            condition: {
-                                type: 'Age' as const,
-                                maxAge: normalize(rule.deleteObjectsTransition.condition.maxAge)
-                            }
-                        }
-                    } : {}),
-                    // Normalize storageClassTransitions
-                    ...(rule.storageClassTransitions ? {
-                        storageClassTransitions: rule.storageClassTransitions.map(t => ({
-                            condition: {
-                                type: 'Age' as const,
-                                maxAge: normalize(t.condition.maxAge)
-                            },
-                            storageClass: t.storageClass
-                        }))
-                    } : {}),
-                    // Normalize abortMultipartUploadsTransition
-                    ...(rule.abortMultipartUploadsTransition ? {
-                        abortMultipartUploadsTransition: {
-                            condition: {
-                                type: 'Age' as const,
-                                maxAge: normalize(rule.abortMultipartUploadsTransition.condition.maxAge)
-                            }
-                        }
-                    } : {})
-                }
-                return normalized
-            })
-
             // Create the new rule using Cloudflare API format
-            // maxAge is in DAYS (not seconds) per Cloudflare REST API
+            // maxAge is in SECONDS and conditions must be present (even if empty)
+            const maxAgeSeconds = days * 86400  // Convert days to seconds
             const newRule: LifecycleRule = {
                 id: ruleId,
                 enabled: true,
-                ...(prefix.length > 0 ? { conditions: { prefix } } : {}),
+                conditions: prefix.length > 0 ? { prefix } : {},
                 ...(ruleType === 'expiration'
                     ? {
                         deleteObjectsTransition: {
-                            condition: { maxAge: days, type: 'Age' as const }
+                            condition: { maxAge: maxAgeSeconds, type: 'Age' as const }
                         }
                     }
                     : {
                         storageClassTransitions: [{
-                            condition: { maxAge: days, type: 'Age' as const },
+                            condition: { maxAge: maxAgeSeconds, type: 'Age' as const },
                             storageClass: 'InfrequentAccess' as const
                         }]
                     }
                 )
             }
 
-            // Add new rule to normalized existing rules
-            await api.setLifecycleRules(bucketName, [...normalizedExisting, newRule])
+            // Merge with existing rules
+            await api.setLifecycleRules(bucketName, [...existingRules, newRule])
             onCreated()
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to create lifecycle rule')
