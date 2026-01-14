@@ -660,35 +660,49 @@ export interface StructuredError {
 }
 
 // ============================================
-// Object Lifecycle Types
+// Object Lifecycle Types (Cloudflare REST API format)
 // ============================================
 
 /**
- * Individual lifecycle rule condition
+ * Condition for lifecycle transitions
  */
-export interface LifecycleRuleCondition {
-  maxAgeSeconds?: number;
+export interface LifecycleTransitionCondition {
+  maxAge: number;  // Days, not seconds
+  type: 'Age';
+}
+
+/**
+ * Storage class transition entry
+ */
+export interface StorageClassTransition {
+  condition: LifecycleTransitionCondition;
+  storageClass: 'InfrequentAccess';
+}
+
+/**
+ * Object transition (for delete or abort multipart)
+ */
+export interface ObjectTransition {
+  condition: LifecycleTransitionCondition;
+}
+
+/**
+ * Conditions that filter which objects the rule applies to
+ */
+export interface LifecycleRuleConditions {
   prefix?: string;
-  suffix?: string;
 }
 
 /**
- * Lifecycle rule action - expiration or transition
- */
-export interface LifecycleRuleAction {
-  type: 'Delete' | 'SetStorageClass';
-  storageClass?: 'InfrequentAccess';
-}
-
-/**
- * Single lifecycle rule from Cloudflare API
+ * Single lifecycle rule (Cloudflare REST API format)
  */
 export interface LifecycleRule {
   id: string;
   enabled: boolean;
-  conditions?: LifecycleRuleCondition;
-  actions?: LifecycleRuleAction[];
-  abortMultipartUploadsAfterDays?: number;
+  conditions?: LifecycleRuleConditions;
+  deleteObjectsTransition?: ObjectTransition;
+  storageClassTransitions?: StorageClassTransition[];
+  abortMultipartUploadsTransition?: ObjectTransition;
 }
 
 /**
