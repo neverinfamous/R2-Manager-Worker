@@ -159,7 +159,7 @@ docker pull writenotenow/r2-bucket-manager:v3.3.0
 
 ### Image Specifications
 
-- **Base Image:** Node.js 22 Alpine
+- **Base Image:** Node.js 24-alpine (LTS)
 - **Platforms:** AMD64, ARM64 (multi-arch)
 - **Size:** ~372MB compressed
 - **User:** Non-root (`app:1001`)
