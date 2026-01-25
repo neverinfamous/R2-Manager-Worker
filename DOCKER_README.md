@@ -1,6 +1,6 @@
 # R2 Bucket Manager - Docker
 
-**Last Updated:** January 14, 2026 | **Version:** 3.3.0
+**Last Updated:** January 25, 2026 | **Version:** 3.3.0
 
 A modern web application for managing Cloudflare R2 buckets with enterprise-grade authentication via Cloudflare Access Zero Trust.
 
