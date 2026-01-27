@@ -1,4 +1,4 @@
-import { useState, type JSX, type FormEvent } from "react";
+import { useState, type JSX } from "react";
 import { api } from "../../services/api";
 import type { LifecycleRule } from "../../types/lifecycle";
 
@@ -34,7 +34,7 @@ export function CreateLifecycleRuleModal({
     return null;
   };
 
-  const handleSubmit = async (e: FormEvent): Promise<void> => {
+  const handleSubmit = async (e: { preventDefault(): void }): Promise<void> => {
     e.preventDefault();
 
     const idError = validateRuleId(ruleId);

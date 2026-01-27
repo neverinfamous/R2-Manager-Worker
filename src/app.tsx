@@ -473,7 +473,7 @@ export default function BucketManager(): JSX.Element {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
+  const handleSubmit = async (e: { preventDefault(): void }): Promise<void> => {
     e.preventDefault();
     if (!isCreatingBucket) {
       await createBucket();

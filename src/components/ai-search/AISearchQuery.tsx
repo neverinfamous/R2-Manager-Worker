@@ -1,4 +1,4 @@
-import { useState, useCallback, type JSX, type FormEvent } from "react";
+import { useState, useCallback, type JSX } from "react";
 import { api } from "../../services/api";
 import type { AISearchResponse, AISearchResult } from "../../services/api";
 
@@ -22,7 +22,7 @@ export function AISearchQuery({
   const [maxResults, setMaxResults] = useState(10);
 
   const handleSearch = useCallback(
-    async (e: FormEvent) => {
+    async (e: { preventDefault(): void }) => {
       e.preventDefault();
       if (!query.trim()) return;
 
