@@ -1102,9 +1102,7 @@ class APIService {
     // For multipart uploads, we just verify ETags exist for all chunks (done in caller)
   }
 
-  async listBuckets(
-    skipCache = false,
-  ): Promise<
+  async listBuckets(skipCache = false): Promise<
     {
       name: string;
       creation_date: string;
@@ -1596,11 +1594,9 @@ class APIService {
     );
 
     if (!response.ok) {
-      const errorData = (await response
-        .json()
-        .catch(() => ({
-          error: `Failed to move file: ${response.status}`,
-        }))) as ApiErrorResponse;
+      const errorData = (await response.json().catch(() => ({
+        error: `Failed to move file: ${response.status}`,
+      }))) as ApiErrorResponse;
       throw new Error(errorData.error ?? "Failed to move file");
     }
 
@@ -1647,11 +1643,9 @@ class APIService {
     );
 
     if (!response.ok) {
-      const errorData = (await response
-        .json()
-        .catch(() => ({
-          error: `Failed to copy file: ${response.status}`,
-        }))) as ApiErrorResponse;
+      const errorData = (await response.json().catch(() => ({
+        error: `Failed to copy file: ${response.status}`,
+      }))) as ApiErrorResponse;
       throw new Error(errorData.error ?? "Failed to copy file");
     }
 
@@ -1746,11 +1740,9 @@ class APIService {
     );
 
     if (!response.ok) {
-      const errorData = (await response
-        .json()
-        .catch(() => ({
-          error: `Failed to generate signed URL: ${response.status}`,
-        }))) as ApiErrorResponse;
+      const errorData = (await response.json().catch(() => ({
+        error: `Failed to generate signed URL: ${response.status}`,
+      }))) as ApiErrorResponse;
       throw new Error(errorData.error ?? "Failed to generate signed URL");
     }
 
@@ -1807,11 +1799,9 @@ class APIService {
     );
 
     if (!response.ok) {
-      const errorData = (await response
-        .json()
-        .catch(() => ({
-          error: `Failed to create folder: ${response.status}`,
-        }))) as ApiErrorResponse;
+      const errorData = (await response.json().catch(() => ({
+        error: `Failed to create folder: ${response.status}`,
+      }))) as ApiErrorResponse;
       throw new Error(errorData.error ?? "Failed to create folder");
     }
 
@@ -1838,11 +1828,9 @@ class APIService {
     );
 
     if (!response.ok) {
-      const errorData = (await response
-        .json()
-        .catch(() => ({
-          error: `Failed to rename folder: ${response.status}`,
-        }))) as ApiErrorResponse;
+      const errorData = (await response.json().catch(() => ({
+        error: `Failed to rename folder: ${response.status}`,
+      }))) as ApiErrorResponse;
       throw new Error(errorData.error ?? "Failed to rename folder");
     }
 
@@ -1878,11 +1866,9 @@ class APIService {
     );
 
     if (!response.ok) {
-      const errorData = (await response
-        .json()
-        .catch(() => ({
-          error: `Failed to copy folder: ${response.status}`,
-        }))) as ApiErrorResponse;
+      const errorData = (await response.json().catch(() => ({
+        error: `Failed to copy folder: ${response.status}`,
+      }))) as ApiErrorResponse;
       throw new Error(errorData.error ?? "Failed to copy folder");
     }
 
@@ -1919,11 +1905,9 @@ class APIService {
     );
 
     if (!response.ok) {
-      const errorData = (await response
-        .json()
-        .catch(() => ({
-          error: `Failed to move folder: ${response.status}`,
-        }))) as ApiErrorResponse;
+      const errorData = (await response.json().catch(() => ({
+        error: `Failed to move folder: ${response.status}`,
+      }))) as ApiErrorResponse;
       throw new Error(errorData.error ?? "Failed to move folder");
     }
 
@@ -1959,11 +1943,9 @@ class APIService {
     );
 
     if (!response.ok) {
-      const errorData = (await response
-        .json()
-        .catch(() => ({
-          error: `Failed to delete folder: ${response.status}`,
-        }))) as ApiErrorResponse;
+      const errorData = (await response.json().catch(() => ({
+        error: `Failed to delete folder: ${response.status}`,
+      }))) as ApiErrorResponse;
       throw new Error(errorData.error ?? "Failed to delete folder");
     }
 

@@ -1,4 +1,4 @@
-import { useState, useCallback, type JSX, type FormEvent } from "react";
+import { useState, useCallback, type JSX } from "react";
 import { api } from "../../services/api";
 import type { CreateS3ImportJobRequest } from "../../services/api";
 
@@ -45,7 +45,7 @@ export function S3CredentialsForm({
   const [overwriteExisting, setOverwriteExisting] = useState(false);
 
   const handleSubmit = useCallback(
-    async (e: FormEvent) => {
+    async (e: { preventDefault(): void }) => {
       e.preventDefault();
       onError(null);
       setIsSubmitting(true);

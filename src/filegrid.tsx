@@ -444,9 +444,15 @@ export function FileGrid({
       } finally {
         loadingRef.current = { isLoading: false, lastRequestTime: now };
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [bucketName, paginatedFiles.cursor, sortFiles, shouldRefresh, currentPath],
+    [
+      bucketName,
+      paginatedFiles.cursor,
+      sortFiles,
+      sortedFilesRef,
+      shouldRefresh,
+      currentPath,
+    ],
   );
 
   useEffect(() => {
@@ -593,9 +599,8 @@ export function FileGrid({
       }
 
       lastSelectedRef.current = key;
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [],
+    [sortedFilesRef],
   );
 
   const handleRowClick = useCallback(
