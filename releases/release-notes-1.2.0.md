@@ -10,6 +10,7 @@ This minor release adds the highly requested **cross-bucket search** feature, al
 ## ✨ Added
 
 ### Cross-Bucket Search
+
 - 🔍 **Search Across All Buckets** - Find files anywhere in your R2 storage
   - Expandable/collapsible search interface on bucket list page
   - Search by filename with real-time debounced search (300ms)
@@ -24,6 +25,7 @@ This minor release adds the highly requested **cross-bucket search** feature, al
   - Mock data support for local development
 
 ### Advanced Filtering
+
 - 📁 **Filter by File Extension** with quick filters:
   - 📷 Images (.jpg, .png, .gif, .webp, .svg, etc.)
   - 📄 Documents (.pdf, .doc, .xlsx, .txt, .csv, etc.)
@@ -47,12 +49,14 @@ This minor release adds the highly requested **cross-bucket search** feature, al
   - Custom range with date picker
 
 ### Full File Operations from Search Results
+
 - ⬇️ **Download files** directly with signed URLs
 - 📋 **Copy files** between buckets with destination folder selection
 - ➡️ **Move files** between buckets with destination folder selection
 - 🗑️ **Delete files** with confirmation modal
 
 ### Bulk Bucket Deletion
+
 - ☑️ **Select Multiple Buckets** - Checkbox selection for each bucket card
   - Visual highlighting with blue border and background
   - Bulk action toolbar showing selection count
@@ -71,26 +75,31 @@ This minor release adds the highly requested **cross-bucket search** feature, al
 ## 🐛 Fixed
 
 ### File Transfer Path Logic
+
 - ✅ Files now correctly go to root folder when no destination path specified
 - ✅ Folder paths properly handled whether they end with `/` or not
 - ✅ Fixed issue where filename was treated as folder name, creating `filename/filename` structure
 - ✅ Transfer modal help text updated for clarity
 
 ### File Rename Operations
+
 - ✅ Images now properly reload with updated filenames and fresh signed URLs after rename
 - ✅ Video files maintain playback functionality after rename operations
 - ✅ Subsequent rename operations now work correctly (fixed "Source file not found" error)
 - ✅ File list now refreshes synchronously after rename to prevent stale data
 
 ### Context Menu
+
 - ✅ Fixed "Copy Link" throwing TypeError when accessed from right-click menu
 - ✅ Changed `handleCopySignedUrl` to accept optional event parameter
 - ✅ Added optional chaining for event.stopPropagation()
 
 ### ESLint Configuration
+
 - ✅ Added `.wrangler` directory to ignored paths to prevent false positives
 
 ### React Hook Pattern
+
 - ✅ Fixed `set-state-in-effect` error by replacing `useEffect` with `useMemo`
 
 ---
@@ -98,6 +107,7 @@ This minor release adds the highly requested **cross-bucket search** feature, al
 ## 🔄 Changed
 
 ### Code Architecture - Major Refactoring
+
 - 🎯 **Extracted Custom Hooks** for improved maintainability:
   - `useFileSort` hook (122 lines) - Manages sorting state and logic
   - `useModalState` hook (95 lines) - Consolidates modal/dropdown states
@@ -112,6 +122,7 @@ This minor release adds the highly requested **cross-bucket search** feature, al
 ## 🛠️ Technical Details
 
 ### New Backend Components
+
 - **`worker/routes/search.ts`** (200 lines) - Parallel cross-bucket search API endpoint
   - Search endpoint: `GET /api/search` with query params for filters
   - Server-side parallel queries for optimal performance
@@ -119,6 +130,7 @@ This minor release adds the highly requested **cross-bucket search** feature, al
   - Results limited to 100 files per search (configurable)
 
 ### New Frontend Components
+
 - **`src/components/search/CrossBucketSearch.tsx`** (207 lines) - Main search interface
 - **`src/components/search/SearchResultsTable.tsx`** (393 lines) - Results table with actions
 - **`src/hooks/useSearch.ts`** (217 lines) - Search state management with debouncing
@@ -126,12 +138,14 @@ This minor release adds the highly requested **cross-bucket search** feature, al
 - **`src/styles/search.css`** (383 lines) - Complete search component styling
 
 ### Modified Files
+
 - **`worker/index.ts`** - Integrated search routes
 - **`src/services/api.ts`** - Added `searchAcrossBuckets()` method
 - **`src/app.tsx`** - Integrated search component above bucket grid
 - **`eslint.config.js`** - Added `.wrangler` to ignores
 
 ### Build & Quality Metrics
+
 - ✅ **Total New Code:** ~1,440 lines across 6 new files
 - ✅ **TypeScript Compilation:** Clean (0 errors)
 - ✅ **ESLint:** Clean (0 errors, 0 warnings)
@@ -143,6 +157,7 @@ This minor release adds the highly requested **cross-bucket search** feature, al
 ## 🎯 Key Features Highlights
 
 ### Cross-Bucket Search
+
 - **Real-time Search** - Debounced search activates automatically as you type (300ms delay)
 - **Server-side Performance** - Parallel queries across all buckets for fast results
 - **Sortable Results** - Click any column header to sort ascending/descending
@@ -151,6 +166,7 @@ This minor release adds the highly requested **cross-bucket search** feature, al
 - **Responsive Design** - Works perfectly on mobile, tablet, and desktop
 
 ### Bulk Bucket Deletion
+
 - **Visual Selection** - Selected buckets highlighted with blue border and background
 - **Progress Tracking** - Real-time progress bar during bulk deletion
 - **Error Resilience** - Continues operation even if individual buckets fail
@@ -158,6 +174,7 @@ This minor release adds the highly requested **cross-bucket search** feature, al
 - **Safety Features** - Clear warnings about permanent deletion that cannot be undone
 
 ### Code Quality Improvements
+
 - **Extracted Hooks** - 461 lines extracted into 3 reusable hooks
 - **Better Separation** - UI logic separated from business logic
 - **Easier Testing** - Isolated hooks can be tested independently
@@ -176,6 +193,7 @@ This minor release adds the highly requested **cross-bucket search** feature, al
 ## 🐳 Docker Updates
 
 Version 1.2.0 Docker images are available on Docker Hub:
+
 - **Latest Tag:** `writenotenow/r2-bucket-manager:latest`
 - **Specific Version:** `writenotenow/r2-bucket-manager:v1.2.0`
 
@@ -188,16 +206,19 @@ Use `docker pull writenotenow/r2-bucket-manager:latest` to get the updated image
 ### From v1.0.x to v1.2.0
 
 1. **Pull the latest code:**
+
    ```bash
    git pull origin main
    ```
 
 2. **Update dependencies:**
+
    ```bash
    npm install
    ```
 
 3. **Rebuild the application:**
+
    ```bash
    npm run build
    ```
@@ -236,6 +257,7 @@ Use `docker pull writenotenow/r2-bucket-manager:latest` to get the updated image
 ## 🎬 What's Next?
 
 Looking ahead to v1.3.0 and beyond:
+
 - **Rate Limiting** - API endpoint rate limiting with Cloudflare KV
 - **AWS S3 Migration** - Tools for migrating from AWS S3 to R2
 - **File Versioning** - Track and restore previous file versions
@@ -266,4 +288,3 @@ See [CHANGELOG.md](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/
 ---
 
 **Made with ❤️ for the Cloudflare community**
-

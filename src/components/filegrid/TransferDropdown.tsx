@@ -1,12 +1,12 @@
-import { type RefObject, type JSX } from 'react'
+import { type RefObject, type JSX } from "react";
 
 interface TransferDropdownProps {
-  isOpen: boolean
-  position: { top: number; left: number } | null
-  buttonRef: RefObject<HTMLButtonElement | null>
-  onToggle: () => void
-  onCopy: () => void
-  onMove: () => void
+  isOpen: boolean;
+  position: { top: number; left: number } | null;
+  buttonRef: RefObject<HTMLButtonElement | null>;
+  onToggle: () => void;
+  onCopy: () => void;
+  onMove: () => void;
 }
 
 export const TransferDropdown = ({
@@ -15,11 +15,11 @@ export const TransferDropdown = ({
   buttonRef,
   onToggle,
   onCopy,
-  onMove
+  onMove,
 }: TransferDropdownProps): JSX.Element => {
   return (
-    <div className={`transfer-dropdown-container ${isOpen ? 'open' : ''}`}>
-      <button 
+    <div className={`transfer-dropdown-container ${isOpen ? "open" : ""}`}>
+      <button
         ref={buttonRef}
         className="action-button transfer-button"
         onClick={onToggle}
@@ -28,22 +28,17 @@ export const TransferDropdown = ({
         <span className="dropdown-arrow">▼</span>
       </button>
       {isOpen && position && (
-        <div 
+        <div
           className="transfer-dropdown-menu"
           style={{
             top: `${position.top}px`,
-            left: `${position.left}px`
+            left: `${position.left}px`,
           }}
         >
-         <button onClick={onCopy}>
-            Copy to...
-          </button>
-          <button onClick={onMove}>
-            Move to...
-          </button>                    
+          <button onClick={onCopy}>Copy to...</button>
+          <button onClick={onMove}>Move to...</button>
         </div>
       )}
     </div>
-  )
-}
-
+  );
+};

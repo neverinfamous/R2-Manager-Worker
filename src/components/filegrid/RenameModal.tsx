@@ -1,15 +1,15 @@
-import { type JSX } from 'react'
+import { type JSX } from "react";
 
 interface RenameModalProps {
-  show: boolean
-  itemType: 'file' | 'folder'
-  itemKey: string
-  newName: string
-  error: string
-  isRenaming: boolean
-  onClose: () => void
-  onNewNameChange: (name: string) => void
-  onSubmit: () => void
+  show: boolean;
+  itemType: "file" | "folder";
+  itemKey: string;
+  newName: string;
+  error: string;
+  isRenaming: boolean;
+  onClose: () => void;
+  onNewNameChange: (name: string) => void;
+  onSubmit: () => void;
 }
 
 export const RenameModal = ({
@@ -21,21 +21,21 @@ export const RenameModal = ({
   isRenaming,
   onClose,
   onNewNameChange,
-  onSubmit
+  onSubmit,
 }: RenameModalProps): JSX.Element | null => {
-  if (!show) return null
+  if (!show) return null;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-        <h2>Rename {itemType === 'file' ? 'File' : 'Folder'}</h2>
-        
+        <h2>Rename {itemType === "file" ? "File" : "Folder"}</h2>
+
         <div className="rename-input-container">
           <div className="rename-current-name-section">
             <span className="rename-label">Current name:</span>
-            <p className="current-name">{itemKey.split('/').pop()}</p>
+            <p className="current-name">{itemKey.split("/").pop()}</p>
           </div>
-          
+
           <label htmlFor="rename-new-name">New name:</label>
           <input
             id="rename-new-name"
@@ -44,22 +44,24 @@ export const RenameModal = ({
             value={newName}
             onChange={(e) => onNewNameChange(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') onSubmit()
-              if (e.key === 'Escape') onClose()
+              if (e.key === "Enter") onSubmit();
+              if (e.key === "Escape") onClose();
             }}
             autoFocus
             placeholder="Enter new name"
             aria-label="New name"
-            aria-describedby={error ? 'rename-error' : undefined}
+            aria-describedby={error ? "rename-error" : undefined}
           />
-          
+
           {error && (
-            <p id="rename-error" className="error-message" role="alert">{error}</p>
+            <p id="rename-error" className="error-message" role="alert">
+              {error}
+            </p>
           )}
         </div>
 
         <div className="modal-actions">
-          <button 
+          <button
             className="modal-button cancel"
             onClick={onClose}
             disabled={isRenaming}
@@ -71,11 +73,10 @@ export const RenameModal = ({
             onClick={onSubmit}
             disabled={!newName.trim() || isRenaming}
           >
-            {isRenaming ? 'Renaming...' : 'Rename'}
+            {isRenaming ? "Renaming..." : "Rename"}
           </button>
         </div>
       </div>
     </div>
-  )
-}
-
+  );
+};

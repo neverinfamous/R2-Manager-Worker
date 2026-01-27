@@ -25,8 +25,8 @@ export interface SearchResponse {
   };
 }
 
-export type SortColumn = 'filename' | 'bucket' | 'size' | 'uploaded';
-export type SortDirection = 'asc' | 'desc';
+export type SortColumn = "filename" | "bucket" | "size" | "uploaded";
+export type SortDirection = "asc" | "desc";
 
 export interface SearchState {
   filters: SearchFilters;
@@ -38,4 +38,3 @@ export interface SearchState {
   total: number;
   hasMore: boolean;
 }
-

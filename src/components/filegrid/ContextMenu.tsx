@@ -1,13 +1,13 @@
-import { type JSX } from 'react'
+import { type JSX } from "react";
 
 interface ContextMenuProps {
-  show: boolean
-  x: number
-  y: number
-  itemType: 'file' | 'folder'
-  onClose: () => void
-  onRename: () => void
-  onCopyLink?: (() => void) | undefined
+  show: boolean;
+  x: number;
+  y: number;
+  itemType: "file" | "folder";
+  onClose: () => void;
+  onRename: () => void;
+  onCopyLink?: (() => void) | undefined;
 }
 
 export const ContextMenu = ({
@@ -17,39 +17,35 @@ export const ContextMenu = ({
   itemType,
   onClose,
   onRename,
-  onCopyLink
+  onCopyLink,
 }: ContextMenuProps): JSX.Element | null => {
-  if (!show) return null
+  if (!show) return null;
 
   return (
     <>
-      <div 
-        className="context-menu-overlay" 
-        onClick={onClose}
-      />
-      <div 
+      <div className="context-menu-overlay" onClick={onClose} />
+      <div
         className="context-menu"
         style={{
-          position: 'fixed',
+          position: "fixed",
           top: `${y}px`,
           left: `${x}px`,
-          zIndex: 1000
+          zIndex: 1000,
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <button onClick={onRename}>
-          ✏️ Rename
-        </button>
-        {itemType === 'file' && onCopyLink && (
-          <button onClick={() => {
-            onCopyLink()
-            onClose()
-          }}>
+        <button onClick={onRename}>✏️ Rename</button>
+        {itemType === "file" && onCopyLink && (
+          <button
+            onClick={() => {
+              onCopyLink();
+              onClose();
+            }}
+          >
             🔗 Copy Link
           </button>
         )}
       </div>
     </>
-  )
-}
-
+  );
+};

@@ -2,11 +2,11 @@ name: CodeQL
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
   schedule:
-    - cron: '23 2 * * 1'
+    - cron: "23 2 * * 1"
 
 env:
   CODEQL_ACTION_FEATURE_SANDWICH: false
@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'javascript-typescript' ]
+        language: ["javascript-typescript"]
 
     steps:
       - name: Checkout repository

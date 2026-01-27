@@ -10,6 +10,7 @@ This major release brings **Job History tracking**, **AI Search integration**, *
 ## ✨ What's New
 
 ### 📋 Job History Tracking
+
 Track all bulk operations with a complete audit trail and event timeline.
 
 - **Operation Tracking** - Automatically track downloads, uploads, deletions, moves, and copies
@@ -20,12 +21,14 @@ Track all bulk operations with a complete audit trail and event timeline.
 - **Navigation Tabs** - Switch between "Buckets" and "Job History" views
 
 **Use Cases:**
+
 - 📊 **Audit Compliance** - Track who performed what operations and when
 - 🔍 **Troubleshooting** - Identify failed operations and specific error causes
 - 📈 **Monitoring** - Track long-running bulk operations in real-time
 - 📋 **Reporting** - Export job history for compliance reports
 
 ### 🤖 AI Search Integration
+
 Connect R2 buckets to Cloudflare AI Search for powerful semantic search and AI-powered Q&A.
 
 - **Compatibility Analysis** - See which files can be indexed (supports MD, TXT, JSON, YAML, code files)
@@ -35,19 +38,21 @@ Connect R2 buckets to Cloudflare AI Search for powerful semantic search and AI-p
 - **Direct Dashboard Link** - Quick access to create instances in Cloudflare Dashboard
 
 ### 🛡️ API Rate Limiting
+
 Tiered protection for API endpoints prevents abuse while ensuring fair resource access.
 
-| Tier | Operations | Limit | Period |
-|------|------------|-------|--------|
-| **READ** | List, Search, Signed URLs | 100 req | 60s |
-| **WRITE** | Upload, Rename, Move | 30 req | 60s |
-| **DELETE** | Remove Files/Buckets | 10 req | 60s |
+| Tier       | Operations                | Limit   | Period |
+| ---------- | ------------------------- | ------- | ------ |
+| **READ**   | List, Search, Signed URLs | 100 req | 60s    |
+| **WRITE**  | Upload, Rename, Move      | 30 req  | 60s    |
+| **DELETE** | Remove Files/Buckets      | 10 req  | 60s    |
 
 - Per-user enforcement using authenticated email
 - Standard 429 responses with retry guidance
 - Automatic bypass for localhost development
 
 ### ✓ Upload Integrity Verification
+
 MD5 checksum verification ensures uploaded files match stored files exactly.
 
 - Client-side MD5 calculation during upload
@@ -57,6 +62,7 @@ MD5 checksum verification ensures uploaded files match stored files exactly.
 - Works for both single-chunk and multi-chunk uploads
 
 ### 📦 Multi-Bucket Download
+
 Download multiple buckets as a single ZIP archive.
 
 - "Select All" button for quick bulk selection
@@ -65,6 +71,7 @@ Download multiple buckets as a single ZIP archive.
 - Timestamped ZIP filename
 
 ### 🔒 Strict TypeScript Compliance
+
 Enterprise-grade type safety across the entire codebase.
 
 - Fixed 280+ ESLint errors and 55 type safety warnings
@@ -77,6 +84,7 @@ Enterprise-grade type safety across the entire codebase.
 ## 🔄 Changed
 
 ### Architecture Enhancement
+
 - **D1 Database for Job History** - New `METADATA` binding stores job tracking data
 - **Schema Includes:**
   - `bulk_jobs` table for job records
@@ -95,6 +103,7 @@ Enterprise-grade type safety across the entire codebase.
 ## 🛠️ Technical Details
 
 ### Job History Implementation
+
 ```
 New files:
 ├── worker/routes/jobs.ts (~550 lines)
@@ -108,11 +117,13 @@ New files:
 ```
 
 **API Endpoints:**
+
 - `GET /api/jobs` - List jobs with filtering
 - `GET /api/jobs/:jobId` - Get job details
 - `GET /api/jobs/:jobId/events` - Get event timeline
 
 ### Code Quality Metrics
+
 - ✅ **TypeScript:** Clean compilation with strict mode
 - ✅ **ESLint:** 0 errors (only intentional console warnings)
 - ✅ **Bundle Size:** ~420 kB gzipped (minimal increase)
@@ -133,21 +144,25 @@ New files:
 ### From v1.x to v2.0.0
 
 1. **Pull the latest code:**
+
    ```bash
    git pull origin main
    ```
 
 2. **Update dependencies:**
+
    ```bash
    npm install
    ```
 
 3. **Create D1 database for job history:**
+
    ```bash
    npx wrangler d1 create r2-manager-metadata
    ```
 
 4. **Update `wrangler.toml` with the database binding:**
+
    ```toml
    [[d1_databases]]
    binding = "METADATA"
@@ -156,6 +171,7 @@ New files:
    ```
 
 5. **Run the schema migration:**
+
    ```bash
    npx wrangler d1 execute r2-manager-metadata --remote --file=worker/schema.sql
    ```
@@ -183,16 +199,19 @@ New files:
 ## 🎯 Key Highlights
 
 ### For Administrators
+
 - **Complete Audit Trail** - Track all user operations for compliance
 - **Rate Limiting** - Protect your API from abuse
 - **Upload Verification** - Ensure data integrity
 
 ### For Developers
+
 - **Strict TypeScript** - Catch errors at compile time
 - **Clean Architecture** - Well-organized code with extracted hooks
 - **Comprehensive API** - Full REST API for programmatic access
 
 ### For End Users
+
 - **Job History View** - Monitor your bulk operations
 - **AI-Powered Search** - Find files using natural language
 - **Multi-Bucket Downloads** - Backup multiple buckets at once
@@ -214,6 +233,7 @@ New files:
 The following improvements have been made since v2.0.0:
 
 ### 🪵 Centralized Logger Service
+
 - **New `logger.ts` Service** - Replaced all direct `console.*` calls with a centralized logging abstraction
   - Environment-aware logging (debug output in development only)
   - Configurable log levels: debug, info, warn, error
@@ -227,6 +247,7 @@ The following improvements have been made since v2.0.0:
 ## 🎬 What's Next?
 
 Looking ahead to v2.1.0 and beyond:
+
 - **More Operation Tracking** - Track uploads, deletions, and transfers
 - **Job Export** - Export job history to CSV/JSON
 - **AWS S3 Migration** - Tools for migrating from AWS S3 to R2
@@ -256,4 +277,3 @@ See [CHANGELOG.md](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/
 ---
 
 **Made with ❤️ for the Cloudflare community**
-

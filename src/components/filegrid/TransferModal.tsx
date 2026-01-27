@@ -1,20 +1,20 @@
-import { type JSX } from 'react'
+import { type JSX } from "react";
 
 interface TransferModalProps {
-  show: boolean
-  mode: 'move' | 'copy'
-  bucketName: string
-  currentPath: string
-  selectedCount: number
-  targetBucket: string | null
-  targetPath: string
-  isTransferring: boolean
-  infoMessage: string
-  availableBuckets?: string[]
-  onClose: () => void
-  onTargetBucketChange: (bucket: string | null) => void
-  onTargetPathChange: (path: string) => void
-  onSubmit: () => void
+  show: boolean;
+  mode: "move" | "copy";
+  bucketName: string;
+  currentPath: string;
+  selectedCount: number;
+  targetBucket: string | null;
+  targetPath: string;
+  isTransferring: boolean;
+  infoMessage: string;
+  availableBuckets?: string[];
+  onClose: () => void;
+  onTargetBucketChange: (bucket: string | null) => void;
+  onTargetPathChange: (path: string) => void;
+  onSubmit: () => void;
 }
 
 export const TransferModal = ({
@@ -31,34 +31,48 @@ export const TransferModal = ({
   onClose,
   onTargetBucketChange,
   onTargetPathChange,
-  onSubmit
+  onSubmit,
 }: TransferModalProps): JSX.Element | null => {
-  if (!show) return null
+  if (!show) return null;
 
   return (
     <div className="modal-overlay" onClick={() => !isTransferring && onClose()}>
       <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-        <h2>{mode === 'move' ? 'Move' : 'Copy'} {selectedCount} Item(s)</h2>
-        <p>From bucket: <strong>{bucketName}</strong></p>
-        {currentPath && <p>From folder: <strong>{currentPath}</strong></p>}
-        
+        <h2>
+          {mode === "move" ? "Move" : "Copy"} {selectedCount} Item(s)
+        </h2>
+        <p>
+          From bucket: <strong>{bucketName}</strong>
+        </p>
+        {currentPath && (
+          <p>
+            From folder: <strong>{currentPath}</strong>
+          </p>
+        )}
+
         <div className="bucket-selector">
-          <label htmlFor="destination-bucket-select">Select destination bucket:</label>
+          <label htmlFor="destination-bucket-select">
+            Select destination bucket:
+          </label>
           <select
             id="destination-bucket-select"
-            value={targetBucket || ''}
+            value={targetBucket || ""}
             onChange={(e) => onTargetBucketChange(e.target.value || null)}
             disabled={isTransferring}
           >
             <option value="">-- Choose a bucket --</option>
-            {availableBuckets?.map(bucket => (
-              <option key={bucket} value={bucket}>{bucket}</option>
+            {availableBuckets?.map((bucket) => (
+              <option key={bucket} value={bucket}>
+                {bucket}
+              </option>
             ))}
           </select>
         </div>
 
         <div className="bucket-selector">
-          <label htmlFor="destination-path-input">Destination folder path (optional):</label>
+          <label htmlFor="destination-path-input">
+            Destination folder path (optional):
+          </label>
           <input
             id="destination-path-input"
             type="text"
@@ -67,16 +81,16 @@ export const TransferModal = ({
             disabled={isTransferring}
             placeholder="e.g., images/thumbnails or leave empty for root"
             style={{
-              width: '100%',
-              padding: '8px',
-              fontSize: '14px',
-              border: '1px solid #444',
-              borderRadius: '4px',
-              backgroundColor: '#2a2a2a',
-              color: '#fff'
+              width: "100%",
+              padding: "8px",
+              fontSize: "14px",
+              border: "1px solid #444",
+              borderRadius: "4px",
+              backgroundColor: "#2a2a2a",
+              color: "#fff",
             }}
           />
-          <p style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>
+          <p style={{ fontSize: "12px", color: "#888", marginTop: "5px" }}>
             Leave empty to transfer to the root folder. End with / for folders.
           </p>
         </div>
@@ -99,18 +113,20 @@ export const TransferModal = ({
             Cancel
           </button>
           <button
-            className={`modal-button ${mode === 'move' ? 'move' : 'copy'}`}
+            className={`modal-button ${mode === "move" ? "move" : "copy"}`}
             onClick={onSubmit}
             disabled={!targetBucket || isTransferring}
           >
-            {isTransferring 
-              ? (mode === 'move' ? 'Moving...' : 'Copying...') 
-              : (mode === 'move' ? 'Move Files' : 'Copy Files')
-            }
+            {isTransferring
+              ? mode === "move"
+                ? "Moving..."
+                : "Copying..."
+              : mode === "move"
+                ? "Move Files"
+                : "Copy Files"}
           </button>
         </div>
       </div>
     </div>
-  )
-}
-
+  );
+};

@@ -10,6 +10,7 @@ This minor release brings **major architectural simplification** by removing the
 ## ✨ Added
 
 ### Multi-Bucket Download
+
 - 📦 **Download Multiple Buckets as ZIP** - Select and download multiple buckets in one operation
   - "Select All" button on main page to quickly select all buckets
   - "Download Selected" button in bulk action toolbar (positioned between "Clear Selection" and "Delete Selected")
@@ -22,6 +23,7 @@ This minor release brings **major architectural simplification** by removing the
   - Works seamlessly with existing bulk selection UI
 
 ### Use Cases for Multi-Bucket Download
+
 - 💾 **Disaster Recovery** - Back up multiple buckets for disaster recovery
 - 🚀 **Migration** - Migrate entire projects containing multiple buckets
 - 📸 **Snapshots** - Create snapshots of development/staging environments
@@ -29,6 +31,7 @@ This minor release brings **major architectural simplification** by removing the
 - 🔄 **Transfer** - Transfer buckets between Cloudflare accounts
 
 ### Example ZIP Structure
+
 ```
 buckets-2025-10-30T14-30-00.zip
 ├── bucket-one/
@@ -49,6 +52,7 @@ buckets-2025-10-30T14-30-00.zip
 ## 🔄 Changed
 
 ### Architecture Simplification - D1 Database Removed
+
 - 🗑️ **No More Database Setup** - Removed D1 database dependency completely
   - Removed D1 database binding from all configuration files (`wrangler.toml`, `wrangler.dev.toml`, `wrangler.toml.example`)
   - Removed D1 operations from worker routes (bucket ownership tracking)
@@ -63,7 +67,9 @@ buckets-2025-10-30T14-30-00.zip
 - 📚 **Documentation Updated** - 22 files updated across main repo and 11 wiki pages to reflect D1 removal
 
 ### Why Remove D1?
+
 The D1 database was originally used to track bucket ownership for multi-user scenarios. However, with Cloudflare Access (Zero Trust) authentication in place, user identity is handled at the authentication layer, and the database added unnecessary complexity. Removing D1:
+
 - Simplifies the deployment process (no database creation, no schema migrations)
 - Reduces infrastructure components to manage
 - Eliminates potential database-related errors
@@ -75,6 +81,7 @@ The D1 database was originally used to track bucket ownership for multi-user sce
 ## 🐛 Fixed
 
 ### Workers.dev Subdomain Persistence
+
 - ✅ Fixed subdomain being disabled on every deployment
 - ✅ Added `workers_dev = true` to `wrangler.toml` to persist setting
 - ✅ Added `preview_urls = true` to enable version-specific preview URLs
@@ -86,6 +93,7 @@ The D1 database was originally used to track bucket ownership for multi-user sce
 ## 🛠️ Technical Details
 
 ### Multi-Bucket Download Implementation
+
 - **New API Method:** `downloadMultipleBuckets()` in `src/services/api.ts`
   - Accepts array of bucket names
   - Returns blob for ZIP file download
@@ -101,6 +109,7 @@ The D1 database was originally used to track bucket ownership for multi-user sce
 - **~200 Lines of New Code** across 3 files (`api.ts`, `files.ts`, `app.tsx`)
 
 ### D1 Database Removal
+
 - **Removed Files/Sections:**
   - D1 database binding configuration from all wrangler files
   - D1 type definitions (D1Database, D1PreparedStatement, D1Result, D1ExecResult)
@@ -118,12 +127,14 @@ The D1 database was originally used to track bucket ownership for multi-user sce
   - Same functionality with Zero Trust authentication
 
 ### UI Enhancements
+
 - **Green "Select All" Button** - Positioned on left side of bulk action toolbar
 - **Blue "Download Selected" Button** - Between "Clear Selection" and "Delete Selected"
 - **Improved Spacing** - 3px gap between checkbox and bucket name for better visual clarity
 - **Toolbar State Management** - Shows/hides buttons based on selection state
 
 ### Build & Quality Metrics
+
 - ✅ **TypeScript Compilation:** Clean (0 errors)
 - ✅ **ESLint:** Clean (0 errors, 0 warnings)
 - ✅ **Bundle Size Impact:** Minimal increase (~0.3 kB gzipped)
@@ -142,6 +153,7 @@ The D1 database was originally used to track bucket ownership for multi-user sce
 ## 🐳 Docker Updates
 
 Version 1.3.0 Docker images are available on Docker Hub:
+
 - **Latest Tag:** `writenotenow/r2-bucket-manager:latest`
 - **Specific Version:** `writenotenow/r2-bucket-manager:v1.3.0`
 
@@ -156,17 +168,20 @@ Use `docker pull writenotenow/r2-bucket-manager:latest` to get the updated image
 **Important:** This release removes the D1 database dependency. If you had previously set up a D1 database, you can optionally delete it (it's no longer used).
 
 1. **Pull the latest code:**
+
    ```bash
    git pull origin main
    ```
 
 2. **Update dependencies:**
+
    ```bash
    npm install
    ```
 
 3. **Update your wrangler.toml:**
    - Remove any D1 database bindings if present:
+
    ```toml
    # Remove this section if it exists:
    [[d1_databases]]
@@ -176,11 +191,13 @@ Use `docker pull writenotenow/r2-bucket-manager:latest` to get the updated image
    ```
 
 4. **Rebuild the application:**
+
    ```bash
    npm run build
    ```
 
 5. **Deploy to Cloudflare Workers:**
+
    ```bash
    npx wrangler deploy
    ```
@@ -212,6 +229,7 @@ Follow the same steps as above. The D1 database was never required in v1.0.x, so
 ## 🎯 Key Highlights
 
 ### Multi-Bucket Download
+
 - **One-Click Selection** - "Select All" button for quick bulk operations
 - **Parallel Fetching** - Downloads all buckets simultaneously for speed
 - **Organized Structure** - Each bucket becomes a top-level folder in the ZIP
@@ -219,6 +237,7 @@ Follow the same steps as above. The D1 database was never required in v1.0.x, so
 - **Progress Feedback** - Visual indicators during preparation and download phases
 
 ### Architecture Simplification
+
 - **Fewer Components** - No database to create, migrate, or maintain
 - **Easier Onboarding** - 2 fewer steps in the setup process
 - **Cleaner Codebase** - ~300 lines of code removed
@@ -240,6 +259,7 @@ Follow the same steps as above. The D1 database was never required in v1.0.x, so
 ## 🎬 What's Next?
 
 Looking ahead to v1.4.0 and beyond:
+
 - ✅ **Rate Limiting** - API endpoint rate limiting with Cloudflare Workers Rate Limiting API (completed, pending release)
 - **Audit Logging** - Track all user actions with detailed logs
 - **AWS S3 Migration** - Tools for migrating from AWS S3 to R2
@@ -270,4 +290,3 @@ See [CHANGELOG.md](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/
 ---
 
 **Made with ❤️ for the Cloudflare community**
-

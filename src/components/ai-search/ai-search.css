@@ -396,7 +396,7 @@
   border: 1px solid var(--border-color);
   border-radius: 0.25rem;
   font-size: 0.75rem;
-  font-family: 'Monaco', 'Menlo', monospace;
+  font-family: "Monaco", "Menlo", monospace;
   color: var(--text-secondary);
 }
 
@@ -782,7 +782,11 @@
 /* AI Response */
 .ai-search-ai-response {
   padding: 1rem;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.1) 0%,
+    rgba(139, 92, 246, 0.1) 100%
+  );
   border: 1px solid rgba(99, 102, 241, 0.3);
   border-radius: 0.5rem;
 }

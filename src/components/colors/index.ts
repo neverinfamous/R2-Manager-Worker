@@ -1,1 +1,1 @@
-export { BucketColorPicker } from './BucketColorPicker'
+export { BucketColorPicker } from "./BucketColorPicker";

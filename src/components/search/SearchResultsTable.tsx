@@ -1,21 +1,25 @@
-import { useState, useCallback, useEffect, type JSX } from 'react'
-import type { SearchResult, SortColumn, SortDirection } from '../../types/search'
-import { formatFileSize } from '../../utils/fileUtils'
-import { api } from '../../services/api'
-import { logger } from '../../services/logger'
+import { useState, useCallback, useEffect, type JSX } from "react";
+import type {
+  SearchResult,
+  SortColumn,
+  SortDirection,
+} from "../../types/search";
+import { formatFileSize } from "../../utils/fileUtils";
+import { api } from "../../services/api";
+import { logger } from "../../services/logger";
 
 interface Bucket {
-  name: string
+  name: string;
 }
 
 interface SearchResultsTableProps {
-  results: SearchResult[]
-  isSearching: boolean
-  sortColumn: SortColumn
-  sortDirection: SortDirection
-  onSort: (column: SortColumn) => void
-  onRefresh?: (() => void) | undefined
-  onNavigateToBucket?: ((bucketName: string) => void) | undefined
+  results: SearchResult[];
+  isSearching: boolean;
+  sortColumn: SortColumn;
+  sortDirection: SortDirection;
+  onSort: (column: SortColumn) => void;
+  onRefresh?: (() => void) | undefined;
+  onNavigateToBucket?: ((bucketName: string) => void) | undefined;
 }
 
 export function SearchResultsTable({
@@ -25,153 +29,175 @@ export function SearchResultsTable({
   sortDirection,
   onSort,
   onRefresh,
-  onNavigateToBucket
+  onNavigateToBucket,
 }: SearchResultsTableProps): JSX.Element {
-  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [transferModalState, setTransferModalState] = useState<{
-    show: boolean
-    mode: 'move' | 'copy'
-    sourceBucket: string
-    sourceKey: string
-    targetBucket: string | null
-    targetPath: string
-    isTransferring: boolean
-    infoMessage: string
-  } | null>(null)
-  const [deleteConfirm, setDeleteConfirm] = useState<{ bucket: string; key: string } | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [availableBuckets, setAvailableBuckets] = useState<string[]>([])
+    show: boolean;
+    mode: "move" | "copy";
+    sourceBucket: string;
+    sourceKey: string;
+    targetBucket: string | null;
+    targetPath: string;
+    isTransferring: boolean;
+    infoMessage: string;
+  } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    bucket: string;
+    key: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [availableBuckets, setAvailableBuckets] = useState<string[]>([]);
 
   const toggleFileSelection = useCallback((bucket: string, key: string) => {
-    const id = `${bucket}:${key}`
-    setSelectedFiles(prev => {
-      const next = new Set(prev)
+    const id = `${bucket}:${key}`;
+    setSelectedFiles((prev) => {
+      const next = new Set(prev);
       if (next.has(id)) {
-        next.delete(id)
+        next.delete(id);
       } else {
-        next.add(id)
+        next.add(id);
       }
-      return next
-    })
-  }, [])
+      return next;
+    });
+  }, []);
 
   // Load available buckets for transfer
   useEffect(() => {
     const loadBuckets = async (): Promise<void> => {
       try {
-        const buckets: Bucket[] = await api.listBuckets()
-        setAvailableBuckets(buckets.map((b) => b.name))
+        const buckets: Bucket[] = await api.listBuckets();
+        setAvailableBuckets(buckets.map((b) => b.name));
       } catch (err) {
-        logger.error('SearchResultsTable', 'Failed to load buckets', err)
+        logger.error("SearchResultsTable", "Failed to load buckets", err);
       }
-    }
-    void loadBuckets()
-  }, [])
+    };
+    void loadBuckets();
+  }, []);
 
   const handleDownload = useCallback(async (bucket: string, key: string) => {
     try {
-      const url = await api.getSignedUrl(bucket, key)
-      window.open(url, '_blank')
+      const url = await api.getSignedUrl(bucket, key);
+      window.open(url, "_blank");
     } catch (err) {
-      logger.error('SearchResultsTable', 'Download error', err)
-      alert('Failed to download file: ' + (err instanceof Error ? err.message : 'Unknown error'))
+      logger.error("SearchResultsTable", "Download error", err);
+      alert(
+        "Failed to download file: " +
+          (err instanceof Error ? err.message : "Unknown error"),
+      );
     }
-  }, [])
+  }, []);
 
-  const handleDelete = useCallback(async (bucket: string, key: string) => {
-    setIsDeleting(true)
-    try {
-      await api.deleteFile(bucket, key)
-      setDeleteConfirm(null)
-      if (onRefresh) {
-        onRefresh()
+  const handleDelete = useCallback(
+    async (bucket: string, key: string) => {
+      setIsDeleting(true);
+      try {
+        await api.deleteFile(bucket, key);
+        setDeleteConfirm(null);
+        if (onRefresh) {
+          onRefresh();
+        }
+      } catch (err) {
+        logger.error("SearchResultsTable", "Delete error", err);
+        alert(
+          "Failed to delete file: " +
+            (err instanceof Error ? err.message : "Unknown error"),
+        );
+      } finally {
+        setIsDeleting(false);
       }
-    } catch (err) {
-      logger.error('SearchResultsTable', 'Delete error', err)
-      alert('Failed to delete file: ' + (err instanceof Error ? err.message : 'Unknown error'))
-    } finally {
-      setIsDeleting(false)
-    }
-  }, [onRefresh])
+    },
+    [onRefresh],
+  );
 
   const handleMove = useCallback((bucket: string, key: string) => {
     setTransferModalState({
       show: true,
-      mode: 'move',
+      mode: "move",
       sourceBucket: bucket,
       sourceKey: key,
       targetBucket: null,
-      targetPath: '',
+      targetPath: "",
       isTransferring: false,
-      infoMessage: ''
-    })
-  }, [])
+      infoMessage: "",
+    });
+  }, []);
 
   const handleCopy = useCallback((bucket: string, key: string) => {
     setTransferModalState({
       show: true,
-      mode: 'copy',
+      mode: "copy",
       sourceBucket: bucket,
       sourceKey: key,
       targetBucket: null,
-      targetPath: '',
+      targetPath: "",
       isTransferring: false,
-      infoMessage: ''
-    })
-  }, [])
+      infoMessage: "",
+    });
+  }, []);
 
   const handleTransferSubmit = useCallback(async () => {
-    if (!transferModalState?.targetBucket) return
+    if (!transferModalState?.targetBucket) return;
 
-    setTransferModalState(prev => prev ? { ...prev, isTransferring: true, infoMessage: 'Transferring...' } : null)
+    setTransferModalState((prev) =>
+      prev
+        ? { ...prev, isTransferring: true, infoMessage: "Transferring..." }
+        : null,
+    );
 
     try {
       // Construct destination path:
       // - If targetPath is empty: pass undefined (API will use just the filename in root)
       // - If targetPath is provided: use it as-is (API will handle adding filename)
       // Note: The API automatically appends the filename to the path if path doesn't end with the filename
-      const destinationPath = transferModalState.targetPath && transferModalState.targetPath.trim() !== '' 
-        ? transferModalState.targetPath 
-        : undefined
-      
-      if (transferModalState.mode === 'move') {
+      const destinationPath =
+        transferModalState.targetPath &&
+        transferModalState.targetPath.trim() !== ""
+          ? transferModalState.targetPath
+          : undefined;
+
+      if (transferModalState.mode === "move") {
         await api.moveFile(
           transferModalState.sourceBucket,
           transferModalState.sourceKey,
           transferModalState.targetBucket,
-          destinationPath
-        )
+          destinationPath,
+        );
       } else {
         await api.copyFile(
           transferModalState.sourceBucket,
           transferModalState.sourceKey,
           transferModalState.targetBucket,
-          destinationPath
-        )
+          destinationPath,
+        );
       }
 
-      setTransferModalState(null)
+      setTransferModalState(null);
       if (onRefresh) {
-        onRefresh()
+        onRefresh();
       }
     } catch (err) {
-      logger.error('SearchResultsTable', 'Transfer error', err)
-      setTransferModalState(prev => prev ? {
-        ...prev,
-        isTransferring: false,
-        infoMessage: `Failed: ${err instanceof Error ? err.message : 'Unknown error'}`
-      } : null)
+      logger.error("SearchResultsTable", "Transfer error", err);
+      setTransferModalState((prev) =>
+        prev
+          ? {
+              ...prev,
+              isTransferring: false,
+              infoMessage: `Failed: ${err instanceof Error ? err.message : "Unknown error"}`,
+            }
+          : null,
+      );
     }
-  }, [transferModalState, onRefresh])
+  }, [transferModalState, onRefresh]);
 
   const getSortIcon = (column: SortColumn): string => {
-    if (sortColumn !== column) return '⇅'
-    return sortDirection === 'asc' ? '↑' : '↓'
-  }
+    if (sortColumn !== column) return "⇅";
+    return sortDirection === "asc" ? "↑" : "↓";
+  };
 
   const getFileName = (key: string): string => {
-    return key.split('/').pop() ?? key
-  }
+    return key.split("/").pop() ?? key;
+  };
 
   if (isSearching) {
     return (
@@ -179,16 +205,18 @@ export function SearchResultsTable({
         <div className="loading-spinner"></div>
         <p>Searching across buckets...</p>
       </div>
-    )
+    );
   }
 
   if (results.length === 0) {
     return (
       <div className="search-results-empty">
         <p>No files found matching your search criteria</p>
-        <p className="empty-subtext">Try adjusting your filters or search query</p>
+        <p className="empty-subtext">
+          Try adjusting your filters or search query
+        </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -196,7 +224,7 @@ export function SearchResultsTable({
       <div className="search-results-container">
         <div className="search-results-header">
           <span className="search-results-count">
-            {results.length} {results.length === 1 ? 'result' : 'results'} found
+            {results.length} {results.length === 1 ? "result" : "results"} found
           </span>
         </div>
 
@@ -211,45 +239,52 @@ export function SearchResultsTable({
                     name="search-select-all"
                     onChange={(e) => {
                       if (e.target.checked) {
-                        setSelectedFiles(new Set(results.map(r => `${r.bucket}:${r.key}`)))
+                        setSelectedFiles(
+                          new Set(results.map((r) => `${r.bucket}:${r.key}`)),
+                        );
                       } else {
-                        setSelectedFiles(new Set())
+                        setSelectedFiles(new Set());
                       }
                     }}
-                    checked={selectedFiles.size === results.length && results.length > 0}
+                    checked={
+                      selectedFiles.size === results.length &&
+                      results.length > 0
+                    }
                     aria-label="Select all results"
                   />
                 </th>
-                <th className="sortable" onClick={() => onSort('filename')}>
-                  Filename {getSortIcon('filename')}
+                <th className="sortable" onClick={() => onSort("filename")}>
+                  Filename {getSortIcon("filename")}
                 </th>
-                <th className="sortable" onClick={() => onSort('bucket')}>
-                  Bucket {getSortIcon('bucket')}
+                <th className="sortable" onClick={() => onSort("bucket")}>
+                  Bucket {getSortIcon("bucket")}
                 </th>
-                <th className="sortable" onClick={() => onSort('size')}>
-                  Size {getSortIcon('size')}
+                <th className="sortable" onClick={() => onSort("size")}>
+                  Size {getSortIcon("size")}
                 </th>
-                <th className="sortable" onClick={() => onSort('uploaded')}>
-                  Uploaded {getSortIcon('uploaded')}
+                <th className="sortable" onClick={() => onSort("uploaded")}>
+                  Uploaded {getSortIcon("uploaded")}
                 </th>
                 <th className="actions-column">Actions</th>
               </tr>
             </thead>
             <tbody>
               {results.map((result, index) => {
-                const id = `${result.bucket}:${result.key}`
-                const isSelected = selectedFiles.has(id)
-                const checkboxId = `search-result-${index}`
-                
+                const id = `${result.bucket}:${result.key}`;
+                const isSelected = selectedFiles.has(id);
+                const checkboxId = `search-result-${index}`;
+
                 return (
-                  <tr key={id} className={isSelected ? 'selected' : ''}>
+                  <tr key={id} className={isSelected ? "selected" : ""}>
                     <td className="checkbox-column">
                       <input
                         type="checkbox"
                         id={checkboxId}
                         name={checkboxId}
                         checked={isSelected}
-                        onChange={() => toggleFileSelection(result.bucket, result.key)}
+                        onChange={() =>
+                          toggleFileSelection(result.bucket, result.key)
+                        }
                         aria-label={`Select ${result.key}`}
                       />
                     </td>
@@ -259,7 +294,7 @@ export function SearchResultsTable({
                       </span>
                     </td>
                     <td className="bucket-column">
-                      <span 
+                      <span
                         className="bucket-badge"
                         onClick={() => onNavigateToBucket?.(result.bucket)}
                         title={`Go to ${result.bucket}`}
@@ -277,7 +312,9 @@ export function SearchResultsTable({
                       <div className="action-buttons">
                         <button
                           className="action-button download"
-                          onClick={() => handleDownload(result.bucket, result.key)}
+                          onClick={() =>
+                            handleDownload(result.bucket, result.key)
+                          }
                           title="Download"
                         >
                           ⬇
@@ -298,7 +335,12 @@ export function SearchResultsTable({
                         </button>
                         <button
                           className="action-button delete"
-                          onClick={() => setDeleteConfirm({ bucket: result.bucket, key: result.key })}
+                          onClick={() =>
+                            setDeleteConfirm({
+                              bucket: result.bucket,
+                              key: result.key,
+                            })
+                          }
                           title="Delete"
                         >
                           🗑
@@ -306,7 +348,7 @@ export function SearchResultsTable({
                       </div>
                     </td>
                   </tr>
-                )
+                );
               })}
             </tbody>
           </table>
@@ -315,39 +357,65 @@ export function SearchResultsTable({
 
       {/* Transfer Modal */}
       {transferModalState && transferModalState.show && (
-        <div className="modal-overlay" onClick={() => !transferModalState.isTransferring && setTransferModalState(null)}>
+        <div
+          className="modal-overlay"
+          onClick={() =>
+            !transferModalState.isTransferring && setTransferModalState(null)
+          }
+        >
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <h2>{transferModalState.mode === 'move' ? 'Move' : 'Copy'} File</h2>
-            <p>From bucket: <strong>{transferModalState.sourceBucket}</strong></p>
-            <p>File: <strong>{getFileName(transferModalState.sourceKey)}</strong></p>
-            
+            <h2>{transferModalState.mode === "move" ? "Move" : "Copy"} File</h2>
+            <p>
+              From bucket: <strong>{transferModalState.sourceBucket}</strong>
+            </p>
+            <p>
+              File: <strong>{getFileName(transferModalState.sourceKey)}</strong>
+            </p>
+
             <div className="bucket-selector">
-              <label htmlFor="destination-bucket-select">Select destination bucket:</label>
+              <label htmlFor="destination-bucket-select">
+                Select destination bucket:
+              </label>
               <select
                 id="destination-bucket-select"
-                value={transferModalState.targetBucket || ''}
-                onChange={(e) => setTransferModalState(prev => prev ? { ...prev, targetBucket: e.target.value || null } : null)}
+                value={transferModalState.targetBucket || ""}
+                onChange={(e) =>
+                  setTransferModalState((prev) =>
+                    prev
+                      ? { ...prev, targetBucket: e.target.value || null }
+                      : null,
+                  )
+                }
                 disabled={transferModalState.isTransferring}
               >
                 <option value="">-- Choose a bucket --</option>
-                {availableBuckets.map(bucket => (
-                  <option key={bucket} value={bucket}>{bucket}</option>
+                {availableBuckets.map((bucket) => (
+                  <option key={bucket} value={bucket}>
+                    {bucket}
+                  </option>
                 ))}
               </select>
             </div>
 
             <div className="bucket-selector">
-              <label htmlFor="destination-path-input">Destination folder path (optional):</label>
+              <label htmlFor="destination-path-input">
+                Destination folder path (optional):
+              </label>
               <input
                 id="destination-path-input"
                 type="text"
                 value={transferModalState.targetPath}
-                onChange={(e) => setTransferModalState(prev => prev ? { ...prev, targetPath: e.target.value } : null)}
+                onChange={(e) =>
+                  setTransferModalState((prev) =>
+                    prev ? { ...prev, targetPath: e.target.value } : null,
+                  )
+                }
                 disabled={transferModalState.isTransferring}
                 placeholder="e.g., images/ or documents/2024/"
               />
-              <p style={{ fontSize: '12px', color: '#888', marginTop: '5px' }}>
-                Leave empty for root folder. Specify folder path (e.g., "images/" or "docs/2024/").
+              <p style={{ fontSize: "12px", color: "#888", marginTop: "5px" }}>
+                Leave empty for root folder. Specify folder path (e.g.,
+                "images/" or "docs/2024/").
               </p>
             </div>
 
@@ -365,10 +433,17 @@ export function SearchResultsTable({
               </button>
               <button
                 onClick={handleTransferSubmit}
-                disabled={transferModalState.isTransferring || !transferModalState.targetBucket}
+                disabled={
+                  transferModalState.isTransferring ||
+                  !transferModalState.targetBucket
+                }
                 className="modal-confirm"
               >
-                {transferModalState.isTransferring ? 'Transferring...' : (transferModalState.mode === 'move' ? 'Move' : 'Copy')}
+                {transferModalState.isTransferring
+                  ? "Transferring..."
+                  : transferModalState.mode === "move"
+                    ? "Move"
+                    : "Copy"}
               </button>
             </div>
           </div>
@@ -377,11 +452,15 @@ export function SearchResultsTable({
 
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
-        <div className="modal-overlay" onClick={() => !isDeleting && setDeleteConfirm(null)}>
+        <div
+          className="modal-overlay"
+          onClick={() => !isDeleting && setDeleteConfirm(null)}
+        >
           <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
             <h2>Delete File?</h2>
             <p>
-              Are you sure you want to delete <strong>{getFileName(deleteConfirm.key)}</strong> from bucket{' '}
+              Are you sure you want to delete{" "}
+              <strong>{getFileName(deleteConfirm.key)}</strong> from bucket{" "}
               <strong>{deleteConfirm.bucket}</strong>?
             </p>
             <p className="warning-text">This action cannot be undone.</p>
@@ -394,17 +473,18 @@ export function SearchResultsTable({
                 Cancel
               </button>
               <button
-                onClick={() => handleDelete(deleteConfirm.bucket, deleteConfirm.key)}
+                onClick={() =>
+                  handleDelete(deleteConfirm.bucket, deleteConfirm.key)
+                }
                 disabled={isDeleting}
                 className="modal-confirm-delete"
               >
-                {isDeleting ? 'Deleting...' : 'Delete'}
+                {isDeleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>
         </div>
       )}
     </>
-  )
+  );
 }
-

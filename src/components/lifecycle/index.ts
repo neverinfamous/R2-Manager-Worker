@@ -1,2 +1,2 @@
-export { LifecycleRulesPanel } from './LifecycleRulesPanel'
-export { CreateLifecycleRuleModal } from './CreateLifecycleRuleModal'
+export { LifecycleRulesPanel } from "./LifecycleRulesPanel";
+export { CreateLifecycleRuleModal } from "./CreateLifecycleRuleModal";

@@ -12,6 +12,7 @@ This patch release fixes the local development environment which was previously 
 ## 🐛 Fixed
 
 ### Local Development Environment
+
 - ✅ Fixed broken local development setup
 - ✅ Added `wrangler.dev.toml` configuration for development (skips frontend build)
 - ✅ Fixed CORS configuration to allow `http://localhost:5173` origin with credentials
@@ -42,6 +43,7 @@ This patch release fixes the local development environment which was previously 
 ## 🐳 Docker Updates
 
 Version 1.0.1 Docker images have already been published to Docker Hub:
+
 - **Latest Tag:** `writenotenow/r2-bucket-manager:latest`
 - **Specific Version:** `writenotenow/r2-bucket-manager:1.0.1`
 

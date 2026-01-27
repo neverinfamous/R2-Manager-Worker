@@ -1,31 +1,37 @@
-import { useState, type JSX } from 'react'
-import type { AISearchCompatibility } from '../../services/api'
+import { useState, type JSX } from "react";
+import type { AISearchCompatibility } from "../../services/api";
 
 interface CompatibilityReportProps {
-  compatibility: AISearchCompatibility
-  onOpenDashboard: () => void
+  compatibility: AISearchCompatibility;
+  onOpenDashboard: () => void;
 }
 
 function formatFileSize(bytes: number): string {
-  const units = ['B', 'KB', 'MB', 'GB']
-  let size = bytes
-  let unitIndex = 0
+  const units = ["B", "KB", "MB", "GB"];
+  let size = bytes;
+  let unitIndex = 0;
 
   while (size >= 1024 && unitIndex < units.length - 1) {
-    size /= 1024
-    unitIndex++
+    size /= 1024;
+    unitIndex++;
   }
 
-  return `${size.toFixed(1)} ${units[unitIndex]}`
+  return `${size.toFixed(1)} ${units[unitIndex]}`;
 }
 
-export function CompatibilityReport({ compatibility, onOpenDashboard }: CompatibilityReportProps): JSX.Element {
-  const [showIndexable, setShowIndexable] = useState(false)
-  const [showNonIndexable, setShowNonIndexable] = useState(false)
+export function CompatibilityReport({
+  compatibility,
+  onOpenDashboard,
+}: CompatibilityReportProps): JSX.Element {
+  const [showIndexable, setShowIndexable] = useState(false);
+  const [showNonIndexable, setShowNonIndexable] = useState(false);
 
-  const indexablePercentage = compatibility.totalFiles > 0
-    ? Math.round((compatibility.indexableFiles / compatibility.totalFiles) * 100)
-    : 0
+  const indexablePercentage =
+    compatibility.totalFiles > 0
+      ? Math.round(
+          (compatibility.indexableFiles / compatibility.totalFiles) * 100,
+        )
+      : 0;
 
   return (
     <div className="compatibility-report">
@@ -66,34 +72,50 @@ export function CompatibilityReport({ compatibility, onOpenDashboard }: Compatib
           </div>
           <div className="compatibility-stat-row non-indexable">
             <span className="stat-label">Non-indexable:</span>
-            <span className="stat-value">{compatibility.nonIndexableFiles}</span>
+            <span className="stat-value">
+              {compatibility.nonIndexableFiles}
+            </span>
           </div>
           <div className="compatibility-stat-row">
             <span className="stat-label">Indexable Size:</span>
-            <span className="stat-value">{formatFileSize(compatibility.indexableSize)}</span>
+            <span className="stat-value">
+              {formatFileSize(compatibility.indexableSize)}
+            </span>
           </div>
         </div>
       </div>
 
       <div className="compatibility-info-box">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <circle cx="12" cy="12" r="10" />
           <path d="M12 16v-4M12 8h.01" />
         </svg>
         <div>
           <p>
-            AI Search can index <strong>{compatibility.indexableFiles}</strong> of your{' '}
-            <strong>{compatibility.totalFiles}</strong> files ({indexablePercentage}%).
+            AI Search can index <strong>{compatibility.indexableFiles}</strong>{" "}
+            of your <strong>{compatibility.totalFiles}</strong> files (
+            {indexablePercentage}%).
           </p>
           <p className="compatibility-hint">
-            Supported file types include: markdown, text, JSON, YAML, HTML, and code files up to 4MB.
+            Supported file types include: markdown, text, JSON, YAML, HTML, and
+            code files up to 4MB.
           </p>
         </div>
       </div>
 
       <div className="compatibility-actions">
         <button className="compatibility-create-btn" onClick={onOpenDashboard}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
             <path d="M12 5v14M5 12h14" />
           </svg>
           Create AI Search Instance
@@ -111,16 +133,21 @@ export function CompatibilityReport({ compatibility, onOpenDashboard }: Compatib
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              className={showIndexable ? 'rotated' : ''}
+              className={showIndexable ? "rotated" : ""}
             >
               <polyline points="9 18 15 12 9 6" />
             </svg>
-            <span className="indexable-label">Indexable Files ({compatibility.files.indexable.length})</span>
+            <span className="indexable-label">
+              Indexable Files ({compatibility.files.indexable.length})
+            </span>
           </button>
           {showIndexable && (
             <div className="compatibility-file-list">
               {compatibility.files.indexable.map((file) => (
-                <div key={file.key} className="compatibility-file-item indexable">
+                <div
+                  key={file.key}
+                  className="compatibility-file-item indexable"
+                >
                   <span className="file-name">{file.key}</span>
                   <span className="file-size">{formatFileSize(file.size)}</span>
                   <span className="file-ext">{file.extension}</span>
@@ -142,16 +169,21 @@ export function CompatibilityReport({ compatibility, onOpenDashboard }: Compatib
               fill="none"
               stroke="currentColor"
               strokeWidth="2"
-              className={showNonIndexable ? 'rotated' : ''}
+              className={showNonIndexable ? "rotated" : ""}
             >
               <polyline points="9 18 15 12 9 6" />
             </svg>
-            <span className="non-indexable-label">Non-indexable Files ({compatibility.files.nonIndexable.length})</span>
+            <span className="non-indexable-label">
+              Non-indexable Files ({compatibility.files.nonIndexable.length})
+            </span>
           </button>
           {showNonIndexable && (
             <div className="compatibility-file-list">
               {compatibility.files.nonIndexable.map((file) => (
-                <div key={file.key} className="compatibility-file-item non-indexable">
+                <div
+                  key={file.key}
+                  className="compatibility-file-item non-indexable"
+                >
                   <span className="file-name">{file.key}</span>
                   <span className="file-size">{formatFileSize(file.size)}</span>
                   <span className="file-reason">{file.reason}</span>
@@ -166,11 +198,12 @@ export function CompatibilityReport({ compatibility, onOpenDashboard }: Compatib
         <h4>Supported File Extensions</h4>
         <div className="supported-extensions">
           {compatibility.supportedExtensions.map((ext) => (
-            <span key={ext} className="extension-badge">{ext}</span>
+            <span key={ext} className="extension-badge">
+              {ext}
+            </span>
           ))}
         </div>
       </div>
     </div>
-  )
+  );
 }
-

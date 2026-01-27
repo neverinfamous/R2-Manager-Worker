@@ -4,7 +4,7 @@
 :root[data-theme="light"] {
   /* Color Scheme */
   color-scheme: light;
-  
+
   /* Background Colors */
   --bg-primary: #ffffff;
   --bg-secondary: #f3f4f6;
@@ -12,57 +12,60 @@
   --bg-modal: #ffffff;
   --bg-dropdown: #ffffff;
   --bg-hover: #f9fafb;
-  
+
   /* Text Colors */
   --text-primary: #111827;
   --text-secondary: #6b7280;
   --text-tertiary: #9ca3af;
   --text-inverse: #ffffff;
-  
+
   /* Border Colors */
   --border-color: #d1d5db;
   --border-hover: #9ca3af;
   --border-focus: #3b82f6;
-  
+
   /* Accent Colors - Blue */
   --accent-blue: #2563eb;
   --accent-blue-hover: #1d4ed8;
   --accent-blue-light: #60a5fa;
   --accent-blue-lighter: #93c5fd;
   --accent-blue-bg: #dbeafe;
-  
+
   /* Accent Colors - Red */
   --accent-red: #dc2626;
   --accent-red-hover: #b91c1c;
   --accent-red-light: #ef4444;
   --accent-red-lighter: #fca5a5;
   --accent-red-bg: #fee2e2;
-  
+
   /* Accent Colors - Green */
   --accent-green: #10b981;
   --accent-green-hover: #059669;
   --accent-green-light: #34d399;
   --accent-green-lighter: #86efac;
   --accent-green-bg: #d1fae5;
-  
+
   /* Accent Colors - Yellow */
   --accent-yellow: #f59e0b;
   --accent-yellow-hover: #d97706;
   --accent-yellow-light: #fbbf24;
   --accent-yellow-bg: #fef3c7;
-  
+
   /* Accent Colors - Gray */
   --accent-gray: #6b7280;
   --accent-gray-hover: #4b5563;
   --accent-gray-light: #9ca3af;
   --accent-gray-bg: #f3f4f6;
-  
+
   /* Shadow Colors */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
   /* Scrollbar */
   --scrollbar-track: #f3f4f6;
   --scrollbar-thumb: #d1d5db;
@@ -73,7 +76,7 @@
 :root[data-theme="dark"] {
   /* Color Scheme */
   color-scheme: dark;
-  
+
   /* Background Colors */
   --bg-primary: #111827;
   --bg-secondary: #1f2937;
@@ -81,57 +84,60 @@
   --bg-modal: #1f2937;
   --bg-dropdown: #1f2937;
   --bg-hover: #2d3748;
-  
+
   /* Text Colors */
   --text-primary: rgba(255, 255, 255, 0.87);
   --text-secondary: #b8babd;
   --text-tertiary: #b9b9b9;
   --text-inverse: #ebe8e8;
-  
+
   /* Border Colors */
   --border-color: #374151;
   --border-hover: #4b5563;
   --border-focus: #60a5fa;
-  
+
   /* Accent Colors - Blue */
   --accent-blue: #2563eb;
   --accent-blue-hover: #1d4ed8;
   --accent-blue-light: #60a5fa;
   --accent-blue-lighter: #93c5fd;
   --accent-blue-bg: #1e3a8a;
-  
+
   /* Accent Colors - Red */
   --accent-red: #dc2626;
   --accent-red-hover: #b91c1c;
   --accent-red-light: #ef4444;
   --accent-red-lighter: #fca5a5;
   --accent-red-bg: rgba(220, 38, 38, 0.2);
-  
+
   /* Accent Colors - Green */
   --accent-green: #10b981;
   --accent-green-hover: #059669;
   --accent-green-light: #34d399;
   --accent-green-lighter: #86efac;
   --accent-green-bg: rgba(16, 185, 129, 0.2);
-  
+
   /* Accent Colors - Yellow */
   --accent-yellow: #f59e0b;
   --accent-yellow-hover: #d97706;
   --accent-yellow-light: #fbbf24;
   --accent-yellow-bg: rgba(245, 158, 11, 0.2);
-  
+
   /* Accent Colors - Gray */
   --accent-gray: #6b7280;
   --accent-gray-hover: #4b5563;
   --accent-gray-light: #9ca3af;
   --accent-gray-bg: #374151;
-  
+
   /* Shadow Colors */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
-  
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+
   /* Scrollbar */
   --scrollbar-track: #1f2937;
   --scrollbar-thumb: #374151;
@@ -142,7 +148,7 @@
 :root {
   /* Color Scheme */
   color-scheme: dark;
-  
+
   /* Background Colors */
   --bg-primary: #111827;
   --bg-secondary: #1f2937;
@@ -150,57 +156,60 @@
   --bg-modal: #1f2937;
   --bg-dropdown: #1f2937;
   --bg-hover: #2d3748;
-  
+
   /* Text Colors */
   --text-primary: rgba(255, 255, 255, 0.87);
   --text-secondary: #9ca3af;
   --text-tertiary: #6b7280;
   --text-inverse: #111827;
-  
+
   /* Border Colors */
   --border-color: #374151;
   --border-hover: #4b5563;
   --border-focus: #60a5fa;
-  
+
   /* Accent Colors - Blue */
   --accent-blue: #2563eb;
   --accent-blue-hover: #1d4ed8;
   --accent-blue-light: #60a5fa;
   --accent-blue-lighter: #93c5fd;
   --accent-blue-bg: #1e3a8a;
-  
+
   /* Accent Colors - Red */
   --accent-red: #dc2626;
   --accent-red-hover: #b91c1c;
   --accent-red-light: #ef4444;
   --accent-red-lighter: #fca5a5;
   --accent-red-bg: rgba(220, 38, 38, 0.2);
-  
+
   /* Accent Colors - Green */
   --accent-green: #10b981;
   --accent-green-hover: #059669;
   --accent-green-light: #34d399;
   --accent-green-lighter: #86efac;
   --accent-green-bg: rgba(16, 185, 129, 0.2);
-  
+
   /* Accent Colors - Yellow */
   --accent-yellow: #f59e0b;
   --accent-yellow-hover: #d97706;
   --accent-yellow-light: #fbbf24;
   --accent-yellow-bg: rgba(245, 158, 11, 0.2);
-  
+
   /* Accent Colors - Gray */
   --accent-gray: #6b7280;
   --accent-gray-hover: #4b5563;
   --accent-gray-light: #9ca3af;
   --accent-gray-bg: #374151;
-  
+
   /* Shadow Colors */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
-  
+  --shadow-md:
+    0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg:
+    0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+  --shadow-xl:
+    0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+
   /* Scrollbar */
   --scrollbar-track: #1f2937;
   --scrollbar-thumb: #374151;
@@ -209,11 +218,15 @@
 
 /* Smooth Transitions for Theme Changes */
 :root {
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }

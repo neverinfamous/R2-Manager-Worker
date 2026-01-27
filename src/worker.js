@@ -10,12 +10,12 @@ export class ChatRoom {
   }
 
   async initMetrics() {
-    let metrics = await this.state.storage.get('metrics');
+    let metrics = await this.state.storage.get("metrics");
     if (!metrics) {
       metrics = {
         messages: { total: 0, bytes: 0, failed: 0 },
         connections: { total: 0, current: 0, peak: 0 },
-        errors: { count: 0, details: [] }
+        errors: { count: 0, details: [] },
       };
     }
     this.metrics = metrics;
@@ -24,7 +24,7 @@ export class ChatRoom {
   // Immediate log sending with single retry on failure
   async sendLog(type, data = {}) {
     const logEntry = {
-      ddsource: 'cloudflare-worker',
+      ddsource: "cloudflare-worker",
       ddtags: `env:prod,service:chatty,event:${type}`,
       message: type,
       timestamp: new Date().toISOString(),
@@ -32,52 +32,58 @@ export class ChatRoom {
         ...data,
         connection_time: Date.now() - this.startTime,
         current_users: this.users.size,
-        metrics: this.metrics
-      }
+        metrics: this.metrics,
+      },
     };
 
     try {
-      const response = await fetch("https://http-intake.logs.datadoghq.com/api/v2/logs", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'DD-API-KEY': 'b2e6e243844fa59b66e2e5c87d880a39'
+      const response = await fetch(
+        "https://http-intake.logs.datadoghq.com/api/v2/logs",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "DD-API-KEY": "b2e6e243844fa59b66e2e5c87d880a39",
+          },
+          body: JSON.stringify([logEntry]),
         },
-        body: JSON.stringify([logEntry])
-      });
+      );
 
-      if (!response.ok) throw new Error(`Datadog log failed: ${response.statusText}`);
+      if (!response.ok)
+        throw new Error(`Datadog log failed: ${response.statusText}`);
     } catch (error) {
-      console.error('Log send error, retrying once:', error);
+      console.error("Log send error, retrying once:", error);
       // Retry once on failure
       try {
         await fetch("https://http-intake.logs.datadoghq.com/api/v2/logs", {
-          method: 'POST',
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'DD-API-KEY': 'b2e6e243844fa59b66e2e5c87d880a39'
+            "Content-Type": "application/json",
+            "DD-API-KEY": "b2e6e243844fa59b66e2e5c87d880a39",
           },
-          body: JSON.stringify([logEntry])
+          body: JSON.stringify([logEntry]),
         });
       } catch (retryError) {
-        console.error('Retry log send failed:', retryError);
+        console.error("Retry log send failed:", retryError);
       }
     }
   }
 
   async fetch(request) {
     const connectionId = crypto.randomUUID();
-    this.sendLog('websocket_request', {
+    this.sendLog("websocket_request", {
       connection_id: connectionId,
       url: request.url,
-      headers: Object.fromEntries(request.headers)
+      headers: Object.fromEntries(request.headers),
     });
 
     try {
-      if (!request.headers.get("Upgrade")?.toLowerCase().includes("websocket")) {
-        this.sendLog('websocket_reject', {
+      if (
+        !request.headers.get("Upgrade")?.toLowerCase().includes("websocket")
+      ) {
+        this.sendLog("websocket_reject", {
           connection_id: connectionId,
-          reason: 'invalid_upgrade'
+          reason: "invalid_upgrade",
         });
         return new Response("Expected WebSocket", { status: 426 });
       }
@@ -89,18 +95,21 @@ export class ChatRoom {
       this.users.add(server);
       this.metrics.connections.total++;
       this.metrics.connections.current = this.users.size;
-      this.metrics.connections.peak = Math.max(this.metrics.connections.peak, this.users.size);
-      await this.state.storage.put('metrics', this.metrics);
+      this.metrics.connections.peak = Math.max(
+        this.metrics.connections.peak,
+        this.users.size,
+      );
+      await this.state.storage.put("metrics", this.metrics);
 
-      this.sendLog('websocket_accepted', {
+      this.sendLog("websocket_accepted", {
         connection_id: connectionId,
-        users: this.users.size
+        users: this.users.size,
       });
 
       let pingInterval = setInterval(() => {
         if (server.readyState === 1) {
           try {
-            server.send(JSON.stringify({ type: 'ping' }));
+            server.send(JSON.stringify({ type: "ping" }));
           } catch (error) {
             clearInterval(pingInterval);
             server.close();
@@ -110,22 +119,22 @@ export class ChatRoom {
         }
       }, 15000);
 
-      server.addEventListener('message', async event => {
+      server.addEventListener("message", async (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.type === 'pong') return;
+          if (data.type === "pong") return;
 
           this.metrics.messages.total++;
           this.metrics.messages.bytes += event.data.length;
-          await this.state.storage.put('metrics', this.metrics);
+          await this.state.storage.put("metrics", this.metrics);
 
-          this.sendLog('websocket_message', {
+          this.sendLog("websocket_message", {
             connection_id: connectionId,
-            size: event.data.length
+            size: event.data.length,
           });
 
           // Broadcast to all users
-          const broadcasts = Array.from(this.users).map(async user => {
+          const broadcasts = Array.from(this.users).map(async (user) => {
             if (user.readyState === 1) {
               try {
                 user.send(event.data);
@@ -138,57 +147,59 @@ export class ChatRoom {
           });
 
           const results = await Promise.allSettled(broadcasts);
-          const failedCount = results.filter(r => r.status === 'rejected' || !r.value).length;
+          const failedCount = results.filter(
+            (r) => r.status === "rejected" || !r.value,
+          ).length;
 
           if (failedCount > 0) {
-            this.sendLog('broadcast_failure', {
+            this.sendLog("broadcast_failure", {
               connection_id: connectionId,
               failed: failedCount,
-              total: this.users.size
+              total: this.users.size,
             });
           }
         } catch (error) {
           this.metrics.errors.count++;
           this.metrics.errors.details.push({
             time: new Date().toISOString(),
-            type: 'message_processing',
-            error: error.message
+            type: "message_processing",
+            error: error.message,
           });
-          await this.state.storage.put('metrics', this.metrics);
+          await this.state.storage.put("metrics", this.metrics);
 
-          this.sendLog('error', {
+          this.sendLog("error", {
             connection_id: connectionId,
-            type: 'message_processing',
-            error: error.message
+            type: "message_processing",
+            error: error.message,
           });
         }
       });
 
-      server.addEventListener('close', async () => {
+      server.addEventListener("close", async () => {
         clearInterval(pingInterval);
         this.users.delete(server);
         this.metrics.connections.current = this.users.size;
-        await this.state.storage.put('metrics', this.metrics);
+        await this.state.storage.put("metrics", this.metrics);
 
-        this.sendLog('websocket_closed', {
+        this.sendLog("websocket_closed", {
           connection_id: connectionId,
-          remaining_users: this.users.size
+          remaining_users: this.users.size,
         });
       });
 
-      server.addEventListener('error', async error => {
+      server.addEventListener("error", async (error) => {
         this.metrics.errors.count++;
         this.metrics.errors.details.push({
           time: new Date().toISOString(),
-          type: 'websocket',
-          error: error.message
+          type: "websocket",
+          error: error.message,
         });
-        await this.state.storage.put('metrics', this.metrics);
+        await this.state.storage.put("metrics", this.metrics);
 
-        this.sendLog('error', {
+        this.sendLog("error", {
           connection_id: connectionId,
-          type: 'websocket',
-          error: error.message
+          type: "websocket",
+          error: error.message,
         });
       });
 
@@ -196,24 +207,23 @@ export class ChatRoom {
         status: 101,
         webSocket: client,
         headers: {
-          'Upgrade': 'websocket',
-          'Connection': 'Upgrade'
-        }
+          Upgrade: "websocket",
+          Connection: "Upgrade",
+        },
       });
-
     } catch (error) {
       this.metrics.errors.count++;
       this.metrics.errors.details.push({
         time: new Date().toISOString(),
-        type: 'system',
-        error: error.message
+        type: "system",
+        error: error.message,
       });
-      await this.state.storage.put('metrics', this.metrics);
+      await this.state.storage.put("metrics", this.metrics);
 
-      this.sendLog('error', {
+      this.sendLog("error", {
         connection_id: connectionId,
-        type: 'system',
-        error: error.message
+        type: "system",
+        error: error.message,
       });
 
       return new Response(error.message, { status: 500 });
@@ -223,16 +233,16 @@ export class ChatRoom {
 
 const worker = {
   async fetch(request, env) {
-    if (request.headers.get('Upgrade')?.toLowerCase() === 'websocket') {
+    if (request.headers.get("Upgrade")?.toLowerCase() === "websocket") {
       const id = env.CHATROOM.idFromName("default");
       const room = env.CHATROOM.get(id);
       return room.fetch(request);
     }
 
     return new Response("Chatty Server", {
-      headers: { 'Content-Type': 'text/plain' }
+      headers: { "Content-Type": "text/plain" },
     });
-  }
+  },
 };
 
 export default worker;

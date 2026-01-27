@@ -1,6 +1,6 @@
 # R2 Bucket Manager
 
-**Last Updated:** January 25, 2026 | **Version:** 3.3.0
+**Last Updated: January 26, 2026**
 
 A modern web application for managing Cloudflare R2 buckets with enterprise-grade authentication via Cloudflare Access Zero Trust.
 
@@ -11,11 +11,11 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
 [![Type Safety](https://img.shields.io/badge/TypeScript-Strict-blue.svg)](https://github.com/neverinfamous/R2-Manager-Worker)
 
- R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to manage Cloudflare R2 buckets and objects. Supports job history tracking, AI-powered search, drag-and-drop uploads with verification, batch copy/move/delete, multi-file ZIP downloads, signed share links, folder hierarchies, advanced search + filters (extension, size, date), S3 import, tags and GitHub SSO via Cloudflare Zero Trust.
+R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to manage Cloudflare R2 buckets and objects. Supports job history tracking, AI-powered search, drag-and-drop uploads with verification, batch copy/move/delete, multi-file ZIP downloads, signed share links, folder hierarchies, advanced search + filters (extension, size, date), S3 import, tags and GitHub SSO via Cloudflare Zero Trust.
 
 **[Live Demo](https://r2.adamic.tech/)** • **[Docker](https://hub.docker.com/r/writenotenow/r2-bucket-manager)** • **[Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki)** • **[Changelog](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Changelog)** • **[Release Article](https://adamic.tech/articles/r2-manager)**
 
-**Tech Stack:** React 19.2.3 | Vite 7.3.1 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
+**Tech Stack:** React 19.2.4 | Vite 7.3.1 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
 
 ---
 
@@ -37,7 +37,7 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
 - 📄 **File Management** - Rename files via right-click context menu with validation
 - 🔍 **Smart Filtering** - Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)
 - 🎯 **Advanced Filtering** - Filter files by extension, size ranges, and upload dates with preset and custom options
-- 📤 **Smart Uploads** - Chunked uploads with automatic retry and integrity verification (10MB chunks, up to 500MB files)*
+- 📤 **Smart Uploads** - Chunked uploads with automatic retry and integrity verification (10MB chunks, up to 500MB files)\*
 - ✓ **Upload Verification** - MD5 checksum verification ensures uploaded files match stored files exactly
 - 📥 **Bulk Downloads** - Download multiple files as ZIP archives
 - 🔗 **Shareable Links** - Generate signed URLs to share files securely
@@ -52,8 +52,9 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
 - 🌓 **Light/Dark Mode** - Auto-detects system preference with manual toggle (System → Light → Dark)
 
 **Upload Size Limits:** This application supports uploads up to 500MB per file. However, **Cloudflare enforces plan-based limits**:
+
 - **Free/Pro Plans:** 100MB maximum per file
-- **Business Plan:** 200MB maximum per file  
+- **Business Plan:** 200MB maximum per file
 - **Enterprise Plan:** 500MB maximum per file
 
 ### Supported File Types
@@ -91,6 +92,7 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
 ### Installation
 
 1. **Clone and install:**
+
    ```bash
    git clone https://github.com/neverinfamous/R2-Manager-Worker.git
    cd R2-Manager-Worker
@@ -98,19 +100,21 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
    ```
 
 2. **Configure environment:**
+
    ```bash
    cp .env.example .env
    cp wrangler.toml.example wrangler.toml
    ```
-   
+
    Edit both files with your settings.
-   
+
    **Optional - Enable Rate Limiting:**
    - Rate limiting is pre-configured in `wrangler.toml.example`
    - Requires Wrangler 4.36.0+ and Workers paid plan
    - If you don't have a paid plan, the app works fine without it
 
 3. **Create R2 bucket:**
+
    ```bash
    npx wrangler login
    npx wrangler r2 bucket create your-bucket-name
@@ -122,6 +126,7 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
    - Copy the Application Audience (AUD) Tag
 
 5. **Set Worker secrets:**
+
    ```bash
    npx wrangler secret put ACCOUNT_ID
    npx wrangler secret put CF_EMAIL
@@ -177,32 +182,40 @@ Access the development server at `http://localhost:8787`
 ## 📦 Bulk Operations
 
 ### Multi-Bucket Download
+
 Download multiple buckets simultaneously as a single, timestamped ZIP archive.
-* **Zero Dependencies:** Generates archives on the fly without size limits.
-* **Smart Structure:** Maintains full folder hierarchy (`/bucket-name/folder/file.ext`).
-* **Bulk Actions:** dedicated toolbar for "Select All" and batch processing.
+
+- **Zero Dependencies:** Generates archives on the fly without size limits.
+- **Smart Structure:** Maintains full folder hierarchy (`/bucket-name/folder/file.ext`).
+- **Bulk Actions:** dedicated toolbar for "Select All" and batch processing.
 
 ### Bulk Bucket Deletion
+
 Select and force-delete multiple buckets in one operation.
-* **Safety First:** Enhanced confirmation modal calculates total files and size before deletion.
-* **Force Delete:** Automatically recursively empties buckets before removing them.
-* **Progress Tracking:** Visual feedback for long-running deletion tasks.
+
+- **Safety First:** Enhanced confirmation modal calculates total files and size before deletion.
+- **Force Delete:** Automatically recursively empties buckets before removing them.
+- **Progress Tracking:** Visual feedback for long-running deletion tasks.
 
 ---
 
 ## 🔎 Search & Filtering
 
 ### Cross-Bucket Search
+
 Real-time, server-side parallel search across **all** your buckets instantly.
-* **Performance:** Queries thousands of files in seconds with minimal overhead.
-* **Direct Actions:** Move, copy, download, or delete files directly from search results.
-* **Deep Linking:** Click bucket badges to navigate directly to the source.
+
+- **Performance:** Queries thousands of files in seconds with minimal overhead.
+- **Direct Actions:** Move, copy, download, or delete files directly from search results.
+- **Deep Linking:** Click bucket badges to navigate directly to the source.
 
 ### Advanced Filtering
+
 Comprehensive client-side filtering for large buckets.
-* **Smart Filters:** Filter by **File Type** (Images, Code, Docs), **Size** (Presets or custom ranges), and **Date** (Upload time).
-* **Context Aware:** Toggle between "Files Only," "Folders Only," or "All."
-* **Persistent:** Active filters remain applied during batch operations and navigation.
+
+- **Smart Filters:** Filter by **File Type** (Images, Code, Docs), **Size** (Presets or custom ranges), and **Date** (Upload time).
+- **Context Aware:** Toggle between "Files Only," "Folders Only," or "All."
+- **Persistent:** Active filters remain applied during batch operations and navigation.
 
 ---
 
@@ -234,6 +247,7 @@ database_id = "your-database-id"
 ```
 
 Create the database and run the schema:
+
 ```bash
 npx wrangler d1 create r2-manager-metadata
 npx wrangler d1 execute r2-manager-metadata --remote --file=worker/schema.sql
@@ -247,7 +261,7 @@ Connect your R2 buckets to Cloudflare AI Search (formerly AutoRAG) for powerful 
 
 - **Compatibility Analysis**: See which files in your bucket can be indexed by AI Search
 - **Visual Reports**: Donut chart showing indexable vs non-indexable file ratios
-- **Dual Search Modes**: 
+- **Dual Search Modes**:
   - **AI Search**: Get AI-generated answers based on your data
   - **Semantic Search**: Retrieve relevant documents without AI generation
 - **Instance Management**: List, sync, and query AI Search instances from the UI
@@ -256,6 +270,7 @@ Connect your R2 buckets to Cloudflare AI Search (formerly AutoRAG) for powerful 
 ### Supported File Types
 
 AI Search can index these file types (up to 4MB each):
+
 - **Text**: `.txt`, `.md`, `.rst`, `.log`
 - **Config**: `.json`, `.yaml`, `.yml`, `.toml`, `.ini`, `.conf`, `.env`
 - **Code**: `.js`, `.ts`, `.py`, `.html`, `.css`, `.xml`
@@ -278,11 +293,11 @@ binding = "AI"
 
 Intelligent, per-user rate limiting prevents abuse while ensuring fair resource access. Limits are applied based on the authenticated user's email.
 
-| Tier | Operations | Limit | Period | Scope |
-| :--- | :--- | :--- | :--- | :--- |
-| **READ** | List, Search, Signed URLs | 300 req | 60s | High-volume access |
-| **WRITE** | Upload, Rename, Move | 100 req | 60s | Modification safety |
-| **DELETE** | Remove Files/Buckets | 30 req | 60s | Destructive actions |
+| Tier       | Operations                | Limit   | Period | Scope               |
+| :--------- | :------------------------ | :------ | :----- | :------------------ |
+| **READ**   | List, Search, Signed URLs | 300 req | 60s    | High-volume access  |
+| **WRITE**  | Upload, Rename, Move      | 100 req | 60s    | Modification safety |
+| **DELETE** | Remove Files/Buckets      | 30 req  | 60s    | Destructive actions |
 
 **Note:** Rate limiting returns standard `429 Too Many Requests` headers and can be configured or disabled via `wrangler.toml`.
 
@@ -307,6 +322,7 @@ simple = { limit = 100, period = 60 }
 ```
 
 **Requirements:**
+
 - Wrangler CLI version 4.36.0 or later
 - Cloudflare Workers paid plan (rate limiting not available on free plan)
 
@@ -319,17 +335,21 @@ simple = { limit = 100, period = 60 }
 ### Quick Start (Two Terminal Windows Required)
 
 **Terminal 1: Frontend dev server (Vite)**
+
 ```bash
 npm run dev
 ```
+
 - Runs on: `http://localhost:5173`
 - Hot Module Replacement (HMR) enabled
 - Watches for file changes automatically
 
 **Terminal 2: Worker dev server (Wrangler)**
+
 ```bash
 npx wrangler dev --config wrangler.dev.toml --local
 ```
+
 - Runs on: `http://localhost:8787`
 - Uses local bindings with mock data (no secrets required)
 - Automatically reloads on code changes
@@ -361,6 +381,7 @@ Open your browser to `http://localhost:5173` - the frontend will automatically c
 ### Mock Operations in Local Development
 
 The following operations return simulated success responses for UI testing:
+
 - ✅ List buckets (returns `dev-bucket`)
 - ✅ Create bucket
 - ✅ Rename bucket
@@ -378,14 +399,14 @@ The following operations return simulated success responses for UI testing:
 
 ### Technology Stack
 
-| Component | Technology | Version |
-|-----------|-----------|---------|
-| Frontend | React | 19.2.3 |
-| Build Tool | Vite | 7.3.1 |
-| Language | TypeScript | 5.9.3 |
-| Backend | Cloudflare Workers | Runtime API |
-| Storage | Cloudflare R2 | S3-compatible |
-| Auth | Cloudflare Access | Zero Trust |
+| Component  | Technology         | Version       |
+| ---------- | ------------------ | ------------- |
+| Frontend   | React              | 19.2.3        |
+| Build Tool | Vite               | 7.3.1         |
+| Language   | TypeScript         | 5.9.3         |
+| Backend    | Cloudflare Workers | Runtime API   |
+| Storage    | Cloudflare R2      | S3-compatible |
+| Auth       | Cloudflare Access  | Zero Trust    |
 
 ### File Organization
 
@@ -407,12 +428,14 @@ The following operations return simulated success responses for UI testing:
 ### API Endpoints
 
 #### Bucket Operations
+
 - `GET /api/buckets` - List all buckets
 - `POST /api/buckets` - Create a new bucket
 - `DELETE /api/buckets/:bucketName` - Delete a bucket (with optional `?force=true`)
 - `PATCH /api/buckets/:bucketName` - Rename a bucket
 
 #### File Operations
+
 - `GET /api/files/:bucketName` - List files in a bucket (supports `?cursor`, `?limit`, `?prefix`, `?skipCache`)
 - `POST /api/files/:bucketName/upload` - Upload a file (supports chunked uploads)
 - `GET /api/files/:bucketName/signed-url/:fileName` - Generate a signed download URL
@@ -423,6 +446,7 @@ The following operations return simulated success responses for UI testing:
 - `PATCH /api/files/:bucketName/:fileName/rename` - Rename a file within the same bucket
 
 #### Folder Operations
+
 - `POST /api/folders/:bucketName/create` - Create a new folder
 - `PATCH /api/folders/:bucketName/rename` - Rename a folder (batch operation)
 - `POST /api/folders/:bucketName/:folderPath/copy` - Copy a folder to another bucket or folder (supports `destinationPath`)
@@ -430,6 +454,7 @@ The following operations return simulated success responses for UI testing:
 - `DELETE /api/folders/:bucketName/:folderPath` - Delete a folder and its contents (with optional `?force=true`)
 
 #### AI Search Operations
+
 - `GET /api/ai-search/compatibility/:bucketName` - Analyze bucket files for AI Search indexability
 - `GET /api/ai-search/instances` - List AI Search instances
 - `POST /api/ai-search/instances` - Create an AI Search instance
@@ -439,6 +464,7 @@ The following operations return simulated success responses for UI testing:
 - `POST /api/ai-search/:instanceName/ai-search` - AI-powered search with generated response
 
 #### Job History & Audit Operations
+
 - `GET /api/jobs` - List jobs with filtering (supports `?status`, `?operation_type`, `?bucket_name`, `?start_date`, `?end_date`, `?job_id`, `?min_errors`, `?limit`, `?offset`, `?sort_by`, `?sort_order`)
 - `GET /api/jobs/:jobId` - Get job status and details
 - `GET /api/jobs/:jobId/events` - Get job event timeline
@@ -469,7 +495,11 @@ You can configure R2 Bucket Manager to hide specific buckets from the UI (e.g., 
    - Add your bucket name(s) to the array
 
 ```typescript
-const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'your-bucket-name'];
+const systemBuckets = [
+  "r2-bucket",
+  "sqlite-mcp-server-wiki",
+  "your-bucket-name",
+];
 ```
 
 2. **Deploy the changes:**
@@ -482,7 +512,12 @@ const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'your-bucket-name'
 To hide buckets named `blog-wiki` and `internal-data`:
 
 ```typescript
-const systemBuckets = ['r2-bucket', 'sqlite-mcp-server-wiki', 'blog-wiki', 'internal-data'];
+const systemBuckets = [
+  "r2-bucket",
+  "sqlite-mcp-server-wiki",
+  "blog-wiki",
+  "internal-data",
+];
 ```
 
 **Note:** Hidden buckets are completely filtered from the API response and won't appear in the bucket list or be accessible through the UI.

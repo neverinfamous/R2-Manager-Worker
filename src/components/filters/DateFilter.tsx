@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useRef, useState, type JSX } from 'react'
-import { formatDateRange } from '../../utils/filterUtils'
-import type { DateFilter as DateFilterType } from '../../types/filters'
+import { useCallback, useEffect, useRef, useState, type JSX } from "react";
+import { formatDateRange } from "../../utils/filterUtils";
+import type { DateFilter as DateFilterType } from "../../types/filters";
 
 interface DateFilterProps {
-  dateFilter: DateFilterType
-  isOpen: boolean
-  onToggle: () => void
-  onPresetChange: (preset: DateFilterType['preset']) => void
-  onCustomRange: (start: Date | null, end: Date | null) => void
-  onClear: () => void
+  dateFilter: DateFilterType;
+  isOpen: boolean;
+  onToggle: () => void;
+  onPresetChange: (preset: DateFilterType["preset"]) => void;
+  onCustomRange: (start: Date | null, end: Date | null) => void;
+  onClear: () => void;
 }
 
 export function DateFilter({
@@ -17,60 +17,67 @@ export function DateFilter({
   onToggle,
   onPresetChange,
   onCustomRange,
-  onClear
+  onClear,
 }: DateFilterProps): JSX.Element {
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  const buttonRef = useRef<HTMLButtonElement>(null)
-  const [customStart, setCustomStart] = useState<string>('')
-  const [customEnd, setCustomEnd] = useState<string>('')
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [customStart, setCustomStart] = useState<string>("");
+  const [customEnd, setCustomEnd] = useState<string>("");
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent): void => {
-      if (isOpen && 
-          dropdownRef.current !== null && 
-          buttonRef.current !== null &&
-          !dropdownRef.current.contains(event.target as Node) &&
-          !buttonRef.current.contains(event.target as Node)) {
-        onToggle()
+      if (
+        isOpen &&
+        dropdownRef.current !== null &&
+        buttonRef.current !== null &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        onToggle();
       }
-    }
+    };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return (): void => { document.removeEventListener('mousedown', handleClickOutside) }
+      document.addEventListener("mousedown", handleClickOutside);
+      return (): void => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
     }
-    return undefined
-  }, [isOpen, onToggle])
+    return undefined;
+  }, [isOpen, onToggle]);
 
-  const handlePresetClick = useCallback((preset: DateFilterType['preset']) => {
-    onPresetChange(preset)
-  }, [onPresetChange])
+  const handlePresetClick = useCallback(
+    (preset: DateFilterType["preset"]) => {
+      onPresetChange(preset);
+    },
+    [onPresetChange],
+  );
 
   const handleCustomApply = useCallback(() => {
-    const start = customStart ? new Date(customStart) : null
-    const end = customEnd ? new Date(customEnd) : null
-    onCustomRange(start, end)
-    setCustomStart('')
-    setCustomEnd('')
-  }, [customStart, customEnd, onCustomRange])
+    const start = customStart ? new Date(customStart) : null;
+    const end = customEnd ? new Date(customEnd) : null;
+    onCustomRange(start, end);
+    setCustomStart("");
+    setCustomEnd("");
+  }, [customStart, customEnd, onCustomRange]);
 
   const getActiveLabel = useCallback(() => {
-    if (dateFilter.preset === 'all') return 'All dates'
-    if (dateFilter.preset === 'custom') {
-      return formatDateRange(dateFilter.start, dateFilter.end)
+    if (dateFilter.preset === "all") return "All dates";
+    if (dateFilter.preset === "custom") {
+      return formatDateRange(dateFilter.start, dateFilter.end);
     }
-    
-    const presetLabels: Record<DateFilterType['preset'], string> = {
-      all: 'All dates',
-      today: 'Today',
-      week: 'Last 7 days',
-      month: 'Last 30 days',
-      quarter: 'Last 90 days',
-      year: 'This year',
-      custom: 'Custom'
-    }
-    return presetLabels[dateFilter.preset]
-  }, [dateFilter])
+
+    const presetLabels: Record<DateFilterType["preset"], string> = {
+      all: "All dates",
+      today: "Today",
+      week: "Last 7 days",
+      month: "Last 30 days",
+      quarter: "Last 90 days",
+      year: "This year",
+      custom: "Custom",
+    };
+    return presetLabels[dateFilter.preset];
+  }, [dateFilter]);
 
   return (
     <div className="filter-dropdown">
@@ -83,7 +90,7 @@ export function DateFilter({
         aria-controls="date-dropdown-menu"
       >
         Date: {getActiveLabel()}
-        <span className="dropdown-arrow">{isOpen ? '▲' : '▼'}</span>
+        <span className="dropdown-arrow">{isOpen ? "▲" : "▼"}</span>
       </button>
 
       {isOpen && (
@@ -97,7 +104,7 @@ export function DateFilter({
           <div className="filter-dropdown-section">
             <div className="filter-dropdown-header">
               <span>Upload Date</span>
-              {dateFilter.preset !== 'all' && (
+              {dateFilter.preset !== "all" && (
                 <button
                   className="filter-clear-link"
                   onClick={onClear}
@@ -112,8 +119,8 @@ export function DateFilter({
                 <input
                   type="radio"
                   name="date-preset"
-                  checked={dateFilter.preset === 'all'}
-                  onChange={() => handlePresetClick('all')}
+                  checked={dateFilter.preset === "all"}
+                  onChange={() => handlePresetClick("all")}
                   className="filter-radio-input"
                 />
                 <span>All Dates</span>
@@ -122,8 +129,8 @@ export function DateFilter({
                 <input
                   type="radio"
                   name="date-preset"
-                  checked={dateFilter.preset === 'today'}
-                  onChange={() => handlePresetClick('today')}
+                  checked={dateFilter.preset === "today"}
+                  onChange={() => handlePresetClick("today")}
                   className="filter-radio-input"
                 />
                 <span>Today</span>
@@ -132,8 +139,8 @@ export function DateFilter({
                 <input
                   type="radio"
                   name="date-preset"
-                  checked={dateFilter.preset === 'week'}
-                  onChange={() => handlePresetClick('week')}
+                  checked={dateFilter.preset === "week"}
+                  onChange={() => handlePresetClick("week")}
                   className="filter-radio-input"
                 />
                 <span>Last 7 Days</span>
@@ -142,8 +149,8 @@ export function DateFilter({
                 <input
                   type="radio"
                   name="date-preset"
-                  checked={dateFilter.preset === 'month'}
-                  onChange={() => handlePresetClick('month')}
+                  checked={dateFilter.preset === "month"}
+                  onChange={() => handlePresetClick("month")}
                   className="filter-radio-input"
                 />
                 <span>Last 30 Days</span>
@@ -152,8 +159,8 @@ export function DateFilter({
                 <input
                   type="radio"
                   name="date-preset"
-                  checked={dateFilter.preset === 'quarter'}
-                  onChange={() => handlePresetClick('quarter')}
+                  checked={dateFilter.preset === "quarter"}
+                  onChange={() => handlePresetClick("quarter")}
                   className="filter-radio-input"
                 />
                 <span>Last 90 Days</span>
@@ -162,8 +169,8 @@ export function DateFilter({
                 <input
                   type="radio"
                   name="date-preset"
-                  checked={dateFilter.preset === 'year'}
-                  onChange={() => handlePresetClick('year')}
+                  checked={dateFilter.preset === "year"}
+                  onChange={() => handlePresetClick("year")}
                   className="filter-radio-input"
                 />
                 <span>This Year</span>
@@ -183,7 +190,7 @@ export function DateFilter({
                   type="date"
                   value={customStart}
                   onChange={(e) => setCustomStart(e.target.value)}
-                  max={customEnd || new Date().toISOString().split('T')[0]}
+                  max={customEnd || new Date().toISOString().split("T")[0]}
                   className="filter-date-input"
                 />
               </div>
@@ -195,7 +202,7 @@ export function DateFilter({
                   value={customEnd}
                   onChange={(e) => setCustomEnd(e.target.value)}
                   min={customStart}
-                  max={new Date().toISOString().split('T')[0]}
+                  max={new Date().toISOString().split("T")[0]}
                   className="filter-date-input"
                 />
               </div>
@@ -212,6 +219,5 @@ export function DateFilter({
         </div>
       )}
     </div>
-  )
+  );
 }
-

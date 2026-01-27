@@ -3,131 +3,138 @@
  */
 
 .bucket-color-picker {
-    position: relative;
-    display: inline-flex;
+  position: relative;
+  display: inline-flex;
 }
 
 .bucket-color-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 2rem;
-    height: 2rem;
-    padding: 0;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    border-radius: 0.25rem;
-    transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 0.25rem;
+  transition: background-color 0.2s;
 }
 
 .bucket-color-button:hover:not(:disabled) {
-    background: var(--bg-hover, rgba(0, 0, 0, 0.1));
+  background: var(--bg-hover, rgba(0, 0, 0, 0.1));
 }
 
 .bucket-color-button:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .bucket-color-dot {
-    width: 1rem;
-    height: 1rem;
-    border-radius: 50%;
-    transition: transform 0.2s;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  transition: transform 0.2s;
 }
 
 .bucket-color-button:hover:not(:disabled) .bucket-color-dot {
-    transform: scale(1.1);
+  transform: scale(1.1);
 }
 
 .bucket-color-palette-icon {
-    color: var(--text-secondary, #6b7280);
-    transition: color 0.2s;
+  color: var(--text-secondary, #6b7280);
+  transition: color 0.2s;
 }
 
 .bucket-color-button:hover:not(:disabled) .bucket-color-palette-icon {
-    color: var(--text-primary, #374151);
+  color: var(--text-primary, #374151);
 }
 
 .bucket-color-spinner {
-    font-size: 0.75rem;
-    color: var(--text-secondary, #6b7280);
+  font-size: 0.75rem;
+  color: var(--text-secondary, #6b7280);
 }
 
 /* Backdrop */
 .bucket-color-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 40;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
 }
 
 /* Dropdown */
 .bucket-color-dropdown {
-    position: fixed;
-    z-index: 50;
-    background: var(--bg-secondary, #ffffff);
-    border: 1px solid var(--border-color, #e5e7eb);
-    border-radius: 0.5rem;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    padding: 0.75rem;
-    min-width: 170px;
+  position: fixed;
+  z-index: 50;
+  background: var(--bg-secondary, #ffffff);
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 0.5rem;
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  padding: 0.75rem;
+  min-width: 170px;
 }
 
 /* Color grid */
 .bucket-color-grid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 0.375rem;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.375rem;
 }
 
 .bucket-color-option {
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: 50%;
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
-    padding: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+  padding: 0;
 }
 
 .bucket-color-option:hover:not(:disabled) {
-    transform: scale(1.15);
+  transform: scale(1.15);
 }
 
 .bucket-color-option:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .bucket-color-option.selected {
-    border-color: var(--text-primary, #374151);
-    box-shadow: 0 0 0 2px var(--bg-secondary, #ffffff), 0 0 0 4px var(--accent-blue, #3b82f6);
+  border-color: var(--text-primary, #374151);
+  box-shadow:
+    0 0 0 2px var(--bg-secondary, #ffffff),
+    0 0 0 4px var(--accent-blue, #3b82f6);
 }
 
 /* Remove color button */
 .bucket-color-remove {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    width: 100%;
-    margin-top: 0.5rem;
-    padding: 0.375rem 0.5rem;
-    border: none;
-    border-top: 1px solid var(--border-color, #e5e7eb);
-    background: transparent;
-    color: var(--text-secondary, #6b7280);
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  width: 100%;
+  margin-top: 0.5rem;
+  padding: 0.375rem 0.5rem;
+  border: none;
+  border-top: 1px solid var(--border-color, #e5e7eb);
+  background: transparent;
+  color: var(--text-secondary, #6b7280);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: color 0.2s;
 }
 
 .bucket-color-remove:hover:not(:disabled) {
-    color: var(--accent-red, #ef4444);
+  color: var(--accent-red, #ef4444);
 }
 
 .bucket-color-remove:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
+  cursor: not-allowed;
+  opacity: 0.5;
 }

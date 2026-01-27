@@ -21,10 +21,10 @@ Automate your R2 storage lifecycle with powerful rule-based management.
 
 #### New API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/lifecycle/:bucketName` | GET | Retrieve lifecycle rules for a bucket |
-| `/api/lifecycle/:bucketName` | PUT | Set lifecycle rules (replaces all rules) |
+| Endpoint                     | Method | Description                              |
+| ---------------------------- | ------ | ---------------------------------------- |
+| `/api/lifecycle/:bucketName` | GET    | Retrieve lifecycle rules for a bucket    |
+| `/api/lifecycle/:bucketName` | PUT    | Set lifecycle rules (replaces all rules) |
 
 #### New Components
 
@@ -55,18 +55,18 @@ Modernized GitHub Actions workflows to match the d1/do/kv-manager fleet pattern.
 
 ### Dependency Updates
 
-| Package | Previous | New |
-|---------|----------|-----|
+| Package                     | Previous     | New          |
+| --------------------------- | ------------ | ------------ |
 | `@cloudflare/workers-types` | 4.20260109.0 | 4.20260114.0 |
-| `@types/node` | 25.0.3 | 25.0.8 |
-| `@types/react` | 19.2.7 | 19.2.8 |
-| `@babel/core` | 7.28.5 | 7.28.6 |
-| `baseline-browser-mapping` | 2.9.11 | 2.9.14 |
-| `caniuse-lite` | 1.0.30001762 | 1.0.30001764 |
-| `rollup` | 4.54.0 | 4.55.1 |
-| `typescript-eslint` | 8.51.0 | 8.53.0 |
-| `vite` | 7.3.0 | 7.3.1 |
-| `wrangler` | 4.56.0 | 4.59.1 |
+| `@types/node`               | 25.0.3       | 25.0.8       |
+| `@types/react`              | 19.2.7       | 19.2.8       |
+| `@babel/core`               | 7.28.5       | 7.28.6       |
+| `baseline-browser-mapping`  | 2.9.11       | 2.9.14       |
+| `caniuse-lite`              | 1.0.30001762 | 1.0.30001764 |
+| `rollup`                    | 4.54.0       | 4.55.1       |
+| `typescript-eslint`         | 8.51.0       | 8.53.0       |
+| `vite`                      | 7.3.0        | 7.3.1        |
+| `wrangler`                  | 4.56.0       | 4.59.1       |
 
 ---
 
@@ -121,11 +121,13 @@ The lifecycle feature integrates with the Cloudflare R2 REST API:
 ### From v3.2.0 to v3.3.0
 
 1. **Pull the latest code:**
+
    ```bash
    git pull origin main
    ```
 
 2. **Update dependencies:**
+
    ```bash
    npm install
    ```
@@ -155,6 +157,7 @@ No database migrations required for this release.
 Looking ahead to v3.4.0 and beyond:
 
 ### Planned Features
+
 - **File Versioning** - Track and restore previous file versions
 - **Advanced Webhooks** - Custom headers, retry logic, and delivery logs
 - **Offline Upload Queue** - Resumable uploads with service workers
@@ -168,6 +171,7 @@ See the full [Roadmap](https://github.com/neverinfamous/R2-Manager-Worker/wiki/R
 None reported at this time.
 
 If you encounter any issues, please [open an issue](https://github.com/neverinfamous/R2-Manager-Worker/issues) on GitHub with:
+
 - Version number (3.3.0)
 - Browser and OS
 - Steps to reproduce

@@ -1,20 +1,30 @@
-import { useState, useCallback, useMemo, type JSX } from 'react'
-import { useSearch } from '../../hooks/useSearch'
-import { SearchResultsTable } from './SearchResultsTable'
-import { ExtensionFilter } from '../filters/ExtensionFilter'
-import { SizeFilter } from '../filters/SizeFilter'
-import { DateFilter } from '../filters/DateFilter'
-import { detectExtensions, SIZE_PRESETS, DATE_PRESETS, EXTENSION_GROUPS } from '../../utils/filterUtils'
-import type { SizeFilter as SizeFilterType, DateFilter as DateFilterType } from '../../types/filters'
+import { useState, useCallback, useMemo, type JSX } from "react";
+import { useSearch } from "../../hooks/useSearch";
+import { SearchResultsTable } from "./SearchResultsTable";
+import { ExtensionFilter } from "../filters/ExtensionFilter";
+import { SizeFilter } from "../filters/SizeFilter";
+import { DateFilter } from "../filters/DateFilter";
+import {
+  detectExtensions,
+  SIZE_PRESETS,
+  DATE_PRESETS,
+  EXTENSION_GROUPS,
+} from "../../utils/filterUtils";
+import type {
+  SizeFilter as SizeFilterType,
+  DateFilter as DateFilterType,
+} from "../../types/filters";
 
 interface CrossBucketSearchProps {
-  onNavigateToBucket?: (bucketName: string) => void
+  onNavigateToBucket?: (bucketName: string) => void;
 }
 
-export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps): JSX.Element {
-  const [extensionDropdownOpen, setExtensionDropdownOpen] = useState(false)
-  const [sizeDropdownOpen, setSizeDropdownOpen] = useState(false)
-  const [dateDropdownOpen, setDateDropdownOpen] = useState(false)
+export function CrossBucketSearch({
+  onNavigateToBucket,
+}: CrossBucketSearchProps): JSX.Element {
+  const [extensionDropdownOpen, setExtensionDropdownOpen] = useState(false);
+  const [sizeDropdownOpen, setSizeDropdownOpen] = useState(false);
+  const [dateDropdownOpen, setDateDropdownOpen] = useState(false);
 
   const {
     filters,
@@ -30,90 +40,117 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
     setDateRange,
     executeSearch,
     clearSearch,
-    sortResults
-  } = useSearch()
+    sortResults,
+  } = useSearch();
 
   // Detect available extensions from results using useMemo
   const availableExtensions = useMemo(() => {
     // Convert SearchResult[] to FileObject[] format for detectExtensions
-    const fileObjects = results.map(r => ({
+    const fileObjects = results.map((r) => ({
       key: r.key,
       size: r.size,
       uploaded: r.uploaded,
-      url: r.url
-    }))
-    return detectExtensions(fileObjects)
-  }, [results])
+      url: r.url,
+    }));
+    return detectExtensions(fileObjects);
+  }, [results]);
 
-  const handleExtensionToggle = useCallback((extension: string) => {
-    setExtensions(
-      filters.extensions.includes(extension)
-        ? filters.extensions.filter(e => e !== extension)
-        : [...filters.extensions, extension]
-    )
-  }, [filters.extensions, setExtensions])
+  const handleExtensionToggle = useCallback(
+    (extension: string) => {
+      setExtensions(
+        filters.extensions.includes(extension)
+          ? filters.extensions.filter((e) => e !== extension)
+          : [...filters.extensions, extension],
+      );
+    },
+    [filters.extensions, setExtensions],
+  );
 
-  const handleExtensionGroupSelect = useCallback((groupName: string) => {
-    const groupExtensions = EXTENSION_GROUPS[groupName as keyof typeof EXTENSION_GROUPS]
-    if (groupExtensions === undefined) return
-    const availableInGroup = groupExtensions.filter(ext => availableExtensions.has(ext))
+  const handleExtensionGroupSelect = useCallback(
+    (groupName: string) => {
+      const groupExtensions =
+        EXTENSION_GROUPS[groupName as keyof typeof EXTENSION_GROUPS];
+      if (groupExtensions === undefined) return;
+      const availableInGroup = groupExtensions.filter((ext) =>
+        availableExtensions.has(ext),
+      );
 
-    // Toggle: if all are selected, deselect; otherwise select all
-    const allSelected = availableInGroup.every(ext => filters.extensions.includes(ext))
+      // Toggle: if all are selected, deselect; otherwise select all
+      const allSelected = availableInGroup.every((ext) =>
+        filters.extensions.includes(ext),
+      );
 
-    if (allSelected) {
-      setExtensions(filters.extensions.filter(e => !availableInGroup.includes(e)))
-    } else {
-      const newExtensions = [...new Set([...filters.extensions, ...availableInGroup])]
-      setExtensions(newExtensions)
-    }
-  }, [availableExtensions, filters.extensions, setExtensions])
-
-  const handleSizePresetChange = useCallback((preset: SizeFilterType['preset']) => {
-    if (preset === 'all') {
-      setSizeRange(null, null)
-    } else if (preset !== 'custom') {
-      const presetValues = SIZE_PRESETS[preset as keyof typeof SIZE_PRESETS]
-      if (presetValues !== undefined) {
-        setSizeRange(presetValues.min, presetValues.max)
+      if (allSelected) {
+        setExtensions(
+          filters.extensions.filter((e) => !availableInGroup.includes(e)),
+        );
+      } else {
+        const newExtensions = [
+          ...new Set([...filters.extensions, ...availableInGroup]),
+        ];
+        setExtensions(newExtensions);
       }
-    }
-  }, [setSizeRange])
+    },
+    [availableExtensions, filters.extensions, setExtensions],
+  );
 
-  const handleCustomSizeRange = useCallback((minMB: number, maxMB: number | null) => {
-    setSizeRange(
-      minMB * 1024 * 1024,
-      maxMB !== null ? maxMB * 1024 * 1024 : null
-    )
-  }, [setSizeRange])
-
-  const handleDatePresetChange = useCallback((preset: DateFilterType['preset']) => {
-    if (preset === 'all') {
-      setDateRange(null, null)
-    } else if (preset !== 'custom') {
-      const presetFn = DATE_PRESETS[preset as keyof typeof DATE_PRESETS]
-      if (presetFn !== undefined) {
-        const range = typeof presetFn === 'function' ? presetFn() : presetFn
-        setDateRange(range.start, range.end)
+  const handleSizePresetChange = useCallback(
+    (preset: SizeFilterType["preset"]) => {
+      if (preset === "all") {
+        setSizeRange(null, null);
+      } else if (preset !== "custom") {
+        const presetValues = SIZE_PRESETS[preset as keyof typeof SIZE_PRESETS];
+        if (presetValues !== undefined) {
+          setSizeRange(presetValues.min, presetValues.max);
+        }
       }
-    }
-  }, [setDateRange])
+    },
+    [setSizeRange],
+  );
 
-  const handleCustomDateRange = useCallback((start: Date | null, end: Date | null) => {
-    setDateRange(start, end)
-  }, [setDateRange])
+  const handleCustomSizeRange = useCallback(
+    (minMB: number, maxMB: number | null) => {
+      setSizeRange(
+        minMB * 1024 * 1024,
+        maxMB !== null ? maxMB * 1024 * 1024 : null,
+      );
+    },
+    [setSizeRange],
+  );
+
+  const handleDatePresetChange = useCallback(
+    (preset: DateFilterType["preset"]) => {
+      if (preset === "all") {
+        setDateRange(null, null);
+      } else if (preset !== "custom") {
+        const presetFn = DATE_PRESETS[preset as keyof typeof DATE_PRESETS];
+        if (presetFn !== undefined) {
+          const range = typeof presetFn === "function" ? presetFn() : presetFn;
+          setDateRange(range.start, range.end);
+        }
+      }
+    },
+    [setDateRange],
+  );
+
+  const handleCustomDateRange = useCallback(
+    (start: Date | null, end: Date | null) => {
+      setDateRange(start, end);
+    },
+    [setDateRange],
+  );
 
   const handleClearAll = useCallback(() => {
-    clearSearch()
-  }, [clearSearch])
+    clearSearch();
+  }, [clearSearch]);
 
   const hasActiveFilters =
-    filters.query.trim() !== '' ||
+    filters.query.trim() !== "" ||
     filters.extensions.length > 0 ||
     filters.minSize !== null ||
     filters.maxSize !== null ||
     filters.startDate !== null ||
-    filters.endDate !== null
+    filters.endDate !== null;
 
   return (
     <div className="cross-bucket-search">
@@ -136,7 +173,7 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
             selectedExtensions={filters.extensions}
             availableExtensions={availableExtensions}
             isOpen={extensionDropdownOpen}
-            onToggle={() => setExtensionDropdownOpen(prev => !prev)}
+            onToggle={() => setExtensionDropdownOpen((prev) => !prev)}
             onExtensionToggle={handleExtensionToggle}
             onGroupSelect={handleExtensionGroupSelect}
             onClear={() => setExtensions([])}
@@ -146,10 +183,13 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
             sizeFilter={{
               min: filters.minSize,
               max: filters.maxSize,
-              preset: filters.minSize !== null || filters.maxSize !== null ? 'custom' : 'all'
+              preset:
+                filters.minSize !== null || filters.maxSize !== null
+                  ? "custom"
+                  : "all",
             }}
             isOpen={sizeDropdownOpen}
-            onToggle={() => setSizeDropdownOpen(prev => !prev)}
+            onToggle={() => setSizeDropdownOpen((prev) => !prev)}
             onPresetChange={handleSizePresetChange}
             onCustomRange={handleCustomSizeRange}
             onClear={() => setSizeRange(null, null)}
@@ -159,20 +199,20 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
             dateFilter={{
               start: filters.startDate,
               end: filters.endDate,
-              preset: filters.startDate !== null || filters.endDate !== null ? 'custom' : 'all'
+              preset:
+                filters.startDate !== null || filters.endDate !== null
+                  ? "custom"
+                  : "all",
             }}
             isOpen={dateDropdownOpen}
-            onToggle={() => setDateDropdownOpen(prev => !prev)}
+            onToggle={() => setDateDropdownOpen((prev) => !prev)}
             onPresetChange={handleDatePresetChange}
             onCustomRange={handleCustomDateRange}
             onClear={() => setDateRange(null, null)}
           />
 
           {hasActiveFilters && (
-            <button
-              className="clear-all-button"
-              onClick={handleClearAll}
-            >
+            <button className="clear-all-button" onClick={handleClearAll}>
               Clear All
             </button>
           )}
@@ -182,7 +222,9 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
       {/* Results count */}
       {hasActiveFilters && (
         <div className="search-results-summary">
-          <span>{total} {total === 1 ? 'result' : 'results'} found</span>
+          <span>
+            {total} {total === 1 ? "result" : "results"} found
+          </span>
         </div>
       )}
 
@@ -206,9 +248,11 @@ export function CrossBucketSearch({ onNavigateToBucket }: CrossBucketSearchProps
 
       {!hasActiveFilters && (
         <div className="search-instructions">
-          <p>Enter a search query or apply filters to search across all buckets</p>
+          <p>
+            Enter a search query or apply filters to search across all buckets
+          </p>
         </div>
       )}
     </div>
-  )
+  );
 }

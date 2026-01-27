@@ -61,13 +61,13 @@ Always up-to-date supported file types for AI Search compatibility.
 
 6 new granular event types for comprehensive R2 operation tracking.
 
-| Event | Description |
-|-------|-------------|
-| `file_move` | Track file transfer operations |
-| `file_copy` | Monitor file duplication |
-| `file_rename` | Capture file rename events |
-| `folder_create` | Monitor folder creation |
-| `folder_delete` | Track folder removal |
+| Event           | Description                      |
+| --------------- | -------------------------------- |
+| `file_move`     | Track file transfer operations   |
+| `file_copy`     | Monitor file duplication         |
+| `file_rename`   | Capture file rename events       |
+| `folder_create` | Monitor folder creation          |
+| `folder_delete` | Track folder removal             |
 | `bucket_rename` | Capture bucket rename operations |
 
 - **Total Events** - Increased from 7 to 15 webhook event types
@@ -119,11 +119,11 @@ Thanks to [@denzyve](https://github.com/denzyve) for identifying these issues in
 
 Prevents 429 errors during rapid UI navigation.
 
-| Tier | Previous | New |
-|------|----------|-----|
-| READ | 100/min | 300/min |
-| WRITE | 30/min | 100/min |
-| DELETE | 10/min | 30/min |
+| Tier   | Previous | New     |
+| ------ | -------- | ------- |
+| READ   | 100/min  | 300/min |
+| WRITE  | 30/min   | 100/min |
+| DELETE | 10/min   | 30/min  |
 
 ### Support Email in Error Messages
 
@@ -136,17 +136,17 @@ All API error responses now include support contact.
 
 ### Dependency Updates
 
-| Package | Previous | New |
-|---------|----------|-----|
-| `@cloudflare/workers-types` | 4.20251213.0 | 4.20260109.0 |
-| `@types/node` | 25.0.2 | 25.0.3 |
-| `esbuild` | 0.27.1 | 0.27.2 |
-| `eslint-plugin-react-refresh` | 0.4.25 | 0.4.26 |
-| `globals` | 16.5.0 | 17.0.0 |
-| `lucide-react` | 0.561.0 | 0.562.0 |
-| `typescript-eslint` | 8.49.0 | 8.52.0 |
-| `vite` | 7.3.0 | 7.3.1 |
-| `wrangler` | 4.55.0 | 4.58.0 |
+| Package                       | Previous     | New          |
+| ----------------------------- | ------------ | ------------ |
+| `@cloudflare/workers-types`   | 4.20251213.0 | 4.20260109.0 |
+| `@types/node`                 | 25.0.2       | 25.0.3       |
+| `esbuild`                     | 0.27.1       | 0.27.2       |
+| `eslint-plugin-react-refresh` | 0.4.25       | 0.4.26       |
+| `globals`                     | 16.5.0       | 17.0.0       |
+| `lucide-react`                | 0.561.0      | 0.562.0      |
+| `typescript-eslint`           | 8.49.0       | 8.52.0       |
+| `vite`                        | 7.3.0        | 7.3.1        |
+| `wrangler`                    | 4.55.0       | 4.58.0       |
 
 ---
 
@@ -160,11 +160,11 @@ All API error responses now include support contact.
 
 ### New API Endpoints
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api/health` | GET | System health status and metrics |
-| `/api/ai-search/instances/:name/status` | GET | AI Search instance indexing status |
-| `/api/ai-search/supported-types` | GET | Dynamic file type detection |
+| Endpoint                                | Method | Description                        |
+| --------------------------------------- | ------ | ---------------------------------- |
+| `/api/health`                           | GET    | System health status and metrics   |
+| `/api/ai-search/instances/:name/status` | GET    | AI Search instance indexing status |
+| `/api/ai-search/supported-types`        | GET    | Dynamic file type detection        |
 
 ### Code Quality Metrics
 
@@ -187,11 +187,13 @@ All API error responses now include support contact.
 ### From v3.1.0 to v3.2.0
 
 1. **Pull the latest code:**
+
    ```bash
    git pull origin main
    ```
 
 2. **Update dependencies:**
+
    ```bash
    npm install
    ```
@@ -222,6 +224,7 @@ No database migrations required for this release.
 Looking ahead to v3.3.0 and beyond:
 
 ### Planned Features
+
 - **File Versioning** - Track and restore previous file versions
 - **Advanced Webhooks** - Custom headers, retry logic, and delivery logs
 - **Offline Upload Queue** - Resumable uploads with service workers
@@ -235,6 +238,7 @@ See the full [Roadmap](https://github.com/neverinfamous/R2-Manager-Worker/wiki/R
 None reported at this time.
 
 If you encounter any issues, please [open an issue](https://github.com/neverinfamous/R2-Manager-Worker/issues) on GitHub with:
+
 - Version number (3.2.0)
 - Browser and OS
 - Steps to reproduce

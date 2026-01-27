@@ -1,3 +1,2 @@
-export { JobHistory } from './JobHistory'
-export { JobHistoryDialog } from './JobHistoryDialog'
-
+export { JobHistory } from "./JobHistory";
+export { JobHistoryDialog } from "./JobHistoryDialog";

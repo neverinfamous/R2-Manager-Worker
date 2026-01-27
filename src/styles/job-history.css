@@ -393,7 +393,7 @@
 
 /* Job ID */
 .job-card-id {
-  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  font-family: "Monaco", "Menlo", "Courier New", monospace;
   font-size: 0.75rem;
   color: var(--text-tertiary);
 }
@@ -465,7 +465,7 @@
 }
 
 .job-dialog-job-id {
-  font-family: 'Monaco', 'Menlo', 'Courier New', monospace;
+  font-family: "Monaco", "Menlo", "Courier New", monospace;
   font-size: 0.75rem;
   color: var(--text-tertiary);
 }
@@ -477,7 +477,7 @@
 }
 
 .job-timeline::before {
-  content: '';
+  content: "";
   position: absolute;
   left: 0.5rem;
   top: 0.5rem;
@@ -666,4 +666,3 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
-

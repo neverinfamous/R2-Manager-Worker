@@ -1,513 +1,515 @@
 /* Lifecycle Rules Panel Styles */
 
 .lifecycle-panel {
-    background: var(--bg-secondary, #1a1a1a);
-    border-radius: 12px;
-    max-width: 800px;
-    margin: 0 auto;
-    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  background: var(--bg-secondary, #1a1a1a);
+  border-radius: 12px;
+  max-width: 800px;
+  margin: 0 auto;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
 .lifecycle-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border-color, #333);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color, #333);
 }
 
 .lifecycle-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .lifecycle-title h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: var(--text-primary, #fff);
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
 }
 
 .lifecycle-icon {
-    width: 24px;
-    height: 24px;
-    color: var(--accent-color, #3b82f6);
+  width: 24px;
+  height: 24px;
+  color: var(--accent-color, #3b82f6);
 }
 
 .lifecycle-bucket-badge {
-    background: var(--accent-color, #3b82f6);
-    color: white;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
+  background: var(--accent-color, #3b82f6);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .lifecycle-close {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 8px;
-    border-radius: 8px;
-    color: var(--text-secondary, #888);
-    transition: all 0.2s ease;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 8px;
+  color: var(--text-secondary, #888);
+  transition: all 0.2s ease;
 }
 
 .lifecycle-close:hover {
-    background: var(--bg-hover, #2a2a2a);
-    color: var(--text-primary, #fff);
+  background: var(--bg-hover, #2a2a2a);
+  color: var(--text-primary, #fff);
 }
 
 .lifecycle-close svg {
-    width: 20px;
-    height: 20px;
+  width: 20px;
+  height: 20px;
 }
 
 .lifecycle-info {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    padding: 16px 24px;
-    background: rgba(59, 130, 246, 0.1);
-    border-bottom: 1px solid var(--border-color, #333);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 24px;
+  background: rgba(59, 130, 246, 0.1);
+  border-bottom: 1px solid var(--border-color, #333);
 }
 
 .lifecycle-info svg {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    color: var(--accent-color, #3b82f6);
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--accent-color, #3b82f6);
 }
 
 .lifecycle-info span {
-    font-size: 0.875rem;
-    color: var(--text-secondary, #aaa);
-    line-height: 1.5;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #aaa);
+  line-height: 1.5;
 }
 
 .lifecycle-error {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 24px;
-    background: rgba(239, 68, 68, 0.1);
-    border-bottom: 1px solid rgba(239, 68, 68, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  background: rgba(239, 68, 68, 0.1);
+  border-bottom: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 .lifecycle-error svg {
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    color: #ef4444;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: #ef4444;
 }
 
 .lifecycle-error span {
-    flex: 1;
-    font-size: 0.875rem;
-    color: #ef4444;
+  flex: 1;
+  font-size: 0.875rem;
+  color: #ef4444;
 }
 
 .lifecycle-error button {
-    background: transparent;
-    border: none;
-    color: #ef4444;
-    font-size: 1.25rem;
-    cursor: pointer;
-    padding: 0 4px;
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0 4px;
 }
 
 .lifecycle-actions {
-    display: flex;
-    gap: 12px;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--border-color, #333);
+  display: flex;
+  gap: 12px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color, #333);
 }
 
 .lifecycle-add-btn,
 .lifecycle-refresh-btn {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .lifecycle-add-btn {
-    background: var(--accent-color, #3b82f6);
-    border: none;
-    color: white;
+  background: var(--accent-color, #3b82f6);
+  border: none;
+  color: white;
 }
 
 .lifecycle-add-btn:hover {
-    background: var(--accent-hover, #2563eb);
+  background: var(--accent-hover, #2563eb);
 }
 
 .lifecycle-add-btn svg,
 .lifecycle-refresh-btn svg {
-    width: 16px;
-    height: 16px;
+  width: 16px;
+  height: 16px;
 }
 
 .lifecycle-refresh-btn {
-    background: transparent;
-    border: 1px solid var(--border-color, #333);
-    color: var(--text-secondary, #aaa);
+  background: transparent;
+  border: 1px solid var(--border-color, #333);
+  color: var(--text-secondary, #aaa);
 }
 
 .lifecycle-refresh-btn:hover:not(:disabled) {
-    border-color: var(--text-secondary, #888);
-    color: var(--text-primary, #fff);
+  border-color: var(--text-secondary, #888);
+  color: var(--text-primary, #fff);
 }
 
 .lifecycle-refresh-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .lifecycle-content {
-    padding: 24px;
-    min-height: 200px;
+  padding: 24px;
+  min-height: 200px;
 }
 
 .lifecycle-loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding: 48px;
-    color: var(--text-secondary, #888);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px;
+  color: var(--text-secondary, #888);
 }
 
 .lifecycle-spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--border-color, #333);
-    border-top-color: var(--accent-color, #3b82f6);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-color, #333);
+  border-top-color: var(--accent-color, #3b82f6);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .lifecycle-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 48px;
-    text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 48px;
+  text-align: center;
 }
 
 .lifecycle-empty svg {
-    width: 48px;
-    height: 48px;
-    color: var(--text-tertiary, #555);
+  width: 48px;
+  height: 48px;
+  color: var(--text-tertiary, #555);
 }
 
 .lifecycle-empty p {
-    margin: 0;
-    font-size: 1rem;
-    font-weight: 500;
-    color: var(--text-secondary, #aaa);
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-secondary, #aaa);
 }
 
 .lifecycle-empty span {
-    font-size: 0.875rem;
-    color: var(--text-tertiary, #666);
-    max-width: 400px;
+  font-size: 0.875rem;
+  color: var(--text-tertiary, #666);
+  max-width: 400px;
 }
 
 .lifecycle-rules-list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .lifecycle-rule {
-    background: var(--bg-tertiary, #252525);
-    border: 1px solid var(--border-color, #333);
-    border-radius: 8px;
-    padding: 16px;
-    transition: all 0.2s ease;
+  background: var(--bg-tertiary, #252525);
+  border: 1px solid var(--border-color, #333);
+  border-radius: 8px;
+  padding: 16px;
+  transition: all 0.2s ease;
 }
 
 .lifecycle-rule:hover {
-    border-color: var(--border-hover, #444);
+  border-color: var(--border-hover, #444);
 }
 
 .lifecycle-rule.disabled {
-    opacity: 0.6;
+  opacity: 0.6;
 }
 
 .lifecycle-rule-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
 .lifecycle-rule-id {
-    font-weight: 600;
-    color: var(--text-primary, #fff);
-    font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
+  font-size: 0.9375rem;
 }
 
 .lifecycle-rule-actions {
-    display: flex;
-    gap: 8px;
+  display: flex;
+  gap: 8px;
 }
 
 .lifecycle-toggle {
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid var(--border-color, #333);
-    background: transparent;
-    color: var(--text-tertiary, #666);
-    transition: all 0.2s ease;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid var(--border-color, #333);
+  background: transparent;
+  color: var(--text-tertiary, #666);
+  transition: all 0.2s ease;
 }
 
 .lifecycle-toggle.enabled {
-    background: rgba(34, 197, 94, 0.15);
-    border-color: rgba(34, 197, 94, 0.3);
-    color: #22c55e;
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #22c55e;
 }
 
 .lifecycle-delete {
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 0.75rem;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    background: rgba(239, 68, 68, 0.1);
-    color: #ef4444;
-    transition: all 0.2s ease;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  transition: all 0.2s ease;
 }
 
 .lifecycle-delete:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.2);
 }
 
 .lifecycle-delete:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .lifecycle-rule-description {
-    font-size: 0.875rem;
-    color: var(--text-secondary, #aaa);
-    margin-bottom: 12px;
+  font-size: 0.875rem;
+  color: var(--text-secondary, #aaa);
+  margin-bottom: 12px;
 }
 
 .lifecycle-rule-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 500;
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
 .lifecycle-rule-badge.expire {
-    background: rgba(239, 68, 68, 0.15);
-    color: #f87171;
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
 }
 
 .lifecycle-rule-badge.transition {
-    background: rgba(59, 130, 246, 0.15);
-    color: #60a5fa;
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
 }
 
 /* Create Lifecycle Rule Modal */
 .lifecycle-modal {
-    background: var(--bg-secondary, #1a1a1a);
-    border-radius: 12px;
-    max-width: 480px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  background: var(--bg-secondary, #1a1a1a);
+  border-radius: 12px;
+  max-width: 480px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .lifecycle-modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--border-color, #333);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color, #333);
 }
 
 .lifecycle-modal-header h3 {
-    margin: 0;
-    font-size: 1.125rem;
-    font-weight: 600;
-    color: var(--text-primary, #fff);
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
 }
 
 .lifecycle-modal-close {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary, #888);
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: all 0.2s ease;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #888);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
 .lifecycle-modal-close:hover:not(:disabled) {
-    background: var(--bg-hover, #2a2a2a);
-    color: var(--text-primary, #fff);
+  background: var(--bg-hover, #2a2a2a);
+  color: var(--text-primary, #fff);
 }
 
 .lifecycle-modal-close:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .lifecycle-modal-content {
-    padding: 24px;
+  padding: 24px;
 }
 
 .lifecycle-modal-error {
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: 8px;
-    padding: 12px 16px;
-    margin-bottom: 20px;
-    font-size: 0.875rem;
-    color: #ef4444;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 0.875rem;
+  color: #ef4444;
 }
 
 .lifecycle-form-group {
-    margin-bottom: 20px;
+  margin-bottom: 20px;
 }
 
 .lifecycle-form-group label {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--text-primary, #fff);
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-primary, #fff);
 }
 
 .lifecycle-form-group input,
 .lifecycle-form-group select {
-    width: 100%;
-    padding: 10px 12px;
-    border: 1px solid var(--border-color, #333);
-    border-radius: 8px;
-    background: var(--bg-tertiary, #252525);
-    color: var(--text-primary, #fff);
-    font-size: 0.875rem;
-    transition: border-color 0.2s ease;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color, #333);
+  border-radius: 8px;
+  background: var(--bg-tertiary, #252525);
+  color: var(--text-primary, #fff);
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease;
 }
 
 .lifecycle-form-group input:focus,
 .lifecycle-form-group select:focus {
-    outline: none;
-    border-color: var(--accent-color, #3b82f6);
+  outline: none;
+  border-color: var(--accent-color, #3b82f6);
 }
 
 .lifecycle-form-group input:disabled,
 .lifecycle-form-group select:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .lifecycle-form-help {
-    display: block;
-    margin-top: 6px;
-    font-size: 0.75rem;
-    color: var(--text-tertiary, #666);
+  display: block;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--text-tertiary, #666);
 }
 
 .lifecycle-days-input {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .lifecycle-days-input input {
-    width: 100px;
+  width: 100px;
 }
 
 .lifecycle-days-input span {
-    color: var(--text-secondary, #aaa);
-    font-size: 0.875rem;
+  color: var(--text-secondary, #aaa);
+  font-size: 0.875rem;
 }
 
 .lifecycle-form-section {
-    margin-top: 24px;
-    padding-top: 24px;
-    border-top: 1px solid var(--border-color, #333);
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border-color, #333);
 }
 
 .lifecycle-form-section h4 {
-    margin: 0 0 8px;
-    font-size: 0.9375rem;
-    font-weight: 600;
-    color: var(--text-primary, #fff);
+  margin: 0 0 8px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary, #fff);
 }
 
 .lifecycle-form-section-help {
-    margin: 0 0 16px;
-    font-size: 0.8125rem;
-    color: var(--text-tertiary, #666);
+  margin: 0 0 16px;
+  font-size: 0.8125rem;
+  color: var(--text-tertiary, #666);
 }
 
 .lifecycle-modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-    padding: 16px 24px;
-    border-top: 1px solid var(--border-color, #333);
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color, #333);
 }
 
 .lifecycle-btn-cancel,
 .lifecycle-btn-create {
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-size: 0.875rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .lifecycle-btn-cancel {
-    background: transparent;
-    border: 1px solid var(--border-color, #333);
-    color: var(--text-secondary, #aaa);
+  background: transparent;
+  border: 1px solid var(--border-color, #333);
+  color: var(--text-secondary, #aaa);
 }
 
 .lifecycle-btn-cancel:hover:not(:disabled) {
-    border-color: var(--text-secondary, #888);
-    color: var(--text-primary, #fff);
+  border-color: var(--text-secondary, #888);
+  color: var(--text-primary, #fff);
 }
 
 .lifecycle-btn-create {
-    background: var(--accent-color, #3b82f6);
-    border: none;
-    color: white;
+  background: var(--accent-color, #3b82f6);
+  border: none;
+  color: white;
 }
 
 .lifecycle-btn-create:hover:not(:disabled) {
-    background: var(--accent-hover, #2563eb);
+  background: var(--accent-hover, #2563eb);
 }
 
 .lifecycle-btn-cancel:disabled,
 .lifecycle-btn-create:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  opacity: 0.5;
+  cursor: not-allowed;
 }

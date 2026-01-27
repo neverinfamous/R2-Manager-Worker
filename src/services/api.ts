@@ -1,351 +1,365 @@
-import SparkMD5 from 'spark-md5'
-import { logger } from './logger'
+import SparkMD5 from "spark-md5";
+import { logger } from "./logger";
 
-const WORKER_API = (import.meta.env['VITE_WORKER_API'] as string | undefined) ?? window.location.origin
+const WORKER_API =
+  (import.meta.env["VITE_WORKER_API"] as string | undefined) ??
+  window.location.origin;
 
-type ProgressCallback = (progress: number) => void
-type RetryCallback = (attempt: number, chunk: number, error: Error) => void
-type VerificationCallback = (status: 'verifying' | 'verified' | 'failed') => void
+type ProgressCallback = (progress: number) => void;
+type RetryCallback = (attempt: number, chunk: number, error: Error) => void;
+type VerificationCallback = (
+  status: "verifying" | "verified" | "failed",
+) => void;
 
 interface FileObject {
-  key: string
-  size: number
-  uploaded: string
-  url: string
+  key: string;
+  size: number;
+  uploaded: string;
+  url: string;
 }
 
 interface PaginationInfo {
-  cursor?: string
-  hasMore: boolean
+  cursor?: string;
+  hasMore: boolean;
 }
 
 interface FileListResponse {
-  objects: FileObject[]
-  folders: string[]
-  pagination: PaginationInfo
+  objects: FileObject[];
+  folders: string[];
+  pagination: PaginationInfo;
 }
 
 interface ListFilesOptions {
-  skipCache?: boolean | undefined
-  prefix?: string | undefined
+  skipCache?: boolean | undefined;
+  prefix?: string | undefined;
 }
 
 interface CloudflareBucket {
-  name: string
-  creation_date: string
-  size?: number
-  objectCount?: number
+  name: string;
+  creation_date: string;
+  size?: number;
+  objectCount?: number;
 }
 
 interface DownloadOptions {
-  asZip?: boolean
-  onProgress?: ProgressCallback
-  maxTotalSize?: number
+  asZip?: boolean;
+  onProgress?: ProgressCallback;
+  maxTotalSize?: number;
 }
 
 interface UploadOptions {
-  onProgress?: ProgressCallback
-  onRetry?: RetryCallback
-  onVerification?: VerificationCallback
-  maxRetries?: number
-  retryDelay?: number
+  onProgress?: ProgressCallback;
+  onRetry?: RetryCallback;
+  onVerification?: VerificationCallback;
+  maxRetries?: number;
+  retryDelay?: number;
 }
 
 // API Response types
 interface UploadChunkResponse {
-  etag?: string
-  success?: boolean
+  etag?: string;
+  success?: boolean;
 }
 
 interface ApiErrorResponse {
-  error?: string
+  error?: string;
 }
 
 interface TransferResponse {
-  success?: boolean
-  copied?: number
-  moved?: number
-  failed?: number
+  success?: boolean;
+  copied?: number;
+  moved?: number;
+  failed?: number;
 }
 
 interface SignedUrlResponse {
-  url: string
+  url: string;
 }
 
 // AI Search Types
 export interface AISearchCompatibility {
-  bucketName: string
-  totalFiles: number
-  indexableFiles: number
-  nonIndexableFiles: number
-  totalSize: number
-  indexableSize: number
+  bucketName: string;
+  totalFiles: number;
+  indexableFiles: number;
+  nonIndexableFiles: number;
+  totalSize: number;
+  indexableSize: number;
   files: {
-    indexable: AISearchFileInfo[]
-    nonIndexable: AISearchFileInfo[]
-  }
-  supportedExtensions: string[]
+    indexable: AISearchFileInfo[];
+    nonIndexable: AISearchFileInfo[];
+  };
+  supportedExtensions: string[];
 }
 
 export interface AISearchFileInfo {
-  key: string
-  size: number
-  extension: string
-  reason?: string
+  key: string;
+  size: number;
+  extension: string;
+  reason?: string;
 }
 
 export interface AISearchInstance {
-  id?: string  // API returns 'id' as the instance identifier
-  name?: string // For backwards compatibility
-  description?: string
-  created_at?: string
-  modified_at?: string
-  status?: 'active' | 'indexing' | 'paused' | 'error' | 'waiting'
-  enable?: boolean
-  type?: 'r2' | 'website'
-  source?: string  // Bucket name when type is 'r2'
+  id?: string; // API returns 'id' as the instance identifier
+  name?: string; // For backwards compatibility
+  description?: string;
+  created_at?: string;
+  modified_at?: string;
+  status?: "active" | "indexing" | "paused" | "error" | "waiting";
+  enable?: boolean;
+  type?: "r2" | "website";
+  source?: string; // Bucket name when type is 'r2'
   data_source?: {
-    type: 'r2' | 'website'
-    bucket_name?: string
-    domain?: string
-  }
-  last_activity?: string
+    type: "r2" | "website";
+    bucket_name?: string;
+    domain?: string;
+  };
+  last_activity?: string;
 }
 
 export interface AISearchInstancesResponse {
-  instances: AISearchInstance[]
-  error?: string
-  dashboardUrl?: string
+  instances: AISearchInstance[];
+  error?: string;
+  dashboardUrl?: string;
 }
 
 export interface AISearchCreateResponse {
-  success: boolean
-  instance?: AISearchInstance
-  error?: string
-  dashboardUrl?: string
+  success: boolean;
+  instance?: AISearchInstance;
+  error?: string;
+  dashboardUrl?: string;
 }
 
 export interface AISearchSyncResponse {
-  success: boolean
-  message?: string
-  job_id?: string
-  error?: string
+  success: boolean;
+  message?: string;
+  job_id?: string;
+  error?: string;
 }
 
 // Dynamic file type support (from Cloudflare toMarkdown API)
 export interface SupportedFileType {
-  extension: string
-  mimeType: string
+  extension: string;
+  mimeType: string;
 }
 
 export interface SupportedFileTypesResponse {
-  types: SupportedFileType[]
-  cached: boolean
-  fetchedAt: string
+  types: SupportedFileType[];
+  cached: boolean;
+  fetchedAt: string;
 }
 
 // AI Search indexing job types
 export interface AISearchIndexingJob {
-  id: string
-  status: 'pending' | 'running' | 'completed' | 'failed'
-  started_at: string
-  completed_at?: string
-  files_indexed?: number
-  files_failed?: number
-  error?: string
+  id: string;
+  status: "pending" | "running" | "completed" | "failed";
+  started_at: string;
+  completed_at?: string;
+  files_indexed?: number;
+  files_failed?: number;
+  error?: string;
 }
 
 export interface AISearchInstanceStatus {
-  name: string
-  status: string
-  last_sync?: string
-  next_sync?: string
-  files_indexed?: number
-  vectorize_index_status?: string
-  recentJobs?: AISearchIndexingJob[]
+  name: string;
+  status: string;
+  last_sync?: string;
+  next_sync?: string;
+  files_indexed?: number;
+  vectorize_index_status?: string;
+  recentJobs?: AISearchIndexingJob[];
 }
 
 export interface AISearchQueryParams {
-  query: string
-  rewrite_query?: boolean
-  max_num_results?: number
-  score_threshold?: number
+  query: string;
+  rewrite_query?: boolean;
+  max_num_results?: number;
+  score_threshold?: number;
   reranking?: {
-    enabled: boolean
-    model?: string
-  }
-  stream?: boolean
+    enabled: boolean;
+    model?: string;
+  };
+  stream?: boolean;
 }
 
 export interface AISearchResult {
-  file_id: string
-  filename: string
-  score: number
+  file_id: string;
+  filename: string;
+  score: number;
   attributes?: {
-    modified_date?: number
-    folder?: string
-  }
+    modified_date?: number;
+    folder?: string;
+  };
   content: {
-    id: string
-    type: string
-    text: string
-  }[]
+    id: string;
+    type: string;
+    text: string;
+  }[];
 }
 
 export interface AISearchResponse {
-  response?: string
-  data?: AISearchResult[]
-  has_more?: boolean
-  next_page?: string | null
-  error?: string
+  response?: string;
+  data?: AISearchResult[];
+  has_more?: boolean;
+  next_page?: string | null;
+  error?: string;
 }
 
 // Job History Types
-export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+export type JobStatus =
+  | "queued"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
 export type JobOperationType =
   // Bulk operations
-  | 'bulk_upload'
-  | 'bulk_download'
-  | 'bulk_delete'
+  | "bulk_upload"
+  | "bulk_download"
+  | "bulk_delete"
   // File operations (individual)
-  | 'file_upload'
-  | 'file_download'
-  | 'file_delete'
-  | 'file_rename'
-  | 'file_move'
-  | 'file_copy'
+  | "file_upload"
+  | "file_download"
+  | "file_delete"
+  | "file_rename"
+  | "file_move"
+  | "file_copy"
   // Folder operations
-  | 'folder_create'
-  | 'folder_delete'
-  | 'folder_rename'
-  | 'folder_move'
-  | 'folder_copy'
+  | "folder_create"
+  | "folder_delete"
+  | "folder_rename"
+  | "folder_move"
+  | "folder_copy"
   // Bucket operations
-  | 'bucket_create'
-  | 'bucket_delete'
-  | 'bucket_rename'
+  | "bucket_create"
+  | "bucket_delete"
+  | "bucket_rename"
   // AI Search
-  | 'ai_search_sync'
+  | "ai_search_sync";
 
 export interface JobListItem {
-  job_id: string
-  bucket_name: string
-  operation_type: JobOperationType
-  status: JobStatus
-  total_items: number | null
-  processed_items: number | null
-  error_count: number | null
-  percentage: number
-  started_at: string
-  completed_at: string | null
-  user_email: string
-  metadata?: string | null
+  job_id: string;
+  bucket_name: string;
+  operation_type: JobOperationType;
+  status: JobStatus;
+  total_items: number | null;
+  processed_items: number | null;
+  error_count: number | null;
+  percentage: number;
+  started_at: string;
+  completed_at: string | null;
+  user_email: string;
+  metadata?: string | null;
 }
 
 export interface JobListResponse {
-  jobs: JobListItem[]
-  total: number
-  limit: number
-  offset: number
+  jobs: JobListItem[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export interface JobEvent {
-  id: number
-  job_id: string
-  event_type: 'started' | 'progress' | 'completed' | 'failed' | 'cancelled'
-  user_email: string
-  timestamp: string
-  details: string | null
+  id: number;
+  job_id: string;
+  event_type: "started" | "progress" | "completed" | "failed" | "cancelled";
+  user_email: string;
+  timestamp: string;
+  details: string | null;
 }
 
 export interface JobEventDetails {
-  total?: number
-  processed?: number
-  errors?: number
-  percentage?: number
-  error_message?: string
-  [key: string]: unknown
+  total?: number;
+  processed?: number;
+  errors?: number;
+  percentage?: number;
+  error_message?: string;
+  [key: string]: unknown;
 }
 
 export interface JobEventsResponse {
-  job_id: string
-  events: JobEvent[]
+  job_id: string;
+  events: JobEvent[];
 }
 
 // S3 Import Types (Super Slurper)
-export type S3ImportJobStatus = 'pending' | 'running' | 'complete' | 'error' | 'aborted'
+export type S3ImportJobStatus =
+  | "pending"
+  | "running"
+  | "complete"
+  | "error"
+  | "aborted";
 
-export type S3ImportProvider = 'aws' | 'gcs' | 's3_compatible'
+export type S3ImportProvider = "aws" | "gcs" | "s3_compatible";
 
 export interface S3ImportJobProgress {
-  objects_copied: number
-  objects_skipped: number
-  objects_failed: number
-  bytes_copied: number
+  objects_copied: number;
+  objects_skipped: number;
+  objects_failed: number;
+  bytes_copied: number;
 }
 
 export interface S3ImportJob {
-  id: string
+  id: string;
   source: {
-    provider: S3ImportProvider
-    bucket: string
-    region?: string
-    endpoint?: string
-    prefix?: string
-  }
+    provider: S3ImportProvider;
+    bucket: string;
+    region?: string;
+    endpoint?: string;
+    prefix?: string;
+  };
   destination: {
-    bucket: string
-  }
-  status: S3ImportJobStatus
-  progress?: S3ImportJobProgress
-  overwrite_objects?: boolean
-  created_at: string
-  completed_at?: string
-  error?: string
+    bucket: string;
+  };
+  status: S3ImportJobStatus;
+  progress?: S3ImportJobProgress;
+  overwrite_objects?: boolean;
+  created_at: string;
+  completed_at?: string;
+  error?: string;
 }
 
 export interface CreateS3ImportJobRequest {
-  sourceBucketName: string
-  sourceAccessKeyId: string
-  sourceSecretAccessKey: string
-  sourceRegion?: string
-  sourceEndpoint?: string
-  sourceProvider?: S3ImportProvider
-  destinationBucketName: string
-  bucketSubpath?: string
-  overwriteExisting?: boolean
+  sourceBucketName: string;
+  sourceAccessKeyId: string;
+  sourceSecretAccessKey: string;
+  sourceRegion?: string;
+  sourceEndpoint?: string;
+  sourceProvider?: S3ImportProvider;
+  destinationBucketName: string;
+  bucketSubpath?: string;
+  overwriteExisting?: boolean;
 }
 
 export interface S3ImportJobsListResponse {
-  jobs: S3ImportJob[]
-  has_more?: boolean
-  error?: string
+  jobs: S3ImportJob[];
+  has_more?: boolean;
+  error?: string;
 }
 
 export interface S3ImportJobResponse {
-  success: boolean
-  job?: S3ImportJob
-  error?: string
-  dashboardUrl?: string
+  success: boolean;
+  job?: S3ImportJob;
+  error?: string;
+  dashboardUrl?: string;
 }
 
 interface FileTypeConfig {
-  maxSize: number
-  description: string
-  accept: string[]
+  maxSize: number;
+  description: string;
+  accept: string[];
 }
 
 interface ValidationResult {
-  valid: boolean
-  error?: string
+  valid: boolean;
+  error?: string;
 }
 
 /**
  * Helper to delay execution (for retry backoff)
  */
 function delay(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -355,372 +369,447 @@ function delay(ms: number): Promise<void> {
 async function fetchWithRetry(
   url: string,
   options: RequestInit,
-  maxRetries = 3
+  maxRetries = 3,
 ): Promise<Response> {
-  let lastError: Error | null = null
-  let lastResponse: Response | null = null
+  let lastError: Error | null = null;
+  let lastResponse: Response | null = null;
 
   // Retry with exponential backoff for rate limits
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const response = await fetch(url, options)
-      lastResponse = response
+      const response = await fetch(url, options);
+      lastResponse = response;
 
       // Successful response (including 2xx and error responses like 404, 500)
-      if (response.ok || (response.status !== 429 && response.status !== 503 && response.status !== 504)) {
-        return response
+      if (
+        response.ok ||
+        (response.status !== 429 &&
+          response.status !== 503 &&
+          response.status !== 504)
+      ) {
+        return response;
       }
 
       // Handle rate limit with retry
       if (response.status === 429) {
-        lastError = new Error('Rate limited (429). Please wait a moment and try again.')
+        lastError = new Error(
+          "Rate limited (429). Please wait a moment and try again.",
+        );
         if (attempt < maxRetries) {
           // Exponential backoff: 2s, 4s, 8s
-          const backoffMs = Math.min(2000 * Math.pow(2, attempt - 1), 8000)
-          await delay(backoffMs)
-          continue // Retry after backoff
+          const backoffMs = Math.min(2000 * Math.pow(2, attempt - 1), 8000);
+          await delay(backoffMs);
+          continue; // Retry after backoff
         }
       }
 
       // Handle service unavailable/timeout with retry
       if (response.status === 503 || response.status === 504) {
-        lastError = new Error(`Service error (${response.status}). Retrying...`)
+        lastError = new Error(
+          `Service error (${response.status}). Retrying...`,
+        );
         if (attempt < maxRetries) {
           // Exponential backoff: 2s, 4s, 8s
-          const backoffMs = Math.min(2000 * Math.pow(2, attempt - 1), 8000)
-          await delay(backoffMs)
-          continue
+          const backoffMs = Math.min(2000 * Math.pow(2, attempt - 1), 8000);
+          await delay(backoffMs);
+          continue;
         }
       }
 
       // Other errors - don't retry
-      return response
+      return response;
     } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err))
+      lastError = err instanceof Error ? err : new Error(String(err));
       if (attempt < maxRetries) {
         // Network error - retry with backoff
-        const backoffMs = Math.min(2000 * Math.pow(2, attempt - 1), 8000)
-        await delay(backoffMs)
-        continue
+        const backoffMs = Math.min(2000 * Math.pow(2, attempt - 1), 8000);
+        await delay(backoffMs);
+        continue;
       }
     }
   }
 
   // If we have a response, return it even if it failed
   if (lastResponse) {
-    return lastResponse
+    return lastResponse;
   }
 
-  throw lastError ?? new Error('Request failed after retries')
+  throw lastError ?? new Error("Request failed after retries");
 }
 
 class APIService {
-  private token: string | null = null
-  private readonly DEFAULT_MAX_RETRIES = 3
-  private readonly DEFAULT_RETRY_DELAY = 1000
-  private readonly CHUNK_SIZE = 10 * 1024 * 1024 // 10MB chunks
+  private token: string | null = null;
+  private readonly DEFAULT_MAX_RETRIES = 3;
+  private readonly DEFAULT_RETRY_DELAY = 1000;
+  private readonly CHUNK_SIZE = 10 * 1024 * 1024; // 10MB chunks
 
   // File type configurations
   private readonly FILE_TYPES: Record<string, FileTypeConfig> = {
     image: {
       maxSize: 15 * 1024 * 1024, // 15MB
-      description: 'Images',
+      description: "Images",
       accept: [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-        'image/avif',
-        'image/heic',
-        'image/svg+xml',
-        'image/bmp',
-        'image/vnd.adobe.photoshop'
-      ]
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+        "image/avif",
+        "image/heic",
+        "image/svg+xml",
+        "image/bmp",
+        "image/vnd.adobe.photoshop",
+      ],
     },
     video: {
       maxSize: 500 * 1024 * 1024, // 500MB
-      description: 'Videos',
+      description: "Videos",
       accept: [
-        'video/mp4',
-        'video/quicktime',
-        'video/webm',
-        'video/x-msvideo',
-        'video/x-ms-wmv',
-        'video/x-matroska',
-        'video/mpeg',
-        'video/x-flv',
-        'video/ogg',
-        'video/3gpp',
-        'video/3gpp2'
-      ]
+        "video/mp4",
+        "video/quicktime",
+        "video/webm",
+        "video/x-msvideo",
+        "video/x-ms-wmv",
+        "video/x-matroska",
+        "video/mpeg",
+        "video/x-flv",
+        "video/ogg",
+        "video/3gpp",
+        "video/3gpp2",
+      ],
     },
     audio: {
       maxSize: 100 * 1024 * 1024, // 100MB
-      description: 'Audio',
+      description: "Audio",
       accept: [
-        'audio/mpeg',
-        'audio/mp3',
-        'audio/wav',
-        'audio/x-wav',
-        'audio/wave',
-        'audio/ogg',
-        'audio/flac',
-        'audio/x-flac',
-        'audio/aac',
-        'audio/x-aac',
-        'audio/m4a',
-        'audio/x-m4a',
-        'audio/webm',
-        'audio/opus'
-      ]
+        "audio/mpeg",
+        "audio/mp3",
+        "audio/wav",
+        "audio/x-wav",
+        "audio/wave",
+        "audio/ogg",
+        "audio/flac",
+        "audio/x-flac",
+        "audio/aac",
+        "audio/x-aac",
+        "audio/m4a",
+        "audio/x-m4a",
+        "audio/webm",
+        "audio/opus",
+      ],
     },
     font: {
       maxSize: 10 * 1024 * 1024, // 10MB
-      description: 'Fonts',
+      description: "Fonts",
       accept: [
-        'font/ttf',
-        'font/otf',
-        'font/woff',
-        'font/woff2',
-        'application/font-woff',
-        'application/font-woff2',
-        'application/x-font-ttf',
-        'application/x-font-otf',
-        'application/vnd.ms-fontobject'
-      ]
+        "font/ttf",
+        "font/otf",
+        "font/woff",
+        "font/woff2",
+        "application/font-woff",
+        "application/font-woff2",
+        "application/x-font-ttf",
+        "application/x-font-otf",
+        "application/vnd.ms-fontobject",
+      ],
     },
     document: {
       maxSize: 50 * 1024 * 1024, // 50MB
-      description: 'Documents',
+      description: "Documents",
       accept: [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'application/vnd.ms-powerpoint',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        'text/plain',
-        'text/markdown',
-        'text/csv',
-        'application/rtf',
-        'text/rtf',
-        'application/x-sqlite3',
-        'application/vnd.sqlite3',
-        'application/x-db'
-      ]
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "text/plain",
+        "text/markdown",
+        "text/csv",
+        "application/rtf",
+        "text/rtf",
+        "application/x-sqlite3",
+        "application/vnd.sqlite3",
+        "application/x-db",
+      ],
     },
     archive: {
       maxSize: 500 * 1024 * 1024, // 500MB
-      description: 'Archives',
+      description: "Archives",
       accept: [
-        'application/zip',
-        'application/x-zip-compressed',
-        'application/x-7z-compressed',
-        'application/x-rar-compressed',
-        'application/x-tar',
-        'application/x-gtar',
-        'application/gzip',
-        'application/x-gzip'
-      ]
+        "application/zip",
+        "application/x-zip-compressed",
+        "application/x-7z-compressed",
+        "application/x-rar-compressed",
+        "application/x-tar",
+        "application/x-gtar",
+        "application/gzip",
+        "application/x-gzip",
+      ],
     },
     code: {
       maxSize: 10 * 1024 * 1024, // 10MB
-      description: 'Code files',
+      description: "Code files",
       accept: [
-        'text/javascript',
-        'application/javascript',
-        'application/x-javascript',
-        'text/typescript',
-        'application/typescript',
-        'application/x-typescript',
-        'text/x-python',
-        'text/x-python-script',
-        'application/x-python',
-        'text/x-java-source',
-        'text/x-java',
-        'text/x-c',
-        'text/x-c++',
-        'text/x-cpp',
-        'text/x-csrc',
-        'text/x-c++src',
-        'text/x-csharp',
-        'text/x-ruby',
-        'application/x-ruby',
-        'text/x-php',
-        'application/x-php',
-        'text/x-go',
-        'application/x-go',
-        'text/x-rust',
-        'application/x-rust',
-        'text/x-swift',
-        'text/x-kotlin',
-        'text/html',
-        'application/xhtml+xml',
-        'text/css',
-        'application/json',
-        'application/ld+json',
-        'text/xml',
-        'application/xml',
-        'application/x-yaml',
-        'text/yaml',
-        'text/x-yaml',
-        'text/x-markdown',
-        'text/markdown',
-        'application/x-tar',
-        'application/x-gtar',
-        'text/plain',
-        'application/sql',
-        'text/x-sql',
-        'text/x-toml',
-        'application/toml'
-      ]
+        "text/javascript",
+        "application/javascript",
+        "application/x-javascript",
+        "text/typescript",
+        "application/typescript",
+        "application/x-typescript",
+        "text/x-python",
+        "text/x-python-script",
+        "application/x-python",
+        "text/x-java-source",
+        "text/x-java",
+        "text/x-c",
+        "text/x-c++",
+        "text/x-cpp",
+        "text/x-csrc",
+        "text/x-c++src",
+        "text/x-csharp",
+        "text/x-ruby",
+        "application/x-ruby",
+        "text/x-php",
+        "application/x-php",
+        "text/x-go",
+        "application/x-go",
+        "text/x-rust",
+        "application/x-rust",
+        "text/x-swift",
+        "text/x-kotlin",
+        "text/html",
+        "application/xhtml+xml",
+        "text/css",
+        "application/json",
+        "application/ld+json",
+        "text/xml",
+        "application/xml",
+        "application/x-yaml",
+        "text/yaml",
+        "text/x-yaml",
+        "text/x-markdown",
+        "text/markdown",
+        "application/x-tar",
+        "application/x-gtar",
+        "text/plain",
+        "application/sql",
+        "text/x-sql",
+        "text/x-toml",
+        "application/toml",
+      ],
     },
     config: {
       maxSize: 10 * 1024 * 1024, // 10MB
-      description: 'Config & Metadata files',
+      description: "Config & Metadata files",
       accept: [
-        'application/toml',
-        'text/x-toml',
-        'application/json',
-        'application/x-jsonc',
-        'text/plain'
-      ]
+        "application/toml",
+        "text/x-toml",
+        "application/json",
+        "application/x-jsonc",
+        "text/plain",
+      ],
     },
     devenv: {
       maxSize: 1 * 1024 * 1024, // 1MB
-      description: 'Dev Environment files',
-      accept: [
-        'text/plain',
-        'text/x-shellscript'
-      ]
+      description: "Dev Environment files",
+      accept: ["text/plain", "text/x-shellscript"],
     },
     dataformat: {
       maxSize: 50 * 1024 * 1024, // 50MB
-      description: 'Data Format files',
-      accept: [
-        'application/octet-stream',
-        'text/plain'
-      ]
+      description: "Data Format files",
+      accept: ["application/octet-stream", "text/plain"],
     },
     docs: {
       maxSize: 10 * 1024 * 1024, // 10MB
-      description: 'Documentation & Text files',
-      accept: [
-        'text/plain'
-      ]
-    }
-  }
+      description: "Documentation & Text files",
+      accept: ["text/plain"],
+    },
+  };
 
   getAllowedMimeTypes(): string[] {
-    return Object.values(this.FILE_TYPES).flatMap(type => type.accept)
+    return Object.values(this.FILE_TYPES).flatMap((type) => type.accept);
   }
 
   getFileTypeConfig(mimeType: string): FileTypeConfig | null {
     for (const [, config] of Object.entries(this.FILE_TYPES)) {
       if (config.accept.includes(mimeType)) {
-        return config
+        return config;
       }
     }
-    return null
+    return null;
   }
 
   validateFile(file: File): ValidationResult {
-    let config = this.getFileTypeConfig(file.type)
+    let config = this.getFileTypeConfig(file.type);
 
     // If MIME type is not recognized or is text/plain, try to determine by extension
-    if (!config || file.type === 'text/plain' || file.type === '') {
-      const ext = file.name.split('.').pop()?.toLowerCase()
-      const configByExt = this.getConfigByExtension(ext)
+    if (!config || file.type === "text/plain" || file.type === "") {
+      const ext = file.name.split(".").pop()?.toLowerCase();
+      const configByExt = this.getConfigByExtension(ext);
       if (configByExt) {
-        config = configByExt
+        config = configByExt;
       }
     }
 
     if (!config) {
       const allowedTypes = Object.values(this.FILE_TYPES)
-        .map(type => type.description)
-        .join(', ')
+        .map((type) => type.description)
+        .join(", ");
       return {
         valid: false,
-        error: `File type not allowed. Accepted file types are: ${allowedTypes}`
-      }
+        error: `File type not allowed. Accepted file types are: ${allowedTypes}`,
+      };
     }
 
     if (file.size > config.maxSize) {
       return {
         valid: false,
-        error: `File size exceeds the limit of ${this.formatSize(config.maxSize)} for ${config.description.toLowerCase()}`
-      }
+        error: `File size exceeds the limit of ${this.formatSize(config.maxSize)} for ${config.description.toLowerCase()}`,
+      };
     }
 
-    return { valid: true }
+    return { valid: true };
   }
 
   private getConfigByExtension(ext: string | undefined): FileTypeConfig | null {
-    if (ext === undefined || ext === '') return null
+    if (ext === undefined || ext === "") return null;
 
     const extensionMap: Record<string, string> = {
       // Images
-      'jpg': 'image', 'jpeg': 'image', 'png': 'image', 'gif': 'image',
-      'webp': 'image', 'avif': 'image', 'heic': 'image', 'svg': 'image', 'bmp': 'image', 'psd': 'image',
+      jpg: "image",
+      jpeg: "image",
+      png: "image",
+      gif: "image",
+      webp: "image",
+      avif: "image",
+      heic: "image",
+      svg: "image",
+      bmp: "image",
+      psd: "image",
       // Videos
-      'mp4': 'video', 'mov': 'video', 'webm': 'video', 'avi': 'video', 'wmv': 'video', 'mkv': 'video',
-      'mpeg': 'video', 'mpg': 'video', 'mpeg4': 'video', 'flv': 'video', 'ogg': 'video', 'ogv': 'video',
-      '3gp': 'video', '3g2': 'video', 'm4v': 'video',
+      mp4: "video",
+      mov: "video",
+      webm: "video",
+      avi: "video",
+      wmv: "video",
+      mkv: "video",
+      mpeg: "video",
+      mpg: "video",
+      mpeg4: "video",
+      flv: "video",
+      ogg: "video",
+      ogv: "video",
+      "3gp": "video",
+      "3g2": "video",
+      m4v: "video",
       // Audio
-      'mp3': 'audio', 'wav': 'audio', 'flac': 'audio', 'aac': 'audio', 'm4a': 'audio', 'oga': 'audio', 'opus': 'audio',
+      mp3: "audio",
+      wav: "audio",
+      flac: "audio",
+      aac: "audio",
+      m4a: "audio",
+      oga: "audio",
+      opus: "audio",
       // Fonts
-      'ttf': 'font', 'otf': 'font', 'woff': 'font', 'woff2': 'font', 'eot': 'font',
+      ttf: "font",
+      otf: "font",
+      woff: "font",
+      woff2: "font",
+      eot: "font",
       // Documents
-      'pdf': 'document', 'doc': 'document', 'docx': 'document',
-      'xls': 'document', 'xlsx': 'document', 'ppt': 'document', 'pptx': 'document',
-      'txt': 'document', 'md': 'document', 'markdown': 'document', 'csv': 'document', 'rtf': 'document',
-      'db': 'document', 'sqlite': 'document', 'sqlite3': 'document',
+      pdf: "document",
+      doc: "document",
+      docx: "document",
+      xls: "document",
+      xlsx: "document",
+      ppt: "document",
+      pptx: "document",
+      txt: "document",
+      md: "document",
+      markdown: "document",
+      csv: "document",
+      rtf: "document",
+      db: "document",
+      sqlite: "document",
+      sqlite3: "document",
       // Archives
-      'zip': 'archive', 'rar': 'archive', '7z': 'archive', 'tar': 'code', 'gz': 'archive',
+      zip: "archive",
+      rar: "archive",
+      "7z": "archive",
+      tar: "code",
+      gz: "archive",
       // Code files
-      'js': 'code', 'jsx': 'code', 'ts': 'code', 'tsx': 'code',
-      'py': 'code', 'java': 'code', 'c': 'code', 'cpp': 'code', 'cc': 'code',
-      'cs': 'code', 'go': 'code', 'rs': 'code', 'php': 'code',
-      'rb': 'code', 'swift': 'code', 'kt': 'code', 'html': 'code',
-      'css': 'code', 'json': 'code', 'xml': 'code', 'yaml': 'code', 'yml': 'code',
-      'sql': 'code', 'ipynb': 'code', 'parquet': 'document',
-      'toml': 'config', 'jsonc': 'config', 'env': 'config', 'lock': 'config',
-      'conf': 'config', 'ini': 'config',
-      'gitignore': 'devenv', 'gitattributes': 'devenv', 'editorconfig': 'devenv',
-      'dockerfile': 'devenv', 'nvmrc': 'devenv', 'browserslistrc': 'devenv',
-      'feather': 'dataformat', 'avro': 'dataformat', 'ndjson': 'dataformat',
-      'nfo': 'docs'
-    }
+      js: "code",
+      jsx: "code",
+      ts: "code",
+      tsx: "code",
+      py: "code",
+      java: "code",
+      c: "code",
+      cpp: "code",
+      cc: "code",
+      cs: "code",
+      go: "code",
+      rs: "code",
+      php: "code",
+      rb: "code",
+      swift: "code",
+      kt: "code",
+      html: "code",
+      css: "code",
+      json: "code",
+      xml: "code",
+      yaml: "code",
+      yml: "code",
+      sql: "code",
+      ipynb: "code",
+      parquet: "document",
+      toml: "config",
+      jsonc: "config",
+      env: "config",
+      lock: "config",
+      conf: "config",
+      ini: "config",
+      gitignore: "devenv",
+      gitattributes: "devenv",
+      editorconfig: "devenv",
+      dockerfile: "devenv",
+      nvmrc: "devenv",
+      browserslistrc: "devenv",
+      feather: "dataformat",
+      avro: "dataformat",
+      ndjson: "dataformat",
+      nfo: "docs",
+    };
 
-    const category = extensionMap[ext]
-    if (category === undefined) return null
-    const config = this.FILE_TYPES[category]
-    return config ?? null
+    const category = extensionMap[ext];
+    if (category === undefined) return null;
+    const config = this.FILE_TYPES[category];
+    return config ?? null;
   }
 
   private formatSize(bytes: number): string {
-    const units = ['B', 'KB', 'MB', 'GB']
-    let size = bytes
-    let unitIndex = 0
+    const units = ["B", "KB", "MB", "GB"];
+    let size = bytes;
+    let unitIndex = 0;
 
     while (size >= 1024 && unitIndex < units.length - 1) {
-      size /= 1024
-      unitIndex++
+      size /= 1024;
+      unitIndex++;
     }
 
-    return `${size.toFixed(1)} ${units[unitIndex]}`
+    return `${size.toFixed(1)} ${units[unitIndex]}`;
   }
 
   private getHeaders(): HeadersInit {
     // Cookies are now handled automatically via credentials: 'include'
     // Keep token handling for backward compatibility during migration
-    const headers: HeadersInit = {}
+    const headers: HeadersInit = {};
     if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`
+      headers["Authorization"] = `Bearer ${this.token}`;
     }
-    return headers
+    return headers;
   }
 
   private getFetchOptions(init?: RequestInit): RequestInit {
@@ -728,15 +817,15 @@ class APIService {
     // Add cache control to prevent stale auth tokens
     return {
       ...init,
-      credentials: 'include',
-      cache: 'no-store'
-    }
+      credentials: "include",
+      cache: "no-store",
+    };
   }
 
   private async handleResponse(response: Response): Promise<Response> {
     // Check for authentication errors
     if (response.status === 401 || response.status === 403) {
-      logger.error('API', 'Authentication error', { status: response.status })
+      logger.error("API", "Authentication error", { status: response.status });
       // Clear any cached data
       localStorage.clear();
       sessionStorage.clear();
@@ -753,26 +842,27 @@ class APIService {
   }
 
   private async sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private async calculateMD5(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      const spark = new SparkMD5.ArrayBuffer()
+      const reader = new FileReader();
+      const spark = new SparkMD5.ArrayBuffer();
 
       reader.onload = (e) => {
         if (e.target?.result !== undefined && e.target.result !== null) {
-          spark.append(e.target.result as ArrayBuffer)
-          resolve(spark.end())
+          spark.append(e.target.result as ArrayBuffer);
+          resolve(spark.end());
         } else {
-          reject(new Error('Failed to read file'))
+          reject(new Error("Failed to read file"));
         }
-      }
+      };
 
-      reader.onerror = () => reject(new Error('Failed to read file for MD5 calculation'))
-      reader.readAsArrayBuffer(blob)
-    })
+      reader.onerror = () =>
+        reject(new Error("Failed to read file for MD5 calculation"));
+      reader.readAsArrayBuffer(blob);
+    });
   }
 
   private async uploadChunkWithRetry(
@@ -782,82 +872,94 @@ class APIService {
     chunkIndex: number,
     totalChunks: number,
     options: UploadOptions = {},
-    fileName?: string
+    fileName?: string,
   ): Promise<{ etag: string; md5: string }> {
     const {
       maxRetries = this.DEFAULT_MAX_RETRIES,
       retryDelay = this.DEFAULT_RETRY_DELAY,
-      onRetry
-    } = options
+      onRetry,
+    } = options;
 
-    const uploadFileName = fileName || file.name
-    let lastError: Error | null = null
+    const uploadFileName = fileName || file.name;
+    let lastError: Error | null = null;
 
     // Calculate MD5 for this chunk
-    const chunkMD5 = await this.calculateMD5(chunk)
+    const chunkMD5 = await this.calculateMD5(chunk);
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const formData = new FormData()
-        formData.append('file', chunk, uploadFileName)
+        const formData = new FormData();
+        formData.append("file", chunk, uploadFileName);
 
-        const response = await fetch(`${WORKER_API}/api/files/${bucketName}/upload`,
+        const response = await fetch(
+          `${WORKER_API}/api/files/${bucketName}/upload`,
           this.getFetchOptions({
-            method: 'POST',
+            method: "POST",
             headers: {
               ...this.getHeaders(),
-              'X-File-Name': encodeURIComponent(uploadFileName),
-              'X-Total-Chunks': totalChunks.toString(),
-              'X-Chunk-Index': chunkIndex.toString(),
-              'X-Chunk-MD5': chunkMD5
+              "X-File-Name": encodeURIComponent(uploadFileName),
+              "X-Total-Chunks": totalChunks.toString(),
+              "X-Chunk-Index": chunkIndex.toString(),
+              "X-Chunk-MD5": chunkMD5,
             },
-            body: formData
-          })
-        )
+            body: formData,
+          }),
+        );
 
         if (!response.ok) {
-          throw new Error(`Upload failed with status: ${response.status}`)
+          throw new Error(`Upload failed with status: ${response.status}`);
         }
 
-        const result = await response.json() as UploadChunkResponse
+        const result = (await response.json()) as UploadChunkResponse;
         return {
-          etag: result.etag ?? '',
-          md5: chunkMD5
-        }
+          etag: result.etag ?? "",
+          md5: chunkMD5,
+        };
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error('Unknown error during upload')
+        lastError =
+          error instanceof Error
+            ? error
+            : new Error("Unknown error during upload");
         if (attempt < maxRetries - 1) {
-          onRetry?.(attempt + 1, chunkIndex, lastError)
-          await this.sleep(retryDelay * Math.pow(2, attempt))
-          continue
+          onRetry?.(attempt + 1, chunkIndex, lastError);
+          await this.sleep(retryDelay * Math.pow(2, attempt));
+          continue;
         }
-        throw new Error(`Failed to upload chunk ${chunkIndex} after ${maxRetries} attempts: ${lastError.message}`)
+        throw new Error(
+          `Failed to upload chunk ${chunkIndex} after ${maxRetries} attempts: ${lastError.message}`,
+        );
       }
     }
 
-    throw new Error('Upload failed unexpectedly')
+    throw new Error("Upload failed unexpectedly");
   }
 
   async uploadFile(
     bucketName: string,
     file: File,
     options: UploadOptions = {},
-    path?: string
+    path?: string,
   ): Promise<void> {
-    const validation = this.validateFile(file)
+    const validation = this.validateFile(file);
     if (!validation.valid) {
-      throw new Error(validation.error)
+      throw new Error(validation.error);
     }
 
-    const { onProgress, maxRetries, retryDelay, onRetry, onVerification } = options
+    const { onProgress, maxRetries, retryDelay, onRetry, onVerification } =
+      options;
 
     // Prepend path to filename if provided (but not if path is empty string)
-    const fileName = path && path.length > 0 ? `${path}${file.name}` : file.name
-    logger.debug('API', 'uploadFile', { path, fileName: file.name, finalFileName: fileName })
+    const fileName =
+      path && path.length > 0 ? `${path}${file.name}` : file.name;
+    logger.debug("API", "uploadFile", {
+      path,
+      fileName: file.name,
+      finalFileName: fileName,
+    });
 
-    const totalChunks = Math.ceil(file.size / this.CHUNK_SIZE)
-    const uploadedChunks = new Set<number>()
-    const chunkResults: { etag: string; md5: string }[] = []
+    const totalChunks = Math.ceil(file.size / this.CHUNK_SIZE);
+    const uploadedChunks = new Set<number>();
+    const chunkResults: { etag: string; md5: string }[] = [];
 
     try {
       if (file.size <= this.CHUNK_SIZE) {
@@ -870,28 +972,32 @@ class APIService {
           {
             maxRetries: maxRetries ?? this.DEFAULT_MAX_RETRIES,
             retryDelay: retryDelay ?? this.DEFAULT_RETRY_DELAY,
-            onRetry: onRetry ?? (() => { /* no-op */ })
+            onRetry:
+              onRetry ??
+              (() => {
+                /* no-op */
+              }),
           },
-          fileName
-        )
-        onProgress?.(99)
+          fileName,
+        );
+        onProgress?.(99);
 
         // Verify single file upload
-        onVerification?.('verifying')
-        await this.verifyUpload(result.etag, result.md5, false)
-        onVerification?.('verified')
+        onVerification?.("verifying");
+        await this.verifyUpload(result.etag, result.md5, false);
+        onVerification?.("verified");
 
-        onProgress?.(100)
-        return
+        onProgress?.(100);
+        return;
       }
 
       // Upload all chunks
       for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-        if (uploadedChunks.has(chunkIndex)) continue
+        if (uploadedChunks.has(chunkIndex)) continue;
 
-        const start = chunkIndex * this.CHUNK_SIZE
-        const end = Math.min(start + this.CHUNK_SIZE, file.size)
-        const chunk = file.slice(start, end)
+        const start = chunkIndex * this.CHUNK_SIZE;
+        const end = Math.min(start + this.CHUNK_SIZE, file.size);
+        const chunk = file.slice(start, end);
 
         const result = await this.uploadChunkWithRetry(
           bucketName,
@@ -902,498 +1008,606 @@ class APIService {
           {
             maxRetries: maxRetries ?? this.DEFAULT_MAX_RETRIES,
             retryDelay: retryDelay ?? this.DEFAULT_RETRY_DELAY,
-            onRetry: onRetry ?? (() => { /* no-op */ })
+            onRetry:
+              onRetry ??
+              (() => {
+                /* no-op */
+              }),
           },
-          fileName
-        )
+          fileName,
+        );
 
-        chunkResults[chunkIndex] = result
-        uploadedChunks.add(chunkIndex)
-        const progress = (uploadedChunks.size / totalChunks) * 95
-        onProgress?.(Math.min(progress, 95))
+        chunkResults[chunkIndex] = result;
+        uploadedChunks.add(chunkIndex);
+        const progress = (uploadedChunks.size / totalChunks) * 95;
+        onProgress?.(Math.min(progress, 95));
       }
 
       // Verify multipart upload
-      onProgress?.(96)
-      onVerification?.('verifying')
+      onProgress?.(96);
+      onVerification?.("verifying");
 
       // For multipart uploads, verify that we have all chunks
       if (chunkResults.length === totalChunks) {
         // R2 uses compound ETags for multipart (hash of MD5s + part count)
         // We verify that all chunks uploaded successfully
-        const allChunksVerified = chunkResults.every(result => result.etag && result.md5)
+        const allChunksVerified = chunkResults.every(
+          (result) => result.etag && result.md5,
+        );
         if (!allChunksVerified) {
-          throw new Error('Verification failed: Some chunks missing ETag')
+          throw new Error("Verification failed: Some chunks missing ETag");
         }
-        onVerification?.('verified')
+        onVerification?.("verified");
       } else {
-        throw new Error('Verification failed: Chunk count mismatch')
+        throw new Error("Verification failed: Chunk count mismatch");
       }
 
-      onProgress?.(100)
+      onProgress?.(100);
 
       // Invalidate file list and bucket list cache after successful upload
-      invalidateFileListCache(bucketName)
-      invalidateBucketListCache() // Bucket sizes are included in bucket list
-
+      invalidateFileListCache(bucketName);
+      invalidateBucketListCache(); // Bucket sizes are included in bucket list
     } catch (error) {
-      const failedChunks = Array.from({ length: totalChunks }, (_, i) => i)
-        .filter(i => !uploadedChunks.has(i))
+      const failedChunks = Array.from(
+        { length: totalChunks },
+        (_, i) => i,
+      ).filter((i) => !uploadedChunks.has(i));
 
-      logger.error('API', 'Upload failed', {
+      logger.error("API", "Upload failed", {
         fileName: file.name,
         totalChunks,
         uploadedChunks: Array.from(uploadedChunks),
         failedChunks,
-        error
-      })
+        error,
+      });
 
-      if (error instanceof Error && error.message.includes('Verification failed')) {
-        onVerification?.('failed')
+      if (
+        error instanceof Error &&
+        error.message.includes("Verification failed")
+      ) {
+        onVerification?.("failed");
       }
 
       throw new Error(
         `Upload failed: ${failedChunks.length} chunks remaining. ` +
-        `Last error: ${error instanceof Error ? error.message : 'Unknown error'}`
-      )
+          `Last error: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
     }
   }
 
-  private async verifyUpload(etag: string, expectedMD5: string, isMultipart: boolean): Promise<void> {
+  private async verifyUpload(
+    etag: string,
+    expectedMD5: string,
+    isMultipart: boolean,
+  ): Promise<void> {
     if (!etag) {
-      throw new Error('Verification failed: No ETag returned from server')
+      throw new Error("Verification failed: No ETag returned from server");
     }
 
     // For non-multipart uploads, R2's ETag should be the MD5 hash (possibly quoted)
     if (!isMultipart) {
-      const cleanEtag = etag.replace(/"/g, '').toLowerCase()
-      const cleanMD5 = expectedMD5.toLowerCase()
+      const cleanEtag = etag.replace(/"/g, "").toLowerCase();
+      const cleanMD5 = expectedMD5.toLowerCase();
 
       if (cleanEtag !== cleanMD5) {
-        logger.error('Verification', 'ETag mismatch', { etag: cleanEtag, expected: cleanMD5 })
-        throw new Error('Verification failed: Checksum mismatch')
+        logger.error("Verification", "ETag mismatch", {
+          etag: cleanEtag,
+          expected: cleanMD5,
+        });
+        throw new Error("Verification failed: Checksum mismatch");
       }
 
-      logger.debug('Verification', 'Upload verified successfully')
+      logger.debug("Verification", "Upload verified successfully");
     }
     // For multipart uploads, we just verify ETags exist for all chunks (done in caller)
   }
 
-  async listBuckets(skipCache = false): Promise<{ name: string; creation_date: string; size?: number; objectCount?: number }[]> {
+  async listBuckets(
+    skipCache = false,
+  ): Promise<
+    {
+      name: string;
+      creation_date: string;
+      size?: number;
+      objectCount?: number;
+    }[]
+  > {
     // Check cache first
     if (!skipCache) {
-      const cached = getCachedBucketList()
+      const cached = getCachedBucketList();
       if (cached) {
         return cached.map((bucket: CloudflareBucket) => ({
           name: bucket.name,
           creation_date: bucket.creation_date,
           size: bucket.size ?? 0,
-          objectCount: bucket.objectCount ?? 0
-        }))
+          objectCount: bucket.objectCount ?? 0,
+        }));
       }
     }
 
-    const response = await fetchWithRetry(`${WORKER_API}/api/buckets`,
+    const response = await fetchWithRetry(
+      `${WORKER_API}/api/buckets`,
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     await this.handleResponse(response);
 
-    const data = await response.json() as { result: { buckets: CloudflareBucket[] } }
+    const data = (await response.json()) as {
+      result: { buckets: CloudflareBucket[] };
+    };
 
     // Cache the result
-    setCachedBucketList(data.result.buckets)
+    setCachedBucketList(data.result.buckets);
 
     return data.result.buckets.map((bucket: CloudflareBucket) => ({
       name: bucket.name,
       creation_date: bucket.creation_date,
       size: bucket.size ?? 0,
-      objectCount: bucket.objectCount ?? 0
-    }))
+      objectCount: bucket.objectCount ?? 0,
+    }));
   }
 
-  async createBucket(name: string): Promise<{ name: string; creation_date: string }> {
-    const response = await fetchWithRetry(`${WORKER_API}/api/buckets`,
+  async createBucket(
+    name: string,
+  ): Promise<{ name: string; creation_date: string }> {
+    const response = await fetchWithRetry(
+      `${WORKER_API}/api/buckets`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name })
-      })
-    )
+        body: JSON.stringify({ name }),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
+      throw new Error(`API error: ${response.status}`);
     }
 
-    const data = await response.json() as { result: { name: string; creation_date: string } }
+    const data = (await response.json()) as {
+      result: { name: string; creation_date: string };
+    };
 
     // Invalidate bucket list cache after creation
-    invalidateBucketListCache()
+    invalidateBucketListCache();
 
-    return data.result
+    return data.result;
   }
 
-  async deleteBucket(name: string, options: { force?: boolean } = {}): Promise<{ success?: boolean; error?: string; errors?: { message: string }[] }> {
-    const url = new URL(`${WORKER_API}/api/buckets/${name}`)
+  async deleteBucket(
+    name: string,
+    options: { force?: boolean } = {},
+  ): Promise<{
+    success?: boolean;
+    error?: string;
+    errors?: { message: string }[];
+  }> {
+    const url = new URL(`${WORKER_API}/api/buckets/${name}`);
     if (options.force === true) {
-      url.searchParams.set('force', 'true')
+      url.searchParams.set("force", "true");
     }
 
-    const response = await fetchWithRetry(url.toString(),
+    const response = await fetchWithRetry(
+      url.toString(),
       this.getFetchOptions({
-        method: 'DELETE',
-        headers: this.getHeaders()
-      })
-    )
+        method: "DELETE",
+        headers: this.getHeaders(),
+      }),
+    );
 
     // Parse the response regardless of status code
-    let data: { success?: boolean; error?: string; errors?: { message: string }[] }
+    let data: {
+      success?: boolean;
+      error?: string;
+      errors?: { message: string }[];
+    };
     try {
-      data = await response.json() as { success?: boolean; error?: string; errors?: { message: string }[] }
+      data = (await response.json()) as {
+        success?: boolean;
+        error?: string;
+        errors?: { message: string }[];
+      };
     } catch {
       // If response can't be parsed as JSON, return a generic error
-      data = { error: `Failed to delete bucket (HTTP ${response.status})` }
+      data = { error: `Failed to delete bucket (HTTP ${response.status})` };
     }
 
     // Invalidate both bucket list and file list for this bucket
     if (data.success) {
-      invalidateBucketListCache()
-      invalidateFileListCache(name)
+      invalidateBucketListCache();
+      invalidateFileListCache(name);
     }
 
     // Return the data along with any context needed
-    return data
+    return data;
   }
 
   validateBucketName(name: string): ValidationResult {
     if (!name || name.trim().length === 0) {
-      return { valid: false, error: 'Bucket name cannot be empty' }
+      return { valid: false, error: "Bucket name cannot be empty" };
     }
-    const trimmedName = name.trim()
+    const trimmedName = name.trim();
     if (trimmedName.length < 3) {
-      return { valid: false, error: 'Bucket name must be at least 3 characters' }
+      return {
+        valid: false,
+        error: "Bucket name must be at least 3 characters",
+      };
     }
     if (trimmedName.length > 63) {
-      return { valid: false, error: 'Bucket name cannot exceed 63 characters' }
+      return { valid: false, error: "Bucket name cannot exceed 63 characters" };
     }
-    const validPattern = /^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$/
+    const validPattern = /^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$/;
     if (!validPattern.test(trimmedName)) {
-      return { valid: false, error: 'Bucket name can only contain lowercase letters, numbers, and hyphens' }
+      return {
+        valid: false,
+        error:
+          "Bucket name can only contain lowercase letters, numbers, and hyphens",
+      };
     }
-    return { valid: true }
+    return { valid: true };
   }
 
-  async renameBucket(oldName: string, newName: string): Promise<{ success: boolean; newName?: string }> {
-    const validation = this.validateBucketName(newName)
+  async renameBucket(
+    oldName: string,
+    newName: string,
+  ): Promise<{ success: boolean; newName?: string }> {
+    const validation = this.validateBucketName(newName);
     if (!validation.valid) {
-      throw new Error(validation.error)
+      throw new Error(validation.error);
     }
-    const url = `${WORKER_API}/api/buckets/${encodeURIComponent(oldName)}`
+    const url = `${WORKER_API}/api/buckets/${encodeURIComponent(oldName)}`;
     const response = await fetchWithRetry(
       url,
       this.getFetchOptions({
-        method: 'PATCH',
-        headers: { ...this.getHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ newName: newName.trim() })
-      })
-    )
+        method: "PATCH",
+        headers: { ...this.getHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ newName: newName.trim() }),
+      }),
+    );
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: `HTTP ${response.status}` })) as { error?: string }
-      throw new Error(error.error ?? 'Failed to rename bucket')
+      const error = (await response
+        .json()
+        .catch(() => ({ error: `HTTP ${response.status}` }))) as {
+        error?: string;
+      };
+      throw new Error(error.error ?? "Failed to rename bucket");
     }
 
-    const result = await response.json() as { success: boolean; newName?: string }
+    const result = (await response.json()) as {
+      success: boolean;
+      newName?: string;
+    };
 
     // Invalidate both old and new bucket caches
     if (result.success) {
-      invalidateBucketListCache()
-      invalidateFileListCache(oldName)
-      invalidateFileListCache(newName)
+      invalidateBucketListCache();
+      invalidateFileListCache(oldName);
+      invalidateFileListCache(newName);
     }
 
-    return result
+    return result;
   }
 
   async listFiles(
     bucketName: string,
     cursor?: string,
     limit = 20,
-    options: ListFilesOptions = {}
+    options: ListFilesOptions = {},
   ): Promise<FileListResponse> {
     // Only cache first page (no cursor)
     if (!cursor && !options.skipCache) {
-      const cached = getCachedFileList(bucketName, options.prefix)
+      const cached = getCachedFileList(bucketName, options.prefix);
       if (cached) {
-        return cached
+        return cached;
       }
     }
 
-    const url = new URL(`${WORKER_API}/api/files/${bucketName}`)
+    const url = new URL(`${WORKER_API}/api/files/${bucketName}`);
     if (cursor) {
-      url.searchParams.set('cursor', cursor)
+      url.searchParams.set("cursor", cursor);
     }
-    url.searchParams.set('limit', limit.toString())
+    url.searchParams.set("limit", limit.toString());
 
     if (options.skipCache) {
-      url.searchParams.set('skipCache', 'true')
+      url.searchParams.set("skipCache", "true");
     }
 
     if (options.prefix) {
-      url.searchParams.set('prefix', options.prefix)
+      url.searchParams.set("prefix", options.prefix);
     }
 
-    const response = await fetchWithRetry(url.toString(),
+    const response = await fetchWithRetry(
+      url.toString(),
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
+      throw new Error(`API error: ${response.status}`);
     }
 
-    const result = await response.json() as FileListResponse
+    const result = (await response.json()) as FileListResponse;
 
     // Cache first page only
     if (!cursor) {
-      setCachedFileList(bucketName, result, options.prefix)
+      setCachedFileList(bucketName, result, options.prefix);
     }
 
-    return result
+    return result;
   }
 
-  async deleteFile(bucketName: string, fileName: string): Promise<{ success: boolean }> {
+  async deleteFile(
+    bucketName: string,
+    fileName: string,
+  ): Promise<{ success: boolean }> {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/files/${bucketName}/delete/${encodeURIComponent(fileName)}`,
       this.getFetchOptions({
-        method: 'DELETE',
-        headers: this.getHeaders()
-      })
-    )
+        method: "DELETE",
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error(`Delete failed: ${response.status}`)
+      throw new Error(`Delete failed: ${response.status}`);
     }
 
     // Invalidate file list and bucket list cache
-    invalidateFileListCache(bucketName)
-    invalidateBucketListCache()
+    invalidateFileListCache(bucketName);
+    invalidateBucketListCache();
 
-    return { success: true }
+    return { success: true };
   }
 
-  async downloadFiles(bucketName: string, files: FileObject[], options: DownloadOptions = {}): Promise<void> {
-    const { asZip = false, onProgress } = options
-    const totalSize = files.reduce((total, file) => total + file.size, 0)
-    const config = this.FILE_TYPES['archive']
+  async downloadFiles(
+    bucketName: string,
+    files: FileObject[],
+    options: DownloadOptions = {},
+  ): Promise<void> {
+    const { asZip = false, onProgress } = options;
+    const totalSize = files.reduce((total, file) => total + file.size, 0);
+    const config = this.FILE_TYPES["archive"];
 
     if (config === undefined) {
-      throw new Error('Archive file type configuration not found')
+      throw new Error("Archive file type configuration not found");
     }
 
     if (asZip && totalSize > config.maxSize) {
-      throw new Error(`Total size exceeds the limit of ${this.formatSize(config.maxSize)} for zip downloads`)
+      throw new Error(
+        `Total size exceeds the limit of ${this.formatSize(config.maxSize)} for zip downloads`,
+      );
     }
 
     if (!asZip || files.length === 1) {
-      const file = files[0]
+      const file = files[0];
       if (file === undefined) {
-        throw new Error('No files to download')
+        throw new Error("No files to download");
       }
-      const url = this.getFileUrl(bucketName, file.key, file)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = file.key
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      onProgress?.(100)
-      return
+      const url = this.getFileUrl(bucketName, file.key, file);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = file.key;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      onProgress?.(100);
+      return;
     }
 
-    const response = await fetch(`${WORKER_API}/api/files/${bucketName}/download-zip`,
+    const response = await fetch(
+      `${WORKER_API}/api/files/${bucketName}/download-zip`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          files: files.map(f => f.key)
-        })
-      })
-    )
+          files: files.map((f) => f.key),
+        }),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error('Failed to download files')
+      throw new Error("Failed to download files");
     }
 
-    const blob = await response.blob()
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${bucketName}-files.zip`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-    onProgress?.(100)
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${bucketName}-files.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    onProgress?.(100);
   }
 
-  getFileUrl(bucketName: string, fileName: string, fileObject?: FileObject): string {
+  getFileUrl(
+    bucketName: string,
+    fileName: string,
+    fileObject?: FileObject,
+  ): string {
     if (fileObject?.url) {
-      return `${WORKER_API}${fileObject.url}`
+      return `${WORKER_API}${fileObject.url}`;
     }
 
-    return `${WORKER_API}/api/files/${bucketName}/download/${encodeURIComponent(fileName)}`
+    return `${WORKER_API}/api/files/${bucketName}/download/${encodeURIComponent(fileName)}`;
   }
 
-  async downloadBucket(bucketName: string, options: DownloadOptions = {}): Promise<void> {
-    const { onProgress } = options
+  async downloadBucket(
+    bucketName: string,
+    options: DownloadOptions = {},
+  ): Promise<void> {
+    const { onProgress } = options;
 
     try {
-      let allFiles: FileObject[] = []
-      let cursor: string | undefined = undefined
+      let allFiles: FileObject[] = [];
+      let cursor: string | undefined = undefined;
 
       do {
-        const response = await this.listFiles(bucketName, cursor)
-        allFiles = [...allFiles, ...response.objects]
-        cursor = response.pagination.cursor
-      } while (cursor)
+        const response = await this.listFiles(bucketName, cursor);
+        allFiles = [...allFiles, ...response.objects];
+        cursor = response.pagination.cursor;
+      } while (cursor);
 
-      const totalSize = allFiles.reduce((total, file) => total + file.size, 0)
-      const config = this.FILE_TYPES['archive']
+      const totalSize = allFiles.reduce((total, file) => total + file.size, 0);
+      const config = this.FILE_TYPES["archive"];
 
       if (config === undefined) {
-        throw new Error('Archive file type configuration not found')
+        throw new Error("Archive file type configuration not found");
       }
 
       if (totalSize > config.maxSize) {
-        throw new Error(`Total size exceeds the limit of ${this.formatSize(config.maxSize)} for bucket downloads`)
+        throw new Error(
+          `Total size exceeds the limit of ${this.formatSize(config.maxSize)} for bucket downloads`,
+        );
       }
 
-      const response = await fetch(`${WORKER_API}/api/files/${bucketName}/download-zip`, {
-        method: 'POST',
-        headers: {
-          ...this.getHeaders(),
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `${WORKER_API}/api/files/${bucketName}/download-zip`,
+        {
+          method: "POST",
+          headers: {
+            ...this.getHeaders(),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            files: allFiles.map((f) => f.key),
+          }),
         },
-        body: JSON.stringify({
-          files: allFiles.map(f => f.key)
-        })
-      })
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to download bucket')
+        throw new Error("Failed to download bucket");
       }
 
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = `${bucketName}.zip`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-      onProgress?.(100)
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${bucketName}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      onProgress?.(100);
     } catch (error) {
-      logger.error('API', 'Bucket download failed', error)
-      throw new Error('Failed to download bucket')
+      logger.error("API", "Bucket download failed", error);
+      throw new Error("Failed to download bucket");
     }
   }
 
-  async downloadMultipleBuckets(bucketNames: string[], options: DownloadOptions = {}): Promise<void> {
-    const { onProgress } = options
+  async downloadMultipleBuckets(
+    bucketNames: string[],
+    options: DownloadOptions = {},
+  ): Promise<void> {
+    const { onProgress } = options;
 
     try {
-      onProgress?.(0)
+      onProgress?.(0);
 
       // Collect all files from all buckets
-      const bucketFiles: { bucketName: string; files: string[] }[] = []
+      const bucketFiles: { bucketName: string; files: string[] }[] = [];
 
       for (const bucketName of bucketNames) {
-        let allFiles: FileObject[] = []
-        let cursor: string | undefined = undefined
+        let allFiles: FileObject[] = [];
+        let cursor: string | undefined = undefined;
 
         do {
-          const response = await this.listFiles(bucketName, cursor)
-          allFiles = [...allFiles, ...response.objects]
-          cursor = response.pagination.cursor
-        } while (cursor)
+          const response = await this.listFiles(bucketName, cursor);
+          allFiles = [...allFiles, ...response.objects];
+          cursor = response.pagination.cursor;
+        } while (cursor);
 
         bucketFiles.push({
           bucketName,
-          files: allFiles.map(f => f.key)
-        })
+          files: allFiles.map((f) => f.key),
+        });
       }
 
-      onProgress?.(10)
+      onProgress?.(10);
 
-      const response = await fetch(`${WORKER_API}/api/files/download-buckets-zip`, {
-        method: 'POST',
-        headers: {
-          ...this.getHeaders(),
-          'Content-Type': 'application/json'
+      const response = await fetch(
+        `${WORKER_API}/api/files/download-buckets-zip`,
+        {
+          method: "POST",
+          headers: {
+            ...this.getHeaders(),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            buckets: bucketFiles,
+          }),
         },
-        body: JSON.stringify({
-          buckets: bucketFiles
-        })
-      })
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to download buckets')
+        throw new Error("Failed to download buckets");
       }
 
-      onProgress?.(50)
+      onProgress?.(50);
 
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5)
-      link.download = `buckets-${timestamp}.zip`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
-      onProgress?.(100)
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const timestamp = new Date()
+        .toISOString()
+        .replace(/[:.]/g, "-")
+        .slice(0, -5);
+      link.download = `buckets-${timestamp}.zip`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      onProgress?.(100);
     } catch (error) {
-      logger.error('API', 'Multi-bucket download failed', error)
-      throw new Error('Failed to download buckets')
+      logger.error("API", "Multi-bucket download failed", error);
+      throw new Error("Failed to download buckets");
     }
   }
 
-  async moveFile(sourceBucket: string, sourceKey: string, destBucket: string, destPath?: string): Promise<void> {
+  async moveFile(
+    sourceBucket: string,
+    sourceKey: string,
+    destBucket: string,
+    destPath?: string,
+  ): Promise<void> {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/files/${sourceBucket}/${encodeURIComponent(sourceKey)}/move`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           destinationBucket: destBucket,
-          destinationPath: destPath
-        })
-      })
-    )
+          destinationPath: destPath,
+        }),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: `Failed to move file: ${response.status}` })) as ApiErrorResponse
-      throw new Error(errorData.error ?? 'Failed to move file')
+      const errorData = (await response
+        .json()
+        .catch(() => ({
+          error: `Failed to move file: ${response.status}`,
+        }))) as ApiErrorResponse;
+      throw new Error(errorData.error ?? "Failed to move file");
     }
 
     // Invalidate file list for both source and destination buckets
-    invalidateFileListCache(sourceBucket)
-    invalidateFileListCache(destBucket)
-    invalidateBucketListCache() // Bucket sizes may have changed
+    invalidateFileListCache(sourceBucket);
+    invalidateFileListCache(destBucket);
+    invalidateBucketListCache(); // Bucket sizes may have changed
   }
 
   async moveFiles(
@@ -1401,40 +1615,49 @@ class APIService {
     fileKeys: string[],
     destBucket: string,
     destPath?: string,
-    onProgress?: (completed: number, total: number) => void
+    onProgress?: (completed: number, total: number) => void,
   ): Promise<void> {
     for (let i = 0; i < fileKeys.length; i++) {
-      const fileKey = fileKeys[i]
-      if (fileKey === undefined) continue
-      await this.moveFile(sourceBucket, fileKey, destBucket, destPath)
-      onProgress?.(i + 1, fileKeys.length)
+      const fileKey = fileKeys[i];
+      if (fileKey === undefined) continue;
+      await this.moveFile(sourceBucket, fileKey, destBucket, destPath);
+      onProgress?.(i + 1, fileKeys.length);
     }
   }
 
-  async copyFile(sourceBucket: string, sourceKey: string, destBucket: string, destPath?: string): Promise<void> {
+  async copyFile(
+    sourceBucket: string,
+    sourceKey: string,
+    destBucket: string,
+    destPath?: string,
+  ): Promise<void> {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/files/${sourceBucket}/${encodeURIComponent(sourceKey)}/copy`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           destinationBucket: destBucket,
-          destinationPath: destPath
-        })
-      })
-    )
+          destinationPath: destPath,
+        }),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: `Failed to copy file: ${response.status}` })) as ApiErrorResponse
-      throw new Error(errorData.error ?? 'Failed to copy file')
+      const errorData = (await response
+        .json()
+        .catch(() => ({
+          error: `Failed to copy file: ${response.status}`,
+        }))) as ApiErrorResponse;
+      throw new Error(errorData.error ?? "Failed to copy file");
     }
 
     // Invalidate file list cache for destination bucket
-    invalidateFileListCache(destBucket)
-    invalidateBucketListCache() // Bucket sizes may have changed
+    invalidateFileListCache(destBucket);
+    invalidateBucketListCache(); // Bucket sizes may have changed
   }
 
   async copyFiles(
@@ -1442,172 +1665,194 @@ class APIService {
     fileKeys: string[],
     destBucket: string,
     destPath?: string,
-    onProgress?: (completed: number, total: number) => void
+    onProgress?: (completed: number, total: number) => void,
   ): Promise<void> {
     for (let i = 0; i < fileKeys.length; i++) {
-      const fileKey = fileKeys[i]
-      if (fileKey === undefined) continue
-      await this.copyFile(sourceBucket, fileKey, destBucket, destPath)
-      onProgress?.(i + 1, fileKeys.length)
+      const fileKey = fileKeys[i];
+      if (fileKey === undefined) continue;
+      await this.copyFile(sourceBucket, fileKey, destBucket, destPath);
+      onProgress?.(i + 1, fileKeys.length);
     }
   }
 
   async renameFile(
     bucketName: string,
     sourceKey: string,
-    newKey: string
+    newKey: string,
   ): Promise<void> {
     // Extract directory path from source
-    const sourceParts = sourceKey.split('/')
-    const sourceDir = sourceParts.slice(0, -1).join('/')
+    const sourceParts = sourceKey.split("/");
+    const sourceDir = sourceParts.slice(0, -1).join("/");
 
     // If newKey doesn't include path, prepend source directory
-    let targetKey = newKey
-    if (!newKey.includes('/') && sourceDir) {
-      targetKey = `${sourceDir}/${newKey}`
+    let targetKey = newKey;
+    if (!newKey.includes("/") && sourceDir) {
+      targetKey = `${sourceDir}/${newKey}`;
     }
 
     const response = await fetchWithRetry(
       `${WORKER_API}/api/files/${bucketName}/${encodeURIComponent(sourceKey)}/rename`,
       this.getFetchOptions({
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ newKey: targetKey })
-      })
-    )
+        body: JSON.stringify({ newKey: targetKey }),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        error: `Failed to rename file: ${response.status}`
-      })) as ApiErrorResponse
-      throw new Error(errorData.error ?? 'Failed to rename file')
+      const errorData = (await response.json().catch(() => ({
+        error: `Failed to rename file: ${response.status}`,
+      }))) as ApiErrorResponse;
+      throw new Error(errorData.error ?? "Failed to rename file");
     }
 
     // Invalidate file list cache for this bucket
-    invalidateFileListCache(bucketName)
+    invalidateFileListCache(bucketName);
   }
 
   validateFileName(name: string): ValidationResult {
     if (!name || name.trim().length === 0) {
-      return { valid: false, error: 'File name cannot be empty' }
+      return { valid: false, error: "File name cannot be empty" };
     }
 
-    const trimmedName = name.trim()
+    const trimmedName = name.trim();
 
     // Check for invalid characters
     // eslint-disable-next-line no-control-regex
-    const invalidChars = /[<>:"|?*\x00-\x1F]/g
+    const invalidChars = /[<>:"|?*\x00-\x1F]/g;
     if (invalidChars.test(trimmedName)) {
-      return { valid: false, error: 'File name contains invalid characters' }
+      return { valid: false, error: "File name contains invalid characters" };
     }
 
     // Check for reserved names (Windows compatibility)
-    const reservedNames = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i
+    const reservedNames = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i;
     if (reservedNames.test(trimmedName)) {
-      return { valid: false, error: 'File name is reserved' }
+      return { valid: false, error: "File name is reserved" };
     }
 
-    return { valid: true }
+    return { valid: true };
   }
 
   async getSignedUrl(bucketName: string, fileName: string): Promise<string> {
     const response = await fetch(
       `${WORKER_API}/api/files/${bucketName}/signed-url/${encodeURIComponent(fileName)}`,
       this.getFetchOptions({
-        method: 'GET',
-        headers: this.getHeaders()
-      })
-    )
+        method: "GET",
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: `Failed to generate signed URL: ${response.status}` })) as ApiErrorResponse
-      throw new Error(errorData.error ?? 'Failed to generate signed URL')
+      const errorData = (await response
+        .json()
+        .catch(() => ({
+          error: `Failed to generate signed URL: ${response.status}`,
+        }))) as ApiErrorResponse;
+      throw new Error(errorData.error ?? "Failed to generate signed URL");
     }
 
-    const data = await response.json() as SignedUrlResponse
-    return data.url
+    const data = (await response.json()) as SignedUrlResponse;
+    return data.url;
   }
 
   // Folder Management Methods
 
   validateFolderName(name: string): ValidationResult {
     if (!name || name.trim().length === 0) {
-      return { valid: false, error: 'Folder name cannot be empty' }
+      return { valid: false, error: "Folder name cannot be empty" };
     }
-    const trimmedName = name.trim()
-    const validPattern = /^[a-zA-Z0-9-_/]+$/
+    const trimmedName = name.trim();
+    const validPattern = /^[a-zA-Z0-9-_/]+$/;
     if (!validPattern.test(trimmedName)) {
-      return { valid: false, error: 'Folder name can only contain letters, numbers, hyphens, underscores, and forward slashes' }
+      return {
+        valid: false,
+        error:
+          "Folder name can only contain letters, numbers, hyphens, underscores, and forward slashes",
+      };
     }
-    if (trimmedName.includes('//')) {
-      return { valid: false, error: 'Folder name cannot contain consecutive slashes' }
+    if (trimmedName.includes("//")) {
+      return {
+        valid: false,
+        error: "Folder name cannot contain consecutive slashes",
+      };
     }
-    if (trimmedName.startsWith('/') || trimmedName.endsWith('/')) {
-      return { valid: false, error: 'Folder name cannot start or end with a slash' }
+    if (trimmedName.startsWith("/") || trimmedName.endsWith("/")) {
+      return {
+        valid: false,
+        error: "Folder name cannot start or end with a slash",
+      };
     }
-    return { valid: true }
+    return { valid: true };
   }
 
   async createFolder(bucketName: string, folderName: string): Promise<void> {
-    const validation = this.validateFolderName(folderName)
+    const validation = this.validateFolderName(folderName);
     if (!validation.valid) {
-      throw new Error(validation.error)
+      throw new Error(validation.error);
     }
 
     const response = await fetchWithRetry(
       `${WORKER_API}/api/folders/${bucketName}/create`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ folderName: folderName.trim() })
-      })
-    )
+        body: JSON.stringify({ folderName: folderName.trim() }),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: `Failed to create folder: ${response.status}` })) as ApiErrorResponse
-      throw new Error(errorData.error ?? 'Failed to create folder')
+      const errorData = (await response
+        .json()
+        .catch(() => ({
+          error: `Failed to create folder: ${response.status}`,
+        }))) as ApiErrorResponse;
+      throw new Error(errorData.error ?? "Failed to create folder");
     }
 
     // Invalidate file list cache for this bucket
-    invalidateFileListCache(bucketName)
+    invalidateFileListCache(bucketName);
   }
 
   async renameFolder(
     bucketName: string,
     oldPath: string,
     newPath: string,
-    onProgress?: (completed: number, total: number) => void
+    onProgress?: (completed: number, total: number) => void,
   ): Promise<void> {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/folders/${bucketName}/rename`,
       this.getFetchOptions({
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ oldPath, newPath })
-      })
-    )
+        body: JSON.stringify({ oldPath, newPath }),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: `Failed to rename folder: ${response.status}` })) as ApiErrorResponse
-      throw new Error(errorData.error ?? 'Failed to rename folder')
+      const errorData = (await response
+        .json()
+        .catch(() => ({
+          error: `Failed to rename folder: ${response.status}`,
+        }))) as ApiErrorResponse;
+      throw new Error(errorData.error ?? "Failed to rename folder");
     }
 
-    const data = await response.json() as TransferResponse
+    const data = (await response.json()) as TransferResponse;
     if (onProgress && data.copied !== undefined) {
-      onProgress(data.copied, data.copied + (data.failed ?? 0))
+      onProgress(data.copied, data.copied + (data.failed ?? 0));
     }
 
     // Invalidate file list cache for this bucket
-    invalidateFileListCache(bucketName)
+    invalidateFileListCache(bucketName);
   }
 
   async copyFolder(
@@ -1615,33 +1860,40 @@ class APIService {
     folderPath: string,
     destBucket: string,
     destPath?: string,
-    onProgress?: (completed: number, total: number) => void
+    onProgress?: (completed: number, total: number) => void,
   ): Promise<void> {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/folders/${sourceBucket}/${encodeURIComponent(folderPath)}/copy`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ destinationBucket: destBucket, destinationPath: destPath })
-      })
-    )
+        body: JSON.stringify({
+          destinationBucket: destBucket,
+          destinationPath: destPath,
+        }),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: `Failed to copy folder: ${response.status}` })) as ApiErrorResponse
-      throw new Error(errorData.error ?? 'Failed to copy folder')
+      const errorData = (await response
+        .json()
+        .catch(() => ({
+          error: `Failed to copy folder: ${response.status}`,
+        }))) as ApiErrorResponse;
+      throw new Error(errorData.error ?? "Failed to copy folder");
     }
 
-    const data = await response.json() as TransferResponse
+    const data = (await response.json()) as TransferResponse;
     if (onProgress && data.copied !== undefined) {
-      onProgress(data.copied, data.copied + (data.failed ?? 0))
+      onProgress(data.copied, data.copied + (data.failed ?? 0));
     }
 
     // Invalidate file list cache for destination bucket
-    invalidateFileListCache(destBucket)
-    invalidateBucketListCache() // Bucket sizes may have changed
+    invalidateFileListCache(destBucket);
+    invalidateBucketListCache(); // Bucket sizes may have changed
   }
 
   async moveFolder(
@@ -1649,64 +1901,85 @@ class APIService {
     folderPath: string,
     destBucket: string,
     destPath?: string,
-    onProgress?: (completed: number, total: number) => void
+    onProgress?: (completed: number, total: number) => void,
   ): Promise<void> {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/folders/${sourceBucket}/${encodeURIComponent(folderPath)}/move`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ destinationBucket: destBucket, destinationPath: destPath })
-      })
-    )
+        body: JSON.stringify({
+          destinationBucket: destBucket,
+          destinationPath: destPath,
+        }),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: `Failed to move folder: ${response.status}` })) as ApiErrorResponse
-      throw new Error(errorData.error ?? 'Failed to move folder')
+      const errorData = (await response
+        .json()
+        .catch(() => ({
+          error: `Failed to move folder: ${response.status}`,
+        }))) as ApiErrorResponse;
+      throw new Error(errorData.error ?? "Failed to move folder");
     }
 
-    const data = await response.json() as TransferResponse
+    const data = (await response.json()) as TransferResponse;
     if (onProgress && data.moved !== undefined) {
-      onProgress(data.moved, data.moved + (data.failed ?? 0))
+      onProgress(data.moved, data.moved + (data.failed ?? 0));
     }
 
     // Invalidate file list cache for both source and destination buckets
-    invalidateFileListCache(sourceBucket)
-    invalidateFileListCache(destBucket)
-    invalidateBucketListCache() // Bucket sizes may have changed
+    invalidateFileListCache(sourceBucket);
+    invalidateFileListCache(destBucket);
+    invalidateBucketListCache(); // Bucket sizes may have changed
   }
 
-  async deleteFolder(bucketName: string, folderPath: string, force = false): Promise<{ success: boolean, fileCount?: number, message?: string }> {
-    const url = new URL(`${WORKER_API}/api/folders/${bucketName}/${encodeURIComponent(folderPath)}`)
+  async deleteFolder(
+    bucketName: string,
+    folderPath: string,
+    force = false,
+  ): Promise<{ success: boolean; fileCount?: number; message?: string }> {
+    const url = new URL(
+      `${WORKER_API}/api/folders/${bucketName}/${encodeURIComponent(folderPath)}`,
+    );
     if (force) {
-      url.searchParams.set('force', 'true')
+      url.searchParams.set("force", "true");
     }
 
     const response = await fetchWithRetry(
       url.toString(),
       this.getFetchOptions({
-        method: 'DELETE',
-        headers: this.getHeaders()
-      })
-    )
+        method: "DELETE",
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: `Failed to delete folder: ${response.status}` })) as ApiErrorResponse
-      throw new Error(errorData.error ?? 'Failed to delete folder')
+      const errorData = (await response
+        .json()
+        .catch(() => ({
+          error: `Failed to delete folder: ${response.status}`,
+        }))) as ApiErrorResponse;
+      throw new Error(errorData.error ?? "Failed to delete folder");
     }
 
-    const result = await response.json() as { success: boolean, fileCount?: number, message?: string }
+    const result = (await response.json()) as {
+      success: boolean;
+      fileCount?: number;
+      message?: string;
+    };
 
     // Invalidate file list and bucket list cache
     if (result.success) {
-      invalidateFileListCache(bucketName)
-      invalidateBucketListCache() // Bucket sizes may have changed
+      invalidateFileListCache(bucketName);
+      invalidateBucketListCache(); // Bucket sizes may have changed
     }
 
-    return result
+    return result;
   }
 
   async searchAcrossBuckets(params: {
@@ -1717,75 +1990,85 @@ class APIService {
     startDate?: Date | null;
     endDate?: Date | null;
     limit?: number;
-  }): Promise<{ results: unknown[]; pagination?: { total?: number; hasMore?: boolean } }> {
-    const url = new URL(`${WORKER_API}/api/search`)
+  }): Promise<{
+    results: unknown[];
+    pagination?: { total?: number; hasMore?: boolean };
+  }> {
+    const url = new URL(`${WORKER_API}/api/search`);
 
     if (params.query) {
-      url.searchParams.set('q', params.query)
+      url.searchParams.set("q", params.query);
     }
     if (params.extensions && params.extensions.length > 0) {
-      url.searchParams.set('extensions', params.extensions.join(','))
+      url.searchParams.set("extensions", params.extensions.join(","));
     }
     if (params.minSize !== null && params.minSize !== undefined) {
-      url.searchParams.set('minSize', params.minSize.toString())
+      url.searchParams.set("minSize", params.minSize.toString());
     }
     if (params.maxSize !== null && params.maxSize !== undefined) {
-      url.searchParams.set('maxSize', params.maxSize.toString())
+      url.searchParams.set("maxSize", params.maxSize.toString());
     }
     if (params.startDate) {
-      url.searchParams.set('startDate', params.startDate.toISOString())
+      url.searchParams.set("startDate", params.startDate.toISOString());
     }
     if (params.endDate) {
-      url.searchParams.set('endDate', params.endDate.toISOString())
+      url.searchParams.set("endDate", params.endDate.toISOString());
     }
     if (params.limit) {
-      url.searchParams.set('limit', params.limit.toString())
+      url.searchParams.set("limit", params.limit.toString());
     }
 
     const response = await fetch(
       url.toString(),
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error(`Search failed: ${response.status}`)
+      throw new Error(`Search failed: ${response.status}`);
     }
 
-    return response.json() as Promise<{ results: unknown[]; pagination?: { total?: number; hasMore?: boolean } }>
+    return response.json() as Promise<{
+      results: unknown[];
+      pagination?: { total?: number; hasMore?: boolean };
+    }>;
   }
 
   // AI Search Methods
 
-  async getAISearchCompatibility(bucketName: string): Promise<AISearchCompatibility> {
+  async getAISearchCompatibility(
+    bucketName: string,
+  ): Promise<AISearchCompatibility> {
     const response = await fetch(
       `${WORKER_API}/api/ai-search/compatibility/${encodeURIComponent(bucketName)}`,
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error(`Failed to get AI Search compatibility: ${response.status}`)
+      throw new Error(
+        `Failed to get AI Search compatibility: ${response.status}`,
+      );
     }
 
-    return response.json() as Promise<AISearchCompatibility>
+    return response.json() as Promise<AISearchCompatibility>;
   }
 
   async getAISearchInstances(): Promise<AISearchInstancesResponse> {
     const response = await fetch(
       `${WORKER_API}/api/ai-search/instances`,
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error(`Failed to get AI Search instances: ${response.status}`)
+      throw new Error(`Failed to get AI Search instances: ${response.status}`);
     }
 
-    return response.json() as Promise<AISearchInstancesResponse>
+    return response.json() as Promise<AISearchInstancesResponse>;
   }
 
   async createAISearchInstance(params: {
@@ -1796,282 +2079,330 @@ class APIService {
     const response = await fetch(
       `${WORKER_API}/api/ai-search/instances`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(params)
-      })
-    )
+        body: JSON.stringify(params),
+      }),
+    );
 
-    return response.json() as Promise<AISearchCreateResponse>
+    return response.json() as Promise<AISearchCreateResponse>;
   }
 
-  async deleteAISearchInstance(instanceName: string): Promise<{ success: boolean; error?: string }> {
+  async deleteAISearchInstance(
+    instanceName: string,
+  ): Promise<{ success: boolean; error?: string }> {
     const response = await fetch(
       `${WORKER_API}/api/ai-search/instances/${encodeURIComponent(instanceName)}`,
       this.getFetchOptions({
-        method: 'DELETE',
-        headers: this.getHeaders()
-      })
-    )
+        method: "DELETE",
+        headers: this.getHeaders(),
+      }),
+    );
 
-    return response.json() as Promise<{ success: boolean; error?: string }>
+    return response.json() as Promise<{ success: boolean; error?: string }>;
   }
 
-  async triggerAISearchSync(instanceName: string): Promise<AISearchSyncResponse> {
+  async triggerAISearchSync(
+    instanceName: string,
+  ): Promise<AISearchSyncResponse> {
     const response = await fetch(
       `${WORKER_API}/api/ai-search/instances/${encodeURIComponent(instanceName)}/sync`,
       this.getFetchOptions({
-        method: 'POST',
-        headers: this.getHeaders()
-      })
-    )
+        method: "POST",
+        headers: this.getHeaders(),
+      }),
+    );
 
-    return response.json() as Promise<AISearchSyncResponse>
+    return response.json() as Promise<AISearchSyncResponse>;
   }
 
-  async aiSearch(instanceName: string, params: AISearchQueryParams): Promise<AISearchResponse> {
+  async aiSearch(
+    instanceName: string,
+    params: AISearchQueryParams,
+  ): Promise<AISearchResponse> {
     const response = await fetch(
       `${WORKER_API}/api/ai-search/${encodeURIComponent(instanceName)}/ai-search`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(params)
-      })
-    )
+        body: JSON.stringify(params),
+      }),
+    );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'AI Search failed' })) as { error?: string }
-      throw new Error(error.error ?? 'AI Search failed')
+      const error = (await response
+        .json()
+        .catch(() => ({ error: "AI Search failed" }))) as { error?: string };
+      throw new Error(error.error ?? "AI Search failed");
     }
 
-    return response.json() as Promise<AISearchResponse>
+    return response.json() as Promise<AISearchResponse>;
   }
 
-  async semanticSearch(instanceName: string, params: AISearchQueryParams): Promise<AISearchResponse> {
+  async semanticSearch(
+    instanceName: string,
+    params: AISearchQueryParams,
+  ): Promise<AISearchResponse> {
     const response = await fetch(
       `${WORKER_API}/api/ai-search/${encodeURIComponent(instanceName)}/search`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(params)
-      })
-    )
+        body: JSON.stringify(params),
+      }),
+    );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Search failed' })) as { error?: string }
-      throw new Error(error.error ?? 'Search failed')
+      const error = (await response
+        .json()
+        .catch(() => ({ error: "Search failed" }))) as { error?: string };
+      throw new Error(error.error ?? "Search failed");
     }
 
-    return response.json() as Promise<AISearchResponse>
+    return response.json() as Promise<AISearchResponse>;
   }
 
-  async getAISearchSupportedTypes(skipCache = false): Promise<SupportedFileTypesResponse> {
-    const url = new URL(`${WORKER_API}/api/ai-search/supported-types`)
+  async getAISearchSupportedTypes(
+    skipCache = false,
+  ): Promise<SupportedFileTypesResponse> {
+    const url = new URL(`${WORKER_API}/api/ai-search/supported-types`);
     if (skipCache) {
-      url.searchParams.set('skipCache', 'true')
+      url.searchParams.set("skipCache", "true");
     }
 
     const response = await fetch(
       url.toString(),
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error(`Failed to get supported file types: ${response.status}`)
+      throw new Error(`Failed to get supported file types: ${response.status}`);
     }
 
-    return response.json() as Promise<SupportedFileTypesResponse>
+    return response.json() as Promise<SupportedFileTypesResponse>;
   }
 
-  async getAISearchInstanceStatus(instanceName: string): Promise<AISearchInstanceStatus> {
+  async getAISearchInstanceStatus(
+    instanceName: string,
+  ): Promise<AISearchInstanceStatus> {
     const response = await fetch(
       `${WORKER_API}/api/ai-search/instances/${encodeURIComponent(instanceName)}/status`,
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error(`Failed to get instance status: ${response.status}`)
+      throw new Error(`Failed to get instance status: ${response.status}`);
     }
 
-    return response.json() as Promise<AISearchInstanceStatus>
+    return response.json() as Promise<AISearchInstanceStatus>;
   }
 
   getAISearchDashboardUrl(): string {
-    return 'https://dash.cloudflare.com/?to=/:account/ai/ai-search'
+    return "https://dash.cloudflare.com/?to=/:account/ai/ai-search";
   }
 
   // Job History Methods
 
   async getJobList(options?: {
-    limit?: number
-    offset?: number
-    status?: string
-    operation_type?: string
-    bucket_name?: string
-    start_date?: string
-    end_date?: string
-    job_id?: string
-    min_errors?: number
-    sort_by?: string
-    sort_order?: 'asc' | 'desc'
+    limit?: number;
+    offset?: number;
+    status?: string;
+    operation_type?: string;
+    bucket_name?: string;
+    start_date?: string;
+    end_date?: string;
+    job_id?: string;
+    min_errors?: number;
+    sort_by?: string;
+    sort_order?: "asc" | "desc";
   }): Promise<JobListResponse> {
-    const params = new URLSearchParams()
-    if (options?.limit) params.set('limit', options.limit.toString())
-    if (options?.offset) params.set('offset', options.offset.toString())
-    if (options?.status) params.set('status', options.status)
-    if (options?.operation_type) params.set('operation_type', options.operation_type)
-    if (options?.bucket_name) params.set('bucket_name', options.bucket_name)
-    if (options?.start_date) params.set('start_date', options.start_date)
-    if (options?.end_date) params.set('end_date', options.end_date)
-    if (options?.job_id) params.set('job_id', options.job_id)
-    if (options?.min_errors !== undefined) params.set('min_errors', options.min_errors.toString())
-    if (options?.sort_by) params.set('sort_by', options.sort_by)
-    if (options?.sort_order) params.set('sort_order', options.sort_order)
+    const params = new URLSearchParams();
+    if (options?.limit) params.set("limit", options.limit.toString());
+    if (options?.offset) params.set("offset", options.offset.toString());
+    if (options?.status) params.set("status", options.status);
+    if (options?.operation_type)
+      params.set("operation_type", options.operation_type);
+    if (options?.bucket_name) params.set("bucket_name", options.bucket_name);
+    if (options?.start_date) params.set("start_date", options.start_date);
+    if (options?.end_date) params.set("end_date", options.end_date);
+    if (options?.job_id) params.set("job_id", options.job_id);
+    if (options?.min_errors !== undefined)
+      params.set("min_errors", options.min_errors.toString());
+    if (options?.sort_by) params.set("sort_by", options.sort_by);
+    if (options?.sort_order) params.set("sort_order", options.sort_order);
 
     const response = await fetch(
       `${WORKER_API}/api/jobs?${params.toString()}`,
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
-      throw new Error(error.error ?? `Failed to get job list: ${response.status}`)
+      const error = (await response
+        .json()
+        .catch(() => ({ error: "Unknown error" }))) as { error?: string };
+      throw new Error(
+        error.error ?? `Failed to get job list: ${response.status}`,
+      );
     }
 
-    const data = await response.json() as { result: JobListResponse; success: boolean }
-    return data.result
+    const data = (await response.json()) as {
+      result: JobListResponse;
+      success: boolean;
+    };
+    return data.result;
   }
 
   async getJobEvents(jobId: string): Promise<JobEventsResponse> {
     const response = await fetch(
       `${WORKER_API}/api/jobs/${encodeURIComponent(jobId)}/events`,
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
-      throw new Error(error.error ?? `Failed to get job events: ${response.status}`)
+      const error = (await response
+        .json()
+        .catch(() => ({ error: "Unknown error" }))) as { error?: string };
+      throw new Error(
+        error.error ?? `Failed to get job events: ${response.status}`,
+      );
     }
 
-    const data = await response.json() as { result: JobEventsResponse; success: boolean }
-    return data.result
+    const data = (await response.json()) as {
+      result: JobEventsResponse;
+      success: boolean;
+    };
+    return data.result;
   }
 
   async getJobStatus(jobId: string): Promise<JobListItem> {
     const response = await fetch(
       `${WORKER_API}/api/jobs/${encodeURIComponent(jobId)}`,
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Unknown error' })) as { error?: string }
-      throw new Error(error.error ?? `Failed to get job status: ${response.status}`)
+      const error = (await response
+        .json()
+        .catch(() => ({ error: "Unknown error" }))) as { error?: string };
+      throw new Error(
+        error.error ?? `Failed to get job status: ${response.status}`,
+      );
     }
 
-    const data = await response.json() as { result: JobListItem; success: boolean }
-    return data.result
+    const data = (await response.json()) as {
+      result: JobListItem;
+      success: boolean;
+    };
+    return data.result;
   }
 
   // S3 Import Methods (Super Slurper)
-  async createS3ImportJob(data: CreateS3ImportJobRequest): Promise<S3ImportJobResponse> {
+  async createS3ImportJob(
+    data: CreateS3ImportJobRequest,
+  ): Promise<S3ImportJobResponse> {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/s3-import/jobs`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(data)
-      })
-    )
+        body: JSON.stringify(data),
+      }),
+    );
 
-    const result = await response.json() as S3ImportJobResponse
+    const result = (await response.json()) as S3ImportJobResponse;
 
     // Invalidate cache on successful job creation
     if (result.success) {
-      invalidateS3ImportJobsCache()
+      invalidateS3ImportJobsCache();
     }
 
-    return result
+    return result;
   }
 
   async listS3ImportJobs(skipCache = false): Promise<S3ImportJobsListResponse> {
     // Check cache first
     if (!skipCache) {
-      const cached = getCachedS3ImportJobs()
+      const cached = getCachedS3ImportJobs();
       if (cached) {
-        return cached
+        return cached;
       }
     }
 
     const response = await fetchWithRetry(
       `${WORKER_API}/api/s3-import/jobs`,
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
-    const result = await response.json() as S3ImportJobsListResponse
+    const result = (await response.json()) as S3ImportJobsListResponse;
 
     // Cache the result
-    setCachedS3ImportJobs(result)
+    setCachedS3ImportJobs(result);
 
-    return result
+    return result;
   }
 
   async getS3ImportJob(jobId: string): Promise<S3ImportJobResponse> {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/s3-import/jobs/${encodeURIComponent(jobId)}`,
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
-    const result = await response.json() as S3ImportJobResponse
-    return result
+    const result = (await response.json()) as S3ImportJobResponse;
+    return result;
   }
 
-  async abortS3ImportJob(jobId: string): Promise<{ success: boolean; error?: string }> {
+  async abortS3ImportJob(
+    jobId: string,
+  ): Promise<{ success: boolean; error?: string }> {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/s3-import/jobs/${encodeURIComponent(jobId)}/abort`,
       this.getFetchOptions({
-        method: 'POST',
-        headers: this.getHeaders()
-      })
-    )
+        method: "POST",
+        headers: this.getHeaders(),
+      }),
+    );
 
-    const result = await response.json() as { success: boolean; error?: string }
+    const result = (await response.json()) as {
+      success: boolean;
+      error?: string;
+    };
 
     // Invalidate cache on successful abort
     if (result.success) {
-      invalidateS3ImportJobsCache()
+      invalidateS3ImportJobsCache();
     }
 
-    return result
+    return result;
   }
 
   getS3ImportDashboardUrl(): string {
-    return 'https://dash.cloudflare.com/?to=/:account/r2/slurper'
+    return "https://dash.cloudflare.com/?to=/:account/r2/slurper";
   }
 
   // ============================================
@@ -2084,70 +2415,78 @@ class APIService {
   async getAllTags(skipCache = false): Promise<TagSummary[]> {
     // Check client-side cache first
     if (!skipCache) {
-      const cached = getCachedAllTags()
+      const cached = getCachedAllTags();
       if (cached) {
-        return cached
+        return cached;
       }
     }
 
-    const url = new URL(`${WORKER_API}/api/tags`)
+    const url = new URL(`${WORKER_API}/api/tags`);
     if (skipCache) {
-      url.searchParams.set('skipCache', 'true')
+      url.searchParams.set("skipCache", "true");
     }
 
     const response = await fetch(
       url.toString(),
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error(`Failed to get tags: ${response.status}`)
+      throw new Error(`Failed to get tags: ${response.status}`);
     }
 
-    const data = await response.json() as { tags: TagSummary[] }
+    const data = (await response.json()) as { tags: TagSummary[] };
 
     // Cache the result
-    setCachedAllTags(data.tags)
+    setCachedAllTags(data.tags);
 
-    return data.tags
+    return data.tags;
   }
 
   /**
    * Get tags for a specific bucket
    */
-  async getBucketTags(bucketName: string, skipCache = false): Promise<string[]> {
+  async getBucketTags(
+    bucketName: string,
+    skipCache = false,
+  ): Promise<string[]> {
     // Check client-side cache first
     if (!skipCache) {
-      const cached = getCachedBucketTags(bucketName)
+      const cached = getCachedBucketTags(bucketName);
       if (cached) {
-        return cached
+        return cached;
       }
     }
 
-    const url = new URL(`${WORKER_API}/api/buckets/${encodeURIComponent(bucketName)}/tags`)
+    const url = new URL(
+      `${WORKER_API}/api/buckets/${encodeURIComponent(bucketName)}/tags`,
+    );
     if (skipCache) {
-      url.searchParams.set('skipCache', 'true')
+      url.searchParams.set("skipCache", "true");
     }
 
     const response = await fetch(
       url.toString(),
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error(`Failed to get bucket tags: ${response.status}`)
+      throw new Error(`Failed to get bucket tags: ${response.status}`);
     }
 
-    const data = await response.json() as { bucket_name: string; tags: string[] }
+    const data = (await response.json()) as {
+      bucket_name: string;
+      tags: string[];
+    };
 
     // Cache the result
-    setCachedBucketTags(bucketName, data.tags)
+    setCachedBucketTags(bucketName, data.tags);
 
-    return data.tags
+    return data.tags;
   }
 
   /**
@@ -2157,22 +2496,24 @@ class APIService {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/buckets/${encodeURIComponent(bucketName)}/tags`,
       this.getFetchOptions({
-        method: 'PUT',
+        method: "PUT",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ tags })
-      })
-    )
+        body: JSON.stringify({ tags }),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Failed to set tags' })) as { error?: string }
-      throw new Error(errorData.error ?? 'Failed to set bucket tags')
+      const errorData = (await response
+        .json()
+        .catch(() => ({ error: "Failed to set tags" }))) as { error?: string };
+      throw new Error(errorData.error ?? "Failed to set bucket tags");
     }
 
     // Invalidate tag cache
-    invalidateTagCache()
+    invalidateTagCache();
   }
 
   /**
@@ -2182,22 +2523,24 @@ class APIService {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/buckets/${encodeURIComponent(bucketName)}/tags`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ tag })
-      })
-    )
+        body: JSON.stringify({ tag }),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Failed to add tag' })) as { error?: string }
-      throw new Error(errorData.error ?? 'Failed to add tag')
+      const errorData = (await response
+        .json()
+        .catch(() => ({ error: "Failed to add tag" }))) as { error?: string };
+      throw new Error(errorData.error ?? "Failed to add tag");
     }
 
     // Invalidate tag cache
-    invalidateTagCache()
+    invalidateTagCache();
   }
 
   /**
@@ -2207,43 +2550,50 @@ class APIService {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/buckets/${encodeURIComponent(bucketName)}/tags/${encodeURIComponent(tag)}`,
       this.getFetchOptions({
-        method: 'DELETE',
-        headers: this.getHeaders()
-      })
-    )
+        method: "DELETE",
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Failed to remove tag' })) as { error?: string }
-      throw new Error(errorData.error ?? 'Failed to remove tag')
+      const errorData = (await response
+        .json()
+        .catch(() => ({ error: "Failed to remove tag" }))) as {
+        error?: string;
+      };
+      throw new Error(errorData.error ?? "Failed to remove tag");
     }
 
     // Invalidate tag cache
-    invalidateTagCache()
+    invalidateTagCache();
   }
 
   /**
    * Search buckets by tags
    */
-  async searchByTags(tags: string[], matchAll = false): Promise<TagSearchResult[]> {
-    const url = new URL(`${WORKER_API}/api/tags/search`)
-    url.searchParams.set('tags', tags.join(','))
+  async searchByTags(
+    tags: string[],
+    matchAll = false,
+  ): Promise<TagSearchResult[]> {
+    const url = new URL(`${WORKER_API}/api/tags/search`);
+    url.searchParams.set("tags", tags.join(","));
     if (matchAll) {
-      url.searchParams.set('matchAll', 'true')
+      url.searchParams.set("matchAll", "true");
     }
 
     const response = await fetch(
       url.toString(),
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error(`Failed to search by tags: ${response.status}`)
+      throw new Error(`Failed to search by tags: ${response.status}`);
     }
 
-    const data = await response.json() as TagSearchResponse
-    return data.results
+    const data = (await response.json()) as TagSearchResponse;
+    return data.results;
   }
 
   /**
@@ -2253,44 +2603,54 @@ class APIService {
     const response = await fetch(
       `${WORKER_API}/api/tags/export`,
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error(`Failed to export tags: ${response.status}`)
+      throw new Error(`Failed to export tags: ${response.status}`);
     }
 
-    const data = await response.json() as { tags: BucketTag[] }
-    return data.tags
+    const data = (await response.json()) as { tags: BucketTag[] };
+    return data.tags;
   }
 
   /**
    * Import tags
    */
-  async importTags(tags: { bucket_name: string; tag: string }[]): Promise<{ imported: number; skipped: number }> {
+  async importTags(
+    tags: { bucket_name: string; tag: string }[],
+  ): Promise<{ imported: number; skipped: number }> {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/tags/import`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ tags })
-      })
-    )
+        body: JSON.stringify({ tags }),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Failed to import tags' })) as { error?: string }
-      throw new Error(errorData.error ?? 'Failed to import tags')
+      const errorData = (await response
+        .json()
+        .catch(() => ({ error: "Failed to import tags" }))) as {
+        error?: string;
+      };
+      throw new Error(errorData.error ?? "Failed to import tags");
     }
 
     // Invalidate tag cache
-    invalidateTagCache()
+    invalidateTagCache();
 
-    const data = await response.json() as { success: boolean; imported: number; skipped: number }
-    return { imported: data.imported, skipped: data.skipped }
+    const data = (await response.json()) as {
+      success: boolean;
+      imported: number;
+      skipped: number;
+    };
+    return { imported: data.imported, skipped: data.skipped };
   }
 
   // ============================================
@@ -2302,54 +2662,64 @@ class APIService {
    */
   async getBucketColors(): Promise<Record<string, string>> {
     // Check client-side cache first
-    const cached = getCachedBucketColors()
+    const cached = getCachedBucketColors();
     if (cached) {
-      return cached
+      return cached;
     }
 
     const response = await fetch(
       `${WORKER_API}/api/buckets/colors`,
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
       // Return empty on error (table may not exist yet)
-      return {}
+      return {};
     }
 
-    const data = await response.json() as { result: Record<string, string>; success: boolean }
+    const data = (await response.json()) as {
+      result: Record<string, string>;
+      success: boolean;
+    };
 
     // Cache the result
-    setCachedBucketColors(data.result)
+    setCachedBucketColors(data.result);
 
-    return data.result
+    return data.result;
   }
 
   /**
    * Update a bucket's color
    */
-  async updateBucketColor(bucketName: string, color: string | null): Promise<void> {
+  async updateBucketColor(
+    bucketName: string,
+    color: string | null,
+  ): Promise<void> {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/buckets/${encodeURIComponent(bucketName)}/color`,
       this.getFetchOptions({
-        method: 'PUT',
+        method: "PUT",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ color })
-      })
-    )
+        body: JSON.stringify({ color }),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Failed to update color' })) as { error?: string }
-      throw new Error(errorData.error ?? 'Failed to update bucket color')
+      const errorData = (await response
+        .json()
+        .catch(() => ({ error: "Failed to update color" }))) as {
+        error?: string;
+      };
+      throw new Error(errorData.error ?? "Failed to update bucket color");
     }
 
     // Invalidate color cache
-    invalidateBucketColorCache()
+    invalidateBucketColorCache();
   }
 
   // ============================================
@@ -2360,74 +2730,78 @@ class APIService {
    * Get current migration status
    */
   async getMigrationStatus(): Promise<{
-    currentVersion: number
-    latestVersion: number
-    pendingMigrations: { version: number; name: string; description: string }[]
-    isUpToDate: boolean
+    currentVersion: number;
+    latestVersion: number;
+    pendingMigrations: { version: number; name: string; description: string }[];
+    isUpToDate: boolean;
     legacy?: {
-      isLegacy: boolean
-      existingTables: string[]
-      suggestedVersion: number
-    }
+      isLegacy: boolean;
+      existingTables: string[];
+      suggestedVersion: number;
+    };
   }> {
     const response = await fetch(
       `${WORKER_API}/api/migrations/status`,
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error(`Failed to get migration status: ${response.status}`)
+      throw new Error(`Failed to get migration status: ${response.status}`);
     }
 
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       result: {
-        currentVersion: number
-        latestVersion: number
-        pendingMigrations: { version: number; name: string; description: string }[]
-        isUpToDate: boolean
+        currentVersion: number;
+        latestVersion: number;
+        pendingMigrations: {
+          version: number;
+          name: string;
+          description: string;
+        }[];
+        isUpToDate: boolean;
         legacy?: {
-          isLegacy: boolean
-          existingTables: string[]
-          suggestedVersion: number
-        }
-      }
-      success: boolean
-    }
-    return data.result
+          isLegacy: boolean;
+          existingTables: string[];
+          suggestedVersion: number;
+        };
+      };
+      success: boolean;
+    };
+    return data.result;
   }
 
   /**
    * Apply pending migrations
    */
   async applyMigrations(): Promise<{
-    success: boolean
-    migrationsApplied: number
-    currentVersion: number
-    errors: string[]
+    success: boolean;
+    migrationsApplied: number;
+    currentVersion: number;
+    errors: string[];
   }> {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/migrations/apply`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
-        }
-      })
-    )
+          "Content-Type": "application/json",
+        },
+      }),
+    );
 
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       result: {
-        success: boolean
-        migrationsApplied: number
-        currentVersion: number
-        errors: string[]
-      }
-      success: boolean
-    }
-    return data.result
+        success: boolean;
+        migrationsApplied: number;
+        currentVersion: number;
+        errors: string[];
+      };
+      success: boolean;
+    };
+    return data.result;
   }
 
   /**
@@ -2437,17 +2811,17 @@ class APIService {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/migrations/mark-legacy`,
       this.getFetchOptions({
-        method: 'POST',
+        method: "POST",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ version })
-      })
-    )
+        body: JSON.stringify({ version }),
+      }),
+    );
 
     if (!response.ok) {
-      throw new Error('Failed to mark legacy migrations')
+      throw new Error("Failed to mark legacy migrations");
     }
   }
 
@@ -2462,40 +2836,47 @@ class APIService {
     const response = await fetch(
       `${WORKER_API}/api/lifecycle/${encodeURIComponent(bucketName)}`,
       this.getFetchOptions({
-        headers: this.getHeaders()
-      })
-    )
+        headers: this.getHeaders(),
+      }),
+    );
 
     if (!response.ok) {
       // Return empty rules on error (no lifecycle configured is common)
-      return { success: true, result: { rules: [] } }
+      return { success: true, result: { rules: [] } };
     }
 
-    return await response.json() as LifecycleRulesResponse
+    return (await response.json()) as LifecycleRulesResponse;
   }
 
   /**
    * Set lifecycle rules for a bucket
    */
-  async setLifecycleRules(bucketName: string, rules: LifecycleRule[]): Promise<LifecycleRulesResponse> {
+  async setLifecycleRules(
+    bucketName: string,
+    rules: LifecycleRule[],
+  ): Promise<LifecycleRulesResponse> {
     const response = await fetchWithRetry(
       `${WORKER_API}/api/lifecycle/${encodeURIComponent(bucketName)}`,
       this.getFetchOptions({
-        method: 'PUT',
+        method: "PUT",
         headers: {
           ...this.getHeaders(),
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ rules })
-      })
-    )
+        body: JSON.stringify({ rules }),
+      }),
+    );
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Failed to update lifecycle rules' })) as { error?: string }
-      throw new Error(errorData.error ?? 'Failed to update lifecycle rules')
+      const errorData = (await response
+        .json()
+        .catch(() => ({ error: "Failed to update lifecycle rules" }))) as {
+        error?: string;
+      };
+      throw new Error(errorData.error ?? "Failed to update lifecycle rules");
     }
 
-    return await response.json() as LifecycleRulesResponse
+    return (await response.json()) as LifecycleRulesResponse;
   }
 
   /**
@@ -2503,16 +2884,15 @@ class APIService {
    */
   async deleteLifecycleRule(bucketName: string, ruleId: string): Promise<void> {
     // Get current rules
-    const current = await this.getLifecycleRules(bucketName)
-    const rules = current.result?.rules ?? []
+    const current = await this.getLifecycleRules(bucketName);
+    const rules = current.result?.rules ?? [];
 
     // Filter out the rule to delete
-    const updatedRules = rules.filter(r => r.id !== ruleId)
+    const updatedRules = rules.filter((r) => r.id !== ruleId);
 
     // Set the updated rules
-    await this.setLifecycleRules(bucketName, updatedRules)
+    await this.setLifecycleRules(bucketName, updatedRules);
   }
-
 }
 
 export const api = new APIService();
@@ -2520,12 +2900,17 @@ export const api = new APIService();
 // ============================================
 // Lifecycle Types (imported from types/lifecycle.ts)
 // ============================================
-import type { LifecycleRule, LifecycleRulesResponse } from '../types/lifecycle'
+import type { LifecycleRule, LifecycleRulesResponse } from "../types/lifecycle";
 
 // ============================================
 // Tag Types (imported from types/tags.ts)
 // ============================================
-import type { TagSummary, TagSearchResult, TagSearchResponse, BucketTag } from '../types/tags'
+import type {
+  TagSummary,
+  TagSearchResult,
+  TagSearchResponse,
+  BucketTag,
+} from "../types/tags";
 
 // ============================================
 // Cache Infrastructure
@@ -2534,18 +2919,22 @@ import type { TagSummary, TagSearchResult, TagSearchResponse, BucketTag } from '
 // ============================================
 // Bucket List Cache
 // ============================================
-let bucketListCache: { data: CloudflareBucket[]; timestamp: number } | null = null
-const BUCKET_LIST_CACHE_TTL = 300000 // 5 minutes
+let bucketListCache: { data: CloudflareBucket[]; timestamp: number } | null =
+  null;
+const BUCKET_LIST_CACHE_TTL = 300000; // 5 minutes
 
 function getCachedBucketList(): CloudflareBucket[] | null {
-  if (bucketListCache && Date.now() - bucketListCache.timestamp < BUCKET_LIST_CACHE_TTL) {
-    return bucketListCache.data
+  if (
+    bucketListCache &&
+    Date.now() - bucketListCache.timestamp < BUCKET_LIST_CACHE_TTL
+  ) {
+    return bucketListCache.data;
   }
-  return null
+  return null;
 }
 
 function setCachedBucketList(data: CloudflareBucket[]): void {
-  bucketListCache = { data, timestamp: Date.now() }
+  bucketListCache = { data, timestamp: Date.now() };
 }
 
 /**
@@ -2553,31 +2942,41 @@ function setCachedBucketList(data: CloudflareBucket[]): void {
  * Call after bucket create/delete/rename operations
  */
 export function invalidateBucketListCache(): void {
-  bucketListCache = null
+  bucketListCache = null;
 }
 
 // ============================================
 // File List Cache (per bucket + prefix)
 // ============================================
-const fileListCache = new Map<string, { data: FileListResponse; timestamp: number }>()
-const FILE_LIST_CACHE_TTL = 300000 // 5 minutes
+const fileListCache = new Map<
+  string,
+  { data: FileListResponse; timestamp: number }
+>();
+const FILE_LIST_CACHE_TTL = 300000; // 5 minutes
 
 function getFileListCacheKey(bucketName: string, prefix?: string): string {
-  return `${bucketName}:${prefix ?? ''}`
+  return `${bucketName}:${prefix ?? ""}`;
 }
 
-function getCachedFileList(bucketName: string, prefix?: string): FileListResponse | null {
-  const key = getFileListCacheKey(bucketName, prefix)
-  const cached = fileListCache.get(key)
+function getCachedFileList(
+  bucketName: string,
+  prefix?: string,
+): FileListResponse | null {
+  const key = getFileListCacheKey(bucketName, prefix);
+  const cached = fileListCache.get(key);
   if (cached && Date.now() - cached.timestamp < FILE_LIST_CACHE_TTL) {
-    return cached.data
+    return cached.data;
   }
-  return null
+  return null;
 }
 
-function setCachedFileList(bucketName: string, data: FileListResponse, prefix?: string): void {
-  const key = getFileListCacheKey(bucketName, prefix)
-  fileListCache.set(key, { data, timestamp: Date.now() })
+function setCachedFileList(
+  bucketName: string,
+  data: FileListResponse,
+  prefix?: string,
+): void {
+  const key = getFileListCacheKey(bucketName, prefix);
+  fileListCache.set(key, { data, timestamp: Date.now() });
 }
 
 /**
@@ -2588,11 +2987,11 @@ export function invalidateFileListCache(bucketName?: string): void {
   if (bucketName) {
     for (const key of fileListCache.keys()) {
       if (key.startsWith(`${bucketName}:`)) {
-        fileListCache.delete(key)
+        fileListCache.delete(key);
       }
     }
   } else {
-    fileListCache.clear()
+    fileListCache.clear();
   }
 }
 
@@ -2603,35 +3002,38 @@ export function invalidateFileListCache(bucketName?: string): void {
 // ============================================
 // Tag Cache (all tags + per bucket)
 // ============================================
-const TAG_CACHE_TTL = 300000 // 5 minutes
+const TAG_CACHE_TTL = 300000; // 5 minutes
 
 // Cache for getAllTags
-let allTagsCache: { data: TagSummary[]; timestamp: number } | null = null
+let allTagsCache: { data: TagSummary[]; timestamp: number } | null = null;
 
 // Cache for getBucketTags (per bucket)
-const bucketTagsCache = new Map<string, { data: string[]; timestamp: number }>()
+const bucketTagsCache = new Map<
+  string,
+  { data: string[]; timestamp: number }
+>();
 
 function getCachedAllTags(): TagSummary[] | null {
   if (allTagsCache && Date.now() - allTagsCache.timestamp < TAG_CACHE_TTL) {
-    return allTagsCache.data
+    return allTagsCache.data;
   }
-  return null
+  return null;
 }
 
 function setCachedAllTags(data: TagSummary[]): void {
-  allTagsCache = { data, timestamp: Date.now() }
+  allTagsCache = { data, timestamp: Date.now() };
 }
 
 function getCachedBucketTags(bucketName: string): string[] | null {
-  const cached = bucketTagsCache.get(bucketName)
+  const cached = bucketTagsCache.get(bucketName);
   if (cached && Date.now() - cached.timestamp < TAG_CACHE_TTL) {
-    return cached.data
+    return cached.data;
   }
-  return null
+  return null;
 }
 
 function setCachedBucketTags(bucketName: string, data: string[]): void {
-  bucketTagsCache.set(bucketName, { data, timestamp: Date.now() })
+  bucketTagsCache.set(bucketName, { data, timestamp: Date.now() });
 }
 
 /**
@@ -2640,34 +3042,40 @@ function setCachedBucketTags(bucketName: string, data: string[]): void {
  */
 export function invalidateTagCache(bucketName?: string): void {
   // Always invalidate allTags since counts may have changed
-  allTagsCache = null
+  allTagsCache = null;
 
   if (bucketName) {
     // Invalidate specific bucket
-    bucketTagsCache.delete(bucketName)
+    bucketTagsCache.delete(bucketName);
   } else {
     // Invalidate all bucket tags
-    bucketTagsCache.clear()
+    bucketTagsCache.clear();
   }
 }
 
 // ============================================
 // Bucket Color Cache
 // ============================================
-const COLOR_CACHE_TTL = 300000 // 5 minutes
+const COLOR_CACHE_TTL = 300000; // 5 minutes
 
 // Cache for getBucketColors
-let bucketColorsCache: { data: Record<string, string>; timestamp: number } | null = null
+let bucketColorsCache: {
+  data: Record<string, string>;
+  timestamp: number;
+} | null = null;
 
 function getCachedBucketColors(): Record<string, string> | null {
-  if (bucketColorsCache && Date.now() - bucketColorsCache.timestamp < COLOR_CACHE_TTL) {
-    return bucketColorsCache.data
+  if (
+    bucketColorsCache &&
+    Date.now() - bucketColorsCache.timestamp < COLOR_CACHE_TTL
+  ) {
+    return bucketColorsCache.data;
   }
-  return null
+  return null;
 }
 
 function setCachedBucketColors(data: Record<string, string>): void {
-  bucketColorsCache = { data, timestamp: Date.now() }
+  bucketColorsCache = { data, timestamp: Date.now() };
 }
 
 /**
@@ -2675,26 +3083,32 @@ function setCachedBucketColors(data: Record<string, string>): void {
  * Call after color mutations
  */
 export function invalidateBucketColorCache(): void {
-  bucketColorsCache = null
+  bucketColorsCache = null;
 }
 
 // ============================================
 // S3 Import Jobs Cache
 // ============================================
-const S3_IMPORT_CACHE_TTL = 120000 // 2 minutes (shorter for frequently-updated data)
+const S3_IMPORT_CACHE_TTL = 120000; // 2 minutes (shorter for frequently-updated data)
 
 // Cache for listS3ImportJobs
-let s3ImportJobsCache: { data: S3ImportJobsListResponse; timestamp: number } | null = null
+let s3ImportJobsCache: {
+  data: S3ImportJobsListResponse;
+  timestamp: number;
+} | null = null;
 
 function getCachedS3ImportJobs(): S3ImportJobsListResponse | null {
-  if (s3ImportJobsCache && Date.now() - s3ImportJobsCache.timestamp < S3_IMPORT_CACHE_TTL) {
-    return s3ImportJobsCache.data
+  if (
+    s3ImportJobsCache &&
+    Date.now() - s3ImportJobsCache.timestamp < S3_IMPORT_CACHE_TTL
+  ) {
+    return s3ImportJobsCache.data;
   }
-  return null
+  return null;
 }
 
 function setCachedS3ImportJobs(data: S3ImportJobsListResponse): void {
-  s3ImportJobsCache = { data, timestamp: Date.now() }
+  s3ImportJobsCache = { data, timestamp: Date.now() };
 }
 
 /**
@@ -2702,5 +3116,5 @@ function setCachedS3ImportJobs(data: S3ImportJobsListResponse): void {
  * Call after job create/abort operations
  */
 export function invalidateS3ImportJobsCache(): void {
-  s3ImportJobsCache = null
+  s3ImportJobsCache = null;
 }

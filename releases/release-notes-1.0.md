@@ -18,22 +18,26 @@ A self-hosted, feature-rich file management interface for Cloudflare R2 storage 
 ## ✨ Key Features
 
 ### 🪣 **Bucket Management**
+
 - Create, rename, and delete R2 buckets
 - Force delete with confirmation for non-empty buckets
 
 ### 📁 **Folder Management**
+
 - Create, rename, copy, move, and delete folders
 - Hierarchical navigation with breadcrumbs
 - Batch operations on entire folder structures
 
 ### 📄 **File Management**
+
 - Upload files with drag-and-drop support
-- Chunked uploads (10MB chunks, up to 500MB files)*
+- Chunked uploads (10MB chunks, up to 500MB files)\*
 - Rename files via right-click context menu
 - Copy and move files between buckets and folders
 - Batch operations (copy, move, delete multiple files)
 
 ### 🔍 **Smart Filtering**
+
 - **Basic Filter** - Real-time search by filename/folder name
 - **Type Filter** - Show All / Files Only / Folders Only
 - **Advanced Filters:**
@@ -43,11 +47,13 @@ A self-hosted, feature-rich file management interface for Cloudflare R2 storage 
 - **Filter Management** - Active filter badges, statistics, and one-click clear all
 
 ### 📥 **Download & Sharing**
+
 - Generate signed URLs for secure file sharing
 - Download multiple files as ZIP archives
 - Bulk download with progress tracking
 
 ### 🎨 **Modern UI**
+
 - Beautiful, responsive interface built with React 19
 - Light/Dark mode with system preference detection
 - Grid and list view modes
@@ -55,6 +61,7 @@ A self-hosted, feature-rich file management interface for Cloudflare R2 storage 
 - Smooth animations and transitions
 
 ### 🔐 **Enterprise Security**
+
 - GitHub SSO via Cloudflare Access (Zero Trust)
 - JWT token validation on every API call
 - HTTPS-only traffic via Cloudflare's edge
@@ -79,6 +86,7 @@ A self-hosted, feature-rich file management interface for Cloudflare R2 storage 
 ## 📦 Installation
 
 ### Prerequisites
+
 - Cloudflare account (Free tier works!)
 - Node.js 18+ and npm
 - Wrangler CLI
@@ -145,8 +153,9 @@ This release includes several security enhancements:
 ## ⚠️ Important Notes
 
 **Upload Size Limits:** This application supports uploads up to 500MB per file. However, **Cloudflare enforces plan-based limits**:
+
 - **Free/Pro Plans:** 100MB maximum per file
-- **Business Plan:** 200MB maximum per file  
+- **Business Plan:** 200MB maximum per file
 - **Enterprise Plan:** 500MB maximum per file
 
 ---
@@ -154,6 +163,7 @@ This release includes several security enhancements:
 ## 🗺️ Roadmap
 
 Future enhancements planned:
+
 - Rate limiting for API endpoints (Cloudflare KV)
 - Refactor large monolithic files (worker/index.ts, filegrid.tsx)
 - AWS S3 migration support

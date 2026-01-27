@@ -1,23 +1,23 @@
 // Custom types for the worker - Cloudflare types are provided by @cloudflare/workers-types
 
 export interface Env {
-  R2: R2Bucket
-  ASSETS: Fetcher
-  CF_EMAIL: string
-  API_KEY: string
-  ACCOUNT_ID: string
-  REGISTRATION_CODE: string
-  URL_SIGNING_KEY?: string  // Optional - auto-generated in local dev
-  TEAM_DOMAIN: string
-  POLICY_AUD: string
-  RATE_LIMITER_READ: RateLimit
-  RATE_LIMITER_WRITE: RateLimit
-  RATE_LIMITER_DELETE: RateLimit
-  AI?: Ai
-  METADATA?: D1Database
+  R2: R2Bucket;
+  ASSETS: Fetcher;
+  CF_EMAIL: string;
+  API_KEY: string;
+  ACCOUNT_ID: string;
+  REGISTRATION_CODE: string;
+  URL_SIGNING_KEY?: string; // Optional - auto-generated in local dev
+  TEAM_DOMAIN: string;
+  POLICY_AUD: string;
+  RATE_LIMITER_READ: RateLimit;
+  RATE_LIMITER_WRITE: RateLimit;
+  RATE_LIMITER_DELETE: RateLimit;
+  AI?: Ai;
+  METADATA?: D1Database;
 }
 
-export const CF_API = 'https://api.cloudflare.com/client/v4';
+export const CF_API = "https://api.cloudflare.com/client/v4";
 
 // API Response types for typed JSON parsing
 export interface CloudflareApiResponse<T = unknown> {
@@ -86,17 +86,17 @@ export interface BatchDeleteBody {
 
 // AI Search Types
 export interface AISearchInstance {
-  id?: string;  // API returns 'id' as the instance identifier
+  id?: string; // API returns 'id' as the instance identifier
   name?: string; // For backwards compatibility
   description?: string;
   created_at?: string;
   modified_at?: string;
-  status?: 'active' | 'indexing' | 'paused' | 'error' | 'waiting';
+  status?: "active" | "indexing" | "paused" | "error" | "waiting";
   enable?: boolean;
-  type?: 'r2' | 'website';
-  source?: string;  // Bucket name when type is 'r2'
+  type?: "r2" | "website";
+  source?: string; // Bucket name when type is 'r2'
   data_source?: {
-    type: 'r2' | 'website';
+    type: "r2" | "website";
     bucket_name?: string;
     domain?: string;
   };
@@ -166,7 +166,7 @@ export interface AISearchResult {
 /**
  * Time range for metrics queries
  */
-export type MetricsTimeRange = '24h' | '7d' | '30d';
+export type MetricsTimeRange = "24h" | "7d" | "30d";
 
 /**
  * Raw metrics data point from GraphQL API
@@ -275,7 +275,6 @@ export interface R2AnalyticsResult {
   };
 }
 
-
 export interface AISearchResponse {
   response?: string;
   data: AISearchResult[];
@@ -318,7 +317,7 @@ export interface AISearchIndexingJob {
   last_seen_at?: string;
   end_reason?: string | null;
   // Legacy fields (may not be present in actual API)
-  status?: 'pending' | 'running' | 'completed' | 'failed';
+  status?: "pending" | "running" | "completed" | "failed";
   completed_at?: string;
   files_indexed?: number;
   files_failed?: number;
@@ -341,18 +340,23 @@ export interface AISearchInstanceStatus {
 }
 
 // Job History Types
-export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+export type JobStatus =
+  | "queued"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
 
 export type JobOperationType =
-  | 'bulk_upload'
-  | 'bulk_download'
-  | 'bulk_delete'
-  | 'bucket_delete'
-  | 'file_move'
-  | 'file_copy'
-  | 'folder_move'
-  | 'folder_copy'
-  | 'ai_search_sync';
+  | "bulk_upload"
+  | "bulk_download"
+  | "bulk_delete"
+  | "bucket_delete"
+  | "file_move"
+  | "file_copy"
+  | "folder_move"
+  | "folder_copy"
+  | "ai_search_sync";
 
 export interface BulkJob {
   job_id: string;
@@ -408,7 +412,7 @@ export interface UpdateJobProgressParams {
 
 export interface CompleteJobParams {
   jobId: string;
-  status: 'completed' | 'failed' | 'cancelled';
+  status: "completed" | "failed" | "cancelled";
   processedItems?: number;
   errorCount?: number;
   userEmail: string;
@@ -424,22 +428,22 @@ export interface LogJobEventParams {
 
 // Audit Log Types - for tracking individual user actions
 export type AuditOperationType =
-  | 'file_upload'
-  | 'file_download'
-  | 'file_delete'
-  | 'file_rename'
-  | 'file_move'
-  | 'file_copy'
-  | 'bucket_create'
-  | 'bucket_delete'
-  | 'bucket_rename'
-  | 'folder_create'
-  | 'folder_delete'
-  | 'folder_rename'
-  | 'folder_move'
-  | 'folder_copy';
+  | "file_upload"
+  | "file_download"
+  | "file_delete"
+  | "file_rename"
+  | "file_move"
+  | "file_copy"
+  | "bucket_create"
+  | "bucket_delete"
+  | "bucket_rename"
+  | "folder_create"
+  | "folder_delete"
+  | "folder_rename"
+  | "folder_move"
+  | "folder_copy";
 
-export type AuditStatus = 'success' | 'failed';
+export type AuditStatus = "success" | "failed";
 
 export interface AuditLogEntry {
   id: number;
@@ -482,9 +486,14 @@ export interface AuditLogSummary {
 }
 
 // S3 Import Types (Super Slurper)
-export type S3ImportJobStatus = 'pending' | 'running' | 'complete' | 'error' | 'aborted';
+export type S3ImportJobStatus =
+  | "pending"
+  | "running"
+  | "complete"
+  | "error"
+  | "aborted";
 
-export type S3ImportProvider = 'aws' | 'gcs' | 's3_compatible';
+export type S3ImportProvider = "aws" | "gcs" | "s3_compatible";
 
 export interface S3ImportJobProgress {
   objects_copied: number;
@@ -545,21 +554,21 @@ export interface S3ImportJobResponse {
  * Webhook event types for R2 operations
  */
 export type WebhookEventType =
-  | 'file_upload'
-  | 'file_download'
-  | 'file_delete'
-  | 'file_move'
-  | 'file_copy'
-  | 'file_rename'
-  | 'bucket_create'
-  | 'bucket_delete'
-  | 'bucket_rename'
-  | 'folder_create'
-  | 'folder_delete'
-  | 'bulk_download_complete'
-  | 's3_import_complete'
-  | 'job_failed'
-  | 'job_completed';
+  | "file_upload"
+  | "file_download"
+  | "file_delete"
+  | "file_move"
+  | "file_copy"
+  | "file_rename"
+  | "bucket_create"
+  | "bucket_delete"
+  | "bucket_rename"
+  | "folder_create"
+  | "folder_delete"
+  | "bulk_download_complete"
+  | "s3_import_complete"
+  | "job_failed"
+  | "job_completed";
 
 /**
  * Webhook configuration stored in database
@@ -632,15 +641,15 @@ export interface WebhookResponse {
 /**
  * Error severity levels
  */
-export type ErrorSeverity = 'error' | 'warning' | 'info';
+export type ErrorSeverity = "error" | "warning" | "info";
 
 /**
  * Context for structured error logging
  */
 export interface ErrorContext {
-  module: string;          // e.g., 'buckets', 'files', 'jobs'
-  operation: string;       // e.g., 'create', 'delete', 'upload'
-  entityId?: string;       // e.g., bucket name, file key, job ID
+  module: string; // e.g., 'buckets', 'files', 'jobs'
+  operation: string; // e.g., 'create', 'delete', 'upload'
+  entityId?: string; // e.g., bucket name, file key, job ID
   bucketName?: string;
   fileName?: string;
   userId?: string;
@@ -653,7 +662,7 @@ export interface ErrorContext {
 export interface StructuredError {
   timestamp: string;
   level: ErrorSeverity;
-  code: string;            // e.g., 'BKT_CREATE_FAILED', 'FILE_UPLOAD_FAILED'
+  code: string; // e.g., 'BKT_CREATE_FAILED', 'FILE_UPLOAD_FAILED'
   message: string;
   context: ErrorContext;
   stack?: string | undefined;
@@ -667,8 +676,8 @@ export interface StructuredError {
  * Condition for lifecycle transitions
  */
 export interface LifecycleTransitionCondition {
-  maxAge: number;  // Days, not seconds
-  type: 'Age';
+  maxAge: number; // Days, not seconds
+  type: "Age";
 }
 
 /**
@@ -676,7 +685,7 @@ export interface LifecycleTransitionCondition {
  */
 export interface StorageClassTransition {
   condition: LifecycleTransitionCondition;
-  storageClass: 'InfrequentAccess';
+  storageClass: "InfrequentAccess";
 }
 
 /**

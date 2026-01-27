@@ -27,6 +27,7 @@ Seamlessly migrate data from Amazon S3, Google Cloud Storage, or any S3-compatib
 - **Mock Data Support** - Test UI without actual migrations in development
 
 **Use Cases:**
+
 - 📦 **Cloud Migration** - Move existing S3 data to Cloudflare R2 for cost savings
 - 🔄 **Multi-Cloud Strategy** - Sync data between providers
 - 🚚 **Data Transfer** - Bulk import from external S3 sources
@@ -56,6 +57,7 @@ Comprehensive analytics for your R2 storage with interactive charts and per-buck
 - **GraphQL Integration** - Uses Cloudflare Analytics API (`r2OperationsAdaptiveGroups`, `r2StorageAdaptiveGroups`)
 
 **Use Cases:**
+
 - 📈 **Usage Monitoring** - Track R2 usage trends and patterns
 - 💰 **Cost Analysis** - Identify high-traffic buckets for optimization
 - 🔍 **Performance Insights** - Monitor success rates and error patterns
@@ -86,6 +88,7 @@ Configure HTTP endpoints to receive real-time notifications for bucket and file 
   - Custom headers support (planned)
 
 **Use Cases:**
+
 - 🔔 **Notifications** - Alert external systems on file operations
 - 🔄 **Automation** - Trigger workflows on bucket events
 - 📝 **Logging** - Send events to external logging services
@@ -108,6 +111,7 @@ Simplified database schema management with automatic upgrade detection and one-c
   - `POST /api/migrations/apply` - Apply pending migrations
 
 **Use Cases:**
+
 - 🔄 **Seamless Upgrades** - Update database schema without manual SQL execution
 - 🛡️ **Data Safety** - Prevent schema drift and compatibility issues
 - ⚡ **Quick Setup** - New features automatically add required database tables
@@ -131,6 +135,7 @@ Client-side filtering for the main bucket list with multiple filter dimensions.
 - **Persistent UI** - Consistent design with existing file filter bar
 
 **Use Cases:**
+
 - 🔍 **Quick Discovery** - Find specific buckets in large accounts
 - 📊 **Organization** - Filter by size to identify large buckets
 - 📅 **Recent Activity** - Find recently created buckets
@@ -160,6 +165,7 @@ Extended Job History system to track all user operations, not just bulk actions.
   - `GET /api/audit/summary` - Get operation counts by type
 
 **Use Cases:**
+
 - 🔐 **Compliance** - Full audit trail for regulatory requirements
 - 🔍 **Forensics** - Investigate what happened to specific files
 - 👥 **User Tracking** - Monitor individual user actions
@@ -228,6 +234,7 @@ Replaced all direct `console.*` calls with a proper logging abstraction.
 - **Comprehensive Coverage** - ~150 console statements replaced across 15+ files
 
 **Benefits:**
+
 - 🛠️ **Better Debugging** - Context-aware log messages
 - 🎯 **Production Ready** - Control log verbosity in production
 - 🔌 **Future Ready** - Easy to add remote logging (Sentry, LogRocket, etc.)
@@ -283,6 +290,7 @@ New files:
 ```
 
 **API Endpoints:**
+
 - `POST /api/s3-import/migrations` - Create migration job
 - `GET /api/s3-import/migrations` - List migrations
 - `GET /api/s3-import/migrations/:id` - Get migration details
@@ -300,6 +308,7 @@ New files:
 ```
 
 **GraphQL Queries:**
+
 - `r2OperationsAdaptiveGroups` - Request/operation metrics
 - `r2StorageAdaptiveGroups` - Storage/object count metrics
 
@@ -316,6 +325,7 @@ New files:
 ```
 
 **Database Schema:**
+
 ```sql
 CREATE TABLE webhooks (
   id TEXT PRIMARY KEY,
@@ -338,6 +348,7 @@ Modified files:
 ```
 
 **Database Schema:**
+
 ```sql
 CREATE TABLE audit_log (
   id TEXT PRIMARY KEY,
@@ -374,30 +385,32 @@ CREATE TABLE audit_log (
 ### From v2.0.0 to v3.0.0
 
 1. **Pull the latest code:**
+
    ```bash
    git pull origin main
    ```
 
 2. **Update dependencies:**
+
    ```bash
    npm install
    ```
 
 3. **Run database migrations (automatic):**
-   
+
    The new automated migration system will detect if your database needs upgrading. After deploying v3.0.0:
-   
    - Visit your R2 Manager UI
    - If migrations are needed, you'll see a banner at the top
    - Click "Upgrade Now" to apply migrations automatically
-   
+
    **Manual Migration (optional):**
-   
+
    If you prefer to run migrations manually:
+
    ```bash
    npx wrangler d1 execute r2-manager-metadata --remote --file=worker/schema.sql
    ```
-   
+
    This will add:
    - `audit_log` table for individual action tracking
    - `webhooks` table for webhook configurations
@@ -448,18 +461,21 @@ Webhooks are ready to use immediately after migration. Create your first webhook
 ## 🎯 Key Highlights
 
 ### For System Administrators
+
 - **Complete Visibility** - Metrics dashboard shows usage patterns
 - **Integration Ready** - Webhooks connect R2 to external systems
 - **Cloud Migration** - S3 Import for seamless provider switching
 - **Audit Compliance** - Complete audit trail for all operations
 
 ### For Developers
+
 - **Migration Tools** - Programmatic S3 import via API
 - **Event-Driven** - Webhook support for automation
 - **Extensible Logging** - Centralized logger ready for remote services
 - **Clean TypeScript** - Strict type safety throughout
 
 ### For End Users
+
 - **Better Performance** - 50-80% faster with client-side caching
 - **Usage Insights** - See R2 usage trends and patterns
 - **Bucket Discovery** - Filter buckets by name, size, and date
@@ -516,6 +532,7 @@ See the full [Roadmap](https://github.com/neverinfamous/R2-Manager-Worker/wiki/R
 - None reported at this time
 
 If you encounter any issues, please [open an issue](https://github.com/neverinfamous/R2-Manager-Worker/issues) on GitHub with:
+
 - Version number (3.0.0)
 - Browser and OS
 - Steps to reproduce
@@ -581,7 +598,3 @@ No known security vulnerabilities at release time.
 ---
 
 **Made with ❤️ for the Cloudflare community**
-
-
-
-

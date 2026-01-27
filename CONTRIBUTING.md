@@ -12,37 +12,37 @@ This project and everyone participating in it is governed by our [Code of Conduc
 
 Before creating bug reports, please check the issue list as you might find out that you don't need to create one. When you are creating a bug report, please include as many details as possible:
 
-* **Use a clear and descriptive title**
-* **Describe the exact steps which reproduce the problem** in as many details as possible
-* **Provide specific examples to demonstrate the steps.** Include links to files or GitHub projects, or copy/pasteable snippets
-* **Describe the behavior you observed after following the steps** and point out what exactly is the problem with that behavior
-* **Explain which behavior you expected to see instead and why**
-* **Include screenshots and animated GIFs** if possible
-* **Include your environment** (OS, Node version, Browser, etc.)
+- **Use a clear and descriptive title**
+- **Describe the exact steps which reproduce the problem** in as many details as possible
+- **Provide specific examples to demonstrate the steps.** Include links to files or GitHub projects, or copy/pasteable snippets
+- **Describe the behavior you observed after following the steps** and point out what exactly is the problem with that behavior
+- **Explain which behavior you expected to see instead and why**
+- **Include screenshots and animated GIFs** if possible
+- **Include your environment** (OS, Node version, Browser, etc.)
 
 ### Suggesting Enhancements
 
 Enhancement suggestions are tracked as GitHub issues. When creating an enhancement suggestion, please include:
 
-* **Use a clear and descriptive title**
-* **Provide a step-by-step description of the suggested enhancement** in as many details as possible
-* **Provide specific examples to demonstrate the steps**
-* **Describe the current behavior** and **the expected behavior**
-* **Explain why this enhancement would be useful**
+- **Use a clear and descriptive title**
+- **Provide a step-by-step description of the suggested enhancement** in as many details as possible
+- **Provide specific examples to demonstrate the steps**
+- **Describe the current behavior** and **the expected behavior**
+- **Explain why this enhancement would be useful**
 
 ### Pull Requests
 
-* Follow the [TypeScript](#typescript-styleguide) and [CSS](#css-styleguide) styleguides
-* Include appropriate test cases for new features
-* Document new code based on the [Documentation Styleguide](#documentation-styleguide)
-* End all files with a newline
+- Follow the [TypeScript](#typescript-styleguide) and [CSS](#css-styleguide) styleguides
+- Include appropriate test cases for new features
+- Document new code based on the [Documentation Styleguide](#documentation-styleguide)
+- End all files with a newline
 
 ## Development Setup
 
 ### Prerequisites
 
-* Node.js 20+ or 25+
-* npm 10+
+- Node.js 20+ or 25+
+- npm 10+
 
 ### Local Development
 
@@ -68,12 +68,14 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 ### Running the Development Server
 
 **Frontend:**
+
 ```bash
 npm run dev
 # Open http://localhost:5173
 ```
 
 **Worker (requires local .env with VITE_WORKER_API):**
+
 ```bash
 npx wrangler dev
 # Open http://localhost:8787
@@ -95,15 +97,16 @@ npm run lint
 
 ### TypeScript Styleguide
 
-* Use semicolons
-* Use 2-space indentation
-* Use `const` by default, `let` only when reassignment is necessary
-* Use meaningful variable names (avoid single letters except for loops)
-* Use type annotations for function parameters and return types
-* Use interfaces over types for object shapes
-* Comment complex logic and non-obvious code
+- Use semicolons
+- Use 2-space indentation
+- Use `const` by default, `let` only when reassignment is necessary
+- Use meaningful variable names (avoid single letters except for loops)
+- Use type annotations for function parameters and return types
+- Use interfaces over types for object shapes
+- Comment complex logic and non-obvious code
 
 Example:
+
 ```typescript
 interface User {
   email: string;
@@ -119,13 +122,14 @@ const getUser = async (id: string): Promise<User> => {
 
 ### CSS Styleguide
 
-* Use CSS modules or scoped styles when possible
-* Use meaningful class names (BEM notation recommended)
-* Mobile-first approach for responsive design
-* Use CSS custom properties for colors and spacing
-* Group related properties together
+- Use CSS modules or scoped styles when possible
+- Use meaningful class names (BEM notation recommended)
+- Mobile-first approach for responsive design
+- Use CSS custom properties for colors and spacing
+- Group related properties together
 
 Example:
+
 ```css
 .file-grid {
   display: grid;
@@ -141,19 +145,19 @@ Example:
 
 ### Documentation Styleguide
 
-* Use Markdown
-* Reference functions and files with backticks (`` `functionName` ``)
-* Use clear headings and sections
-* Include code examples for complex features
-* Keep language clear and concise
+- Use Markdown
+- Reference functions and files with backticks (`` `functionName` ``)
+- Use clear headings and sections
+- Include code examples for complex features
+- Keep language clear and concise
 
 ## Commit Messages
 
-* Use the present tense ("Add feature" not "Added feature")
-* Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
-* Limit the first line to 72 characters or less
-* Reference issues and pull requests liberally after the first line
-* Consider using conventional commits:
+- Use the present tense ("Add feature" not "Added feature")
+- Use the imperative mood ("Move cursor to..." not "Moves cursor to...")
+- Limit the first line to 72 characters or less
+- Reference issues and pull requests liberally after the first line
+- Consider using conventional commits:
   - `feat:` - A new feature
   - `fix:` - A bug fix
   - `docs:` - Documentation changes
@@ -164,6 +168,7 @@ Example:
   - `chore:` - Build process, dependencies, or tooling
 
 Example:
+
 ```
 feat: add file transfer progress tracking
 
@@ -195,20 +200,21 @@ Fixes #123
 
 ### Issue and Pull Request Labels
 
-* `bug` - Something isn't working
-* `enhancement` - New feature or request
-* `documentation` - Improvements or additions to documentation
-* `good first issue` - Good for newcomers
-* `help wanted` - Extra attention is needed
-* `question` - Further information is requested
-* `wontfix` - This will not be worked on
+- `bug` - Something isn't working
+- `enhancement` - New feature or request
+- `documentation` - Improvements or additions to documentation
+- `good first issue` - Good for newcomers
+- `help wanted` - Extra attention is needed
+- `question` - Further information is requested
+- `wontfix` - This will not be worked on
 
 ### Recognition
 
 Contributors will be recognized in:
-* Pull Request merge messages
-* Release notes
-* Project README (for significant contributions)
+
+- Pull Request merge messages
+- Release notes
+- Project README (for significant contributions)
 
 ## Questions?
 

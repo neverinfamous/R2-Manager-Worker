@@ -2,10 +2,10 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [ main ]
-    tags: [ 'v*' ]
+    branches: [main]
+    tags: ["v*"]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 env:
   REGISTRY: docker.io
@@ -14,10 +14,10 @@ env:
 permissions:
   contents: read
   packages: write
-  security-events: write  # For security scanning
-  pull-requests: write    # For PR comments
-  id-token: write        # For supply chain attestations
-  attestations: write    # For generating attestations
+  security-events: write # For security scanning
+  pull-requests: write # For PR comments
+  id-token: write # For supply chain attestations
+  attestations: write # For generating attestations
 
 jobs:
   # Gate: Lint and build must pass before Docker images are created
@@ -30,8 +30,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '24.x'
-          cache: 'npm'
+          node-version: "24.x"
+          cache: "npm"
 
       - name: Install dependencies
         run: npm ci
@@ -82,89 +82,89 @@ jobs:
             runner: ubuntu-latest
           - platform: linux/arm64
             runner: ubuntu-24.04-arm
-    
+
     runs-on: ${{ matrix.runner }}
     permissions:
       contents: read
       packages: write
       id-token: write
       attestations: write
-    
+
     outputs:
       version: ${{ steps.version.outputs.version }}
-    
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Log in to Docker Hub
-      if: github.event_name != 'pull_request'
-      uses: docker/login-action@v3
-      continue-on-error: true
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        continue-on-error: true
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Read version from VERSION file
-      id: version
-      run: |
-        if [ -f "VERSION" ]; then
-          VERSION=$(head -1 VERSION | tr -d '[:space:]')
-        fi
-        if [ -z "$VERSION" ]; then
-          VERSION=$(grep -oP '"version":\s*"\K[0-9.]+' package.json | head -1)
-        fi
-        if [ -z "$VERSION" ]; then
-          VERSION="1.0.0"
-        fi
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "Detected version: $VERSION"
+      - name: Read version from VERSION file
+        id: version
+        run: |
+          if [ -f "VERSION" ]; then
+            VERSION=$(head -1 VERSION | tr -d '[:space:]')
+          fi
+          if [ -z "$VERSION" ]; then
+            VERSION=$(grep -oP '"version":\s*"\K[0-9.]+' package.json | head -1)
+          fi
+          if [ -z "$VERSION" ]; then
+            VERSION="1.0.0"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
 
-    - name: Extract metadata
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        flavor: |
-          latest=false
-          suffix=-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
-        tags: |
-          type=sha,prefix=sha-,format=short
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=false
+            suffix=-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          tags: |
+            type=sha,prefix=sha-,format=short
 
-    - name: Build and push platform image
-      id: build
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        file: Dockerfile
-        platforms: ${{ matrix.platform }}
-        push: ${{ github.event_name != 'pull_request' }}
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        cache-from: type=gha,scope=${{ matrix.platform }}
-        cache-to: type=gha,scope=${{ matrix.platform }},mode=max
-        provenance: mode=max
-        sbom: true
+      - name: Build and push platform image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: ${{ matrix.platform }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.platform }}
+          cache-to: type=gha,scope=${{ matrix.platform }},mode=max
+          provenance: mode=max
+          sbom: true
 
-    - name: Export digest
-      if: github.event_name != 'pull_request'
-      run: |
-        mkdir -p /tmp/digests
-        digest="${{ steps.build.outputs.digest }}"
-        touch "/tmp/digests/${digest#sha256:}"
+      - name: Export digest
+        if: github.event_name != 'pull_request'
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
 
-    - name: Upload digest
-      if: github.event_name != 'pull_request'
-      uses: actions/upload-artifact@v6
-      with:
-        name: digests-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
-        path: /tmp/digests/*
-        if-no-files-found: error
-        retention-days: 1
+      - name: Upload digest
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v6
+        with:
+          name: digests-${{ matrix.platform == 'linux/amd64' && 'amd64' || 'arm64' }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
 
   # Security scan on amd64 image with strict gates (blocks on critical/high fixable vulns)
   security-scan:
@@ -175,47 +175,47 @@ jobs:
       contents: read
       security-events: write
       pull-requests: write
-    
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Build image for scanning
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        file: Dockerfile
-        platforms: linux/amd64
-        push: false
-        load: true
-        tags: local-scan:latest
-        cache-from: type=gha,scope=linux/amd64
+      - name: Build image for scanning
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: local-scan:latest
+          cache-from: type=gha,scope=linux/amd64
 
-    - name: Docker Scout CVE Scan
-      uses: docker/scout-action@v1
-      with:
-        command: cves
-        image: local://local-scan:latest
-        exit-code: true
-        only-severities: critical,high
-        only-fixed: true
-        sarif-file: scout-results.sarif
+      - name: Docker Scout CVE Scan
+        uses: docker/scout-action@v1
+        with:
+          command: cves
+          image: local://local-scan:latest
+          exit-code: true
+          only-severities: critical,high
+          only-fixed: true
+          sarif-file: scout-results.sarif
 
-    - name: Upload Scout results to GitHub Security
-      uses: github/codeql-action/upload-sarif@v4
-      if: always()
-      with:
-        sarif_file: scout-results.sarif
+      - name: Upload Scout results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: scout-results.sarif
 
   # Merge platform images into multi-arch manifest
   merge-and-push:
@@ -228,87 +228,87 @@ jobs:
       id-token: write
       attestations: write
       deployments: write
-    
+
     environment:
       name: ${{ github.ref == 'refs/heads/main' && 'production' || '' }}
       url: https://hub.docker.com/r/writenotenow/r2-bucket-manager
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v6
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
-    - name: Download digests
-      uses: actions/download-artifact@v7
-      with:
-        path: /tmp/digests
-        pattern: digests-*
-        merge-multiple: true
+      - name: Download digests
+        uses: actions/download-artifact@v7
+        with:
+          path: /tmp/digests
+          pattern: digests-*
+          merge-multiple: true
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Log in to Docker Hub
-      uses: docker/login-action@v3
-      with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Read version
-      id: version
-      run: |
-        if [ -f "VERSION" ]; then
-          VERSION=$(head -1 VERSION | tr -d '[:space:]')
-        fi
-        if [ -z "$VERSION" ]; then
-          VERSION=$(grep -oP '"version":\s*"\K[0-9.]+' package.json | head -1)
-        fi
-        if [ -z "$VERSION" ]; then
-          VERSION="1.0.0"
-        fi
-        echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Read version
+        id: version
+        run: |
+          if [ -f "VERSION" ]; then
+            VERSION=$(head -1 VERSION | tr -d '[:space:]')
+          fi
+          if [ -z "$VERSION" ]; then
+            VERSION=$(grep -oP '"version":\s*"\K[0-9.]+' package.json | head -1)
+          fi
+          if [ -z "$VERSION" ]; then
+            VERSION="1.0.0"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-    - name: Extract metadata for manifest
-      id: meta
-      uses: docker/metadata-action@v5
-      with:
-        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-        flavor: |
-          latest=auto
-        tags: |
-          type=semver,pattern=v{{version}}
-          type=raw,value=v${{ steps.version.outputs.version }},enable={{is_default_branch}}
-          type=raw,value=latest,enable={{is_default_branch}}
-          type=sha,prefix=sha-,format=short
+      - name: Extract metadata for manifest
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          flavor: |
+            latest=auto
+          tags: |
+            type=semver,pattern=v{{version}}
+            type=raw,value=v${{ steps.version.outputs.version }},enable={{is_default_branch}}
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-,format=short
 
-    - name: Create and push manifest
-      working-directory: /tmp/digests
-      run: |
-        docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-          $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+      - name: Create and push manifest
+        working-directory: /tmp/digests
+        run: |
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
 
-    - name: Inspect manifest
-      run: |
-        docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
+      - name: Inspect manifest
+        run: |
+          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.meta.outputs.version }}
 
-    # Update Docker Hub description
-    - name: Update Docker Hub Description
-      if: github.ref == 'refs/heads/main'
-      uses: peter-evans/dockerhub-description@v5
-      continue-on-error: true
-      timeout-minutes: 5
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
-        repository: ${{ env.IMAGE_NAME }}
-        readme-filepath: ./DOCKER_README.md
-        short-description: "Cloudflare R2 Manager - Batch Ops, Cross-Bucket Search, Share Links, S3 Import, Tags, GitHub SSO."
+      # Update Docker Hub description
+      - name: Update Docker Hub Description
+        if: github.ref == 'refs/heads/main'
+        uses: peter-evans/dockerhub-description@v5
+        continue-on-error: true
+        timeout-minutes: 5
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: ${{ env.IMAGE_NAME }}
+          readme-filepath: ./DOCKER_README.md
+          short-description: "Cloudflare R2 Manager - Batch Ops, Cross-Bucket Search, Share Links, S3 Import, Tags, GitHub SSO."
 
-    - name: Deployment Summary
-      if: github.ref == 'refs/heads/main'
-      run: |
-        echo "✅ Successfully published Docker images to production"
-        echo "🐳 Registry: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
-        echo "🏷️ Tags: ${{ steps.meta.outputs.tags }}"
-        echo "📝 Commit: ${{ github.sha }}"
-        echo "👤 Published by: ${{ github.actor }}"
+      - name: Deployment Summary
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "✅ Successfully published Docker images to production"
+          echo "🐳 Registry: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
+          echo "🏷️ Tags: ${{ steps.meta.outputs.tags }}"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "👤 Published by: ${{ github.actor }}"

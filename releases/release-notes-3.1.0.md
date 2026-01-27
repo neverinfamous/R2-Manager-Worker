@@ -28,6 +28,7 @@ Organize your buckets with custom text tags and quickly find them using powerful
 - **WCAG-Compliant UI** - Keyboard accessible with ARIA labels
 
 **Use Cases:**
+
 - 📁 **Project Organization** - Tag buckets by project, team, or environment
 - 🔍 **Quick Discovery** - Find related buckets instantly with tag search
 - 📊 **Categorization** - Group buckets by type, status, or any custom criteria
@@ -50,6 +51,7 @@ Assign colors to buckets for quick visual identification with a 27-color palette
 - **WCAG-Compliant UI** - Full keyboard navigation with ARIA labels
 
 **Use Cases:**
+
 - 🔴 **Priority Marking** - Use red for critical, green for stable
 - 🟡 **Status Indication** - Color-code by deployment stage
 - 🔵 **Team Identification** - Different colors for different teams
@@ -145,22 +147,24 @@ CREATE TABLE bucket_colors (
 ### From v3.0.0 to v3.1.0
 
 1. **Pull the latest code:**
+
    ```bash
    git pull origin main
    ```
 
 2. **Update dependencies:**
+
    ```bash
    npm install
    ```
 
 3. **Run database migrations (automatic):**
-   
+
    After deploying v3.1.0:
    - Visit your R2 Manager UI
    - If migrations are needed, you'll see a banner at the top
    - Click "Upgrade Now" to apply migrations automatically
-   
+
    This will add:
    - `bucket_tags` table for bucket tagging
    - `bucket_colors` table for color assignments
@@ -188,6 +192,7 @@ CREATE TABLE bucket_colors (
 Looking ahead to v3.2.0 and beyond:
 
 ### Planned Features
+
 - **File Versioning** - Track and restore previous file versions
 - **Advanced Webhooks** - Custom headers, retry logic, and delivery logs
 - **Offline Upload Queue** - Resumable uploads with service workers
@@ -201,6 +206,7 @@ See the full [Roadmap](https://github.com/neverinfamous/R2-Manager-Worker/wiki/R
 None reported at this time.
 
 If you encounter any issues, please [open an issue](https://github.com/neverinfamous/R2-Manager-Worker/issues) on GitHub with:
+
 - Version number (3.1.0)
 - Browser and OS
 - Steps to reproduce

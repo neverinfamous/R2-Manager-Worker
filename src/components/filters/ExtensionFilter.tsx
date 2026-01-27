@@ -1,14 +1,14 @@
-import { useCallback, useEffect, useRef, type JSX } from 'react'
-import { type EXTENSION_GROUPS } from '../../utils/filterUtils'
+import { useCallback, useEffect, useRef, type JSX } from "react";
+import { type EXTENSION_GROUPS } from "../../utils/filterUtils";
 
 interface ExtensionFilterProps {
-  selectedExtensions: string[]
-  availableExtensions: Map<string, number>
-  isOpen: boolean
-  onToggle: () => void
-  onExtensionToggle: (extension: string) => void
-  onGroupSelect: (groupName: string) => void
-  onClear: () => void
+  selectedExtensions: string[];
+  availableExtensions: Map<string, number>;
+  isOpen: boolean;
+  onToggle: () => void;
+  onExtensionToggle: (extension: string) => void;
+  onGroupSelect: (groupName: string) => void;
+  onClear: () => void;
 }
 
 export function ExtensionFilter({
@@ -18,35 +18,43 @@ export function ExtensionFilter({
   onToggle,
   onExtensionToggle,
   onGroupSelect,
-  onClear
+  onClear,
 }: ExtensionFilterProps): JSX.Element {
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  const buttonRef = useRef<HTMLButtonElement>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent): void => {
-      if (isOpen && 
-          dropdownRef.current !== null && 
-          buttonRef.current !== null &&
-          !dropdownRef.current.contains(event.target as Node) &&
-          !buttonRef.current.contains(event.target as Node)) {
-        onToggle()
+      if (
+        isOpen &&
+        dropdownRef.current !== null &&
+        buttonRef.current !== null &&
+        !dropdownRef.current.contains(event.target as Node) &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        onToggle();
       }
-    }
+    };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return (): void => { document.removeEventListener('mousedown', handleClickOutside) }
+      document.addEventListener("mousedown", handleClickOutside);
+      return (): void => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
     }
-    return undefined
-  }, [isOpen, onToggle])
+    return undefined;
+  }, [isOpen, onToggle]);
 
-  const sortedExtensions = Array.from(availableExtensions.entries())
-    .sort((a, b) => b[1] - a[1]) // Sort by count descending
+  const sortedExtensions = Array.from(availableExtensions.entries()).sort(
+    (a, b) => b[1] - a[1],
+  ); // Sort by count descending
 
-  const handleGroupClick = useCallback((groupName: keyof typeof EXTENSION_GROUPS) => {
-    onGroupSelect(groupName)
-  }, [onGroupSelect])
+  const handleGroupClick = useCallback(
+    (groupName: keyof typeof EXTENSION_GROUPS) => {
+      onGroupSelect(groupName);
+    },
+    [onGroupSelect],
+  );
 
   return (
     <div className="filter-dropdown">
@@ -60,9 +68,11 @@ export function ExtensionFilter({
       >
         Extensions
         {selectedExtensions.length > 0 && (
-          <span className="filter-badge-count">({selectedExtensions.length})</span>
+          <span className="filter-badge-count">
+            ({selectedExtensions.length})
+          </span>
         )}
-        <span className="dropdown-arrow">{isOpen ? '▲' : '▼'}</span>
+        <span className="dropdown-arrow">{isOpen ? "▲" : "▼"}</span>
       </button>
 
       {isOpen && (
@@ -89,35 +99,35 @@ export function ExtensionFilter({
             <div className="filter-group-buttons">
               <button
                 className="filter-group-button"
-                onClick={() => handleGroupClick('images')}
+                onClick={() => handleGroupClick("images")}
                 type="button"
               >
                 📷 Images
               </button>
               <button
                 className="filter-group-button"
-                onClick={() => handleGroupClick('documents')}
+                onClick={() => handleGroupClick("documents")}
                 type="button"
               >
                 📄 Documents
               </button>
               <button
                 className="filter-group-button"
-                onClick={() => handleGroupClick('videos')}
+                onClick={() => handleGroupClick("videos")}
                 type="button"
               >
                 🎬 Videos
               </button>
               <button
                 className="filter-group-button"
-                onClick={() => handleGroupClick('code')}
+                onClick={() => handleGroupClick("code")}
                 type="button"
               >
                 💻 Code
               </button>
               <button
                 className="filter-group-button"
-                onClick={() => handleGroupClick('archives')}
+                onClick={() => handleGroupClick("archives")}
                 type="button"
               >
                 📦 Archives
@@ -156,13 +166,10 @@ export function ExtensionFilter({
           )}
 
           {sortedExtensions.length === 0 && (
-            <div className="filter-empty-state">
-              No files in current folder
-            </div>
+            <div className="filter-empty-state">No files in current folder</div>
           )}
         </div>
       )}
     </div>
-  )
+  );
 }
-
