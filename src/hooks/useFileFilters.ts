@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type {
   SizeFilter as SizeFilterType,
   DateFilter as DateFilterType,
@@ -74,9 +74,6 @@ export function useFileFilters({
 
   // Advanced filter state
   const [selectedExtensions, setSelectedExtensions] = useState<string[]>([]);
-  const [availableExtensions, setAvailableExtensions] = useState<
-    Map<string, number>
-  >(new Map());
   const [sizeFilter, setSizeFilter] = useState<SizeFilterType>({
     min: null,
     max: null,
@@ -88,12 +85,8 @@ export function useFileFilters({
     preset: "all",
   });
 
-  // Update available extensions when files change
-  useEffect(() => {
-    const extensions = detectExtensions(files);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAvailableExtensions(extensions);
-  }, [files]);
+  // Compute available extensions directly from files (no effect-based setState needed)
+  const availableExtensions = useMemo(() => detectExtensions(files), [files]);
 
   // Computed filtered results with advanced filters
   const filteredFiles = useMemo(() => {

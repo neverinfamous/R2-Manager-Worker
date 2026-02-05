@@ -106,36 +106,31 @@ class LoggerService {
     }
 
     // Output to console if enabled
+    // Console calls are intentional here - this is the logger's primary output mechanism
+    /* eslint-disable no-console */
     if (this.config.enableConsole) {
       const formattedMessage = this.formatMessage(context, message);
 
       switch (level) {
         case "debug":
-          // eslint-disable-next-line no-console
           if (data !== undefined) console.debug(formattedMessage, data);
-          // eslint-disable-next-line no-console
           else console.debug(formattedMessage);
           break;
         case "info":
-          // eslint-disable-next-line no-console
           if (data !== undefined) console.info(formattedMessage, data);
-          // eslint-disable-next-line no-console
           else console.info(formattedMessage);
           break;
         case "warn":
-          // eslint-disable-next-line no-console
           if (data !== undefined) console.warn(formattedMessage, data);
-          // eslint-disable-next-line no-console
           else console.warn(formattedMessage);
           break;
         case "error":
-          // eslint-disable-next-line no-console
           if (data !== undefined) console.error(formattedMessage, data);
-          // eslint-disable-next-line no-console
           else console.error(formattedMessage);
           break;
       }
     }
+    /* eslint-enable no-console */
   }
 
   /**

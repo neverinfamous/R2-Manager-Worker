@@ -390,95 +390,82 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
     return () => clearTimeout(timer);
   }, [jobIdInput]);
 
-  const loadJobs = useCallback(
-    async (reset?: boolean) => {
-      try {
-        setLoading(true);
-        setError("");
+  // Stable filter criteria for fetching - offset is managed separately
+  const fetchJobs = useCallback(
+    async (currentOffset: number, reset: boolean) => {
+      const options: {
+        limit: number;
+        offset: number;
+        status?: string;
+        operation_type?: string;
+        bucket_name?: string;
+        start_date?: string;
+        end_date?: string;
+        job_id?: string;
+        min_errors?: number;
+        sort_by?: string;
+        sort_order?: "asc" | "desc";
+      } = {
+        limit,
+        offset: currentOffset,
+      };
 
-        const currentOffset = reset ? 0 : offset;
-
-        const options: {
-          limit: number;
-          offset: number;
-          status?: string;
-          operation_type?: string;
-          bucket_name?: string;
-          start_date?: string;
-          end_date?: string;
-          job_id?: string;
-          min_errors?: number;
-          sort_by?: string;
-          sort_order?: "asc" | "desc";
-        } = {
-          limit,
-          offset: currentOffset,
-        };
-
-        if (statusFilter !== "all") {
-          options.status = statusFilter;
-        }
-
-        if (operationFilter !== "all") {
-          options.operation_type = operationFilter;
-        }
-
-        if (bucketFilter !== "all") {
-          options.bucket_name = bucketFilter;
-        }
-
-        // Handle date range based on preset
-        if (datePreset !== "all") {
-          const now = new Date();
-          let startDate: Date;
-
-          switch (datePreset) {
-            case "24h":
-              startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-              break;
-            case "7d":
-              startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-              break;
-            case "30d":
-              startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-              break;
-            default:
-              startDate = now;
-          }
-
-          options.start_date = startDate.toISOString();
-        }
-
-        if (jobIdSearch.trim()) {
-          options.job_id = jobIdSearch.trim();
-        }
-
-        if (minErrors.trim() && !isNaN(parseInt(minErrors))) {
-          options.min_errors = parseInt(minErrors);
-        }
-
-        options.sort_by = sortBy;
-        options.sort_order = sortOrder;
-
-        const data = await api.getJobList(options);
-
-        if (reset) {
-          setJobs(data.jobs);
-          setOffset(limit);
-        } else {
-          setJobs((prevJobs) => [...prevJobs, ...data.jobs]);
-          setOffset(currentOffset + limit);
-        }
-
-        setTotal(data.total);
-      } catch (err) {
-        logger.error("JobHistory", "Failed to load job history", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to load job history",
-        );
-      } finally {
-        setLoading(false);
+      if (statusFilter !== "all") {
+        options.status = statusFilter;
       }
+
+      if (operationFilter !== "all") {
+        options.operation_type = operationFilter;
+      }
+
+      if (bucketFilter !== "all") {
+        options.bucket_name = bucketFilter;
+      }
+
+      // Handle date range based on preset
+      if (datePreset !== "all") {
+        const now = new Date();
+        let startDate: Date;
+
+        switch (datePreset) {
+          case "24h":
+            startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            break;
+          case "7d":
+            startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case "30d":
+            startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          default:
+            startDate = now;
+        }
+
+        options.start_date = startDate.toISOString();
+      }
+
+      if (jobIdSearch.trim()) {
+        options.job_id = jobIdSearch.trim();
+      }
+
+      if (minErrors.trim() && !isNaN(parseInt(minErrors))) {
+        options.min_errors = parseInt(minErrors);
+      }
+
+      options.sort_by = sortBy;
+      options.sort_order = sortOrder;
+
+      const data = await api.getJobList(options);
+
+      if (reset) {
+        setJobs(data.jobs);
+        setOffset(limit);
+      } else {
+        setJobs((prevJobs) => [...prevJobs, ...data.jobs]);
+        setOffset(currentOffset + limit);
+      }
+
+      setTotal(data.total);
     },
     [
       statusFilter,
@@ -489,23 +476,44 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
       minErrors,
       sortBy,
       sortOrder,
-      offset,
     ],
   );
 
+  const loadJobs = useCallback(
+    async (reset?: boolean) => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const currentOffset = reset ? 0 : offset;
+        await fetchJobs(currentOffset, reset ?? false);
+      } catch (err) {
+        logger.error("JobHistory", "Failed to load job history", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to load job history",
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [fetchJobs, offset],
+  );
+
+  // Load jobs when filter criteria change (reset to first page)
   useEffect(() => {
-    void loadJobs(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    statusFilter,
-    operationFilter,
-    bucketFilter,
-    datePreset,
-    jobIdSearch,
-    minErrors,
-    sortBy,
-    sortOrder,
-  ]);
+    setLoading(true);
+    setError("");
+    fetchJobs(0, true)
+      .catch((err: unknown) => {
+        logger.error("JobHistory", "Failed to load job history", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to load job history",
+        );
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [fetchJobs]);
 
   const handleLoadMore = (): void => {
     void loadJobs(false);

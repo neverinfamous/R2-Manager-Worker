@@ -216,15 +216,16 @@ export function FileGrid({
 
   useEffect(() => {
     mountedRef.current = true;
+    // Capture current ref values for cleanup
+    const debounceTimer = debounceTimerRef;
+    const refreshTimeout = refreshTimeoutRef;
     return () => {
       mountedRef.current = false;
-      if (debounceTimerRef.current) {
-        window.clearTimeout(debounceTimerRef.current);
+      if (debounceTimer.current) {
+        window.clearTimeout(debounceTimer.current);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      const refreshTimeout = refreshTimeoutRef.current;
-      if (refreshTimeout) {
-        window.clearTimeout(refreshTimeout);
+      if (refreshTimeout.current) {
+        window.clearTimeout(refreshTimeout.current);
       }
     };
   }, []);
