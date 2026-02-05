@@ -1,4 +1,4 @@
-import { useEffect, useState, type JSX } from "react";
+import { useCallback, useEffect, useState, type JSX } from "react";
 import { api, type JobEvent, type JobEventDetails } from "../../services/api";
 
 // Icons
@@ -136,14 +136,7 @@ export function JobHistoryDialog({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (open && jobId) {
-      void loadEvents();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, jobId]);
-
-  const loadEvents = async (): Promise<void> => {
+  const loadEvents = useCallback(async (): Promise<void> => {
     try {
       setLoading(true);
       setError(null);
@@ -156,7 +149,13 @@ export function JobHistoryDialog({
     } finally {
       setLoading(false);
     }
-  };
+  }, [jobId]);
+
+  useEffect(() => {
+    if (open && jobId) {
+      void loadEvents();
+    }
+  }, [open, jobId, loadEvents]);
 
   const getEventIcon = (eventType: string): JSX.Element => {
     switch (eventType) {

@@ -5,6 +5,19 @@ const WORKER_API =
   (import.meta.env["VITE_WORKER_API"] as string | undefined) ??
   window.location.origin;
 
+/**
+ * Pattern to detect invalid file name characters including control characters.
+ * Control characters (0x00-0x1F) can cause filesystem issues and security problems.
+ * Also blocks: < > : " | ? * which are invalid on Windows filesystems.
+ */
+// eslint-disable-next-line no-control-regex
+const INVALID_FILENAME_CHARS = /[<>:"|?*\x00-\x1F]/g;
+
+/**
+ * Pattern to detect Windows reserved file names (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
+ */
+const RESERVED_FILENAME_PATTERN = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i;
+
 type ProgressCallback = (progress: number) => void;
 type RetryCallback = (attempt: number, chunk: number, error: Error) => void;
 type VerificationCallback = (
@@ -1714,16 +1727,13 @@ class APIService {
 
     const trimmedName = name.trim();
 
-    // Check for invalid characters
-    // eslint-disable-next-line no-control-regex
-    const invalidChars = /[<>:"|?*\x00-\x1F]/g;
-    if (invalidChars.test(trimmedName)) {
+    // Check for invalid characters (uses module-level constant with documented regex)
+    if (INVALID_FILENAME_CHARS.test(trimmedName)) {
       return { valid: false, error: "File name contains invalid characters" };
     }
 
     // Check for reserved names (Windows compatibility)
-    const reservedNames = /^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])$/i;
-    if (reservedNames.test(trimmedName)) {
+    if (RESERVED_FILENAME_PATTERN.test(trimmedName)) {
       return { valid: false, error: "File name is reserved" };
     }
 

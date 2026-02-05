@@ -1,25 +1,12 @@
-/* eslint-disable react-refresh/only-export-components */
+import { useEffect, useState, useMemo, type ReactNode, type JSX } from "react";
 import {
-  createContext,
-  useEffect,
-  useState,
-  type ReactNode,
-  useMemo,
-  type JSX,
-} from "react";
+  ThemeContext,
+  type ThemeMode,
+  type ResolvedTheme,
+} from "./theme-context-value";
 
-export type ThemeMode = "light" | "dark" | "system";
-export type ResolvedTheme = "light" | "dark";
-
-interface ThemeContextType {
-  theme: ThemeMode;
-  resolvedTheme: ResolvedTheme;
-  setTheme: (theme: ThemeMode) => void;
-}
-
-export const ThemeContext = createContext<ThemeContextType | undefined>(
-  undefined,
-);
+// Re-export types for external consumers
+export type { ThemeMode, ResolvedTheme } from "./theme-context-value";
 
 const STORAGE_KEY = "r2-manager-theme";
 
