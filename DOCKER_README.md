@@ -5,7 +5,7 @@
 A modern web application for managing Cloudflare R2 buckets with enterprise-grade authentication via Cloudflare Access Zero Trust.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v3.3.0-green)
+![Version](https://img.shields.io/badge/version-v3.4.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
@@ -152,13 +152,13 @@ docker run -p 8787:8787 -v "/path/to/wrangler.toml:/app/wrangler.toml" writenote
 | Tag           | Description                | Use Case                    |
 | ------------- | -------------------------- | --------------------------- |
 | `latest`      | Latest stable release      | **Recommended for testing** |
-| `v3.3.0`      | Specific version           | Pin to exact version        |
+| `v3.4.0`      | Specific version           | Pin to exact version        |
 | `sha-abc1234` | Commit SHA (12-char short) | Development/traceability    |
 
 **Pull a specific version:**
 
 ```bash
-docker pull writenotenow/r2-bucket-manager:v3.3.0
+docker pull writenotenow/r2-bucket-manager:v3.4.0
 ```
 
 ---

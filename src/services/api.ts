@@ -2931,11 +2931,9 @@ class APIService {
     );
 
     if (!response.ok) {
-      const errorData = (await response
-        .json()
-        .catch(() => ({
-          error: "Failed to update local uploads setting",
-        }))) as {
+      const errorData = (await response.json().catch(() => ({
+        error: "Failed to update local uploads setting",
+      }))) as {
         error?: string;
       };
       throw new Error(
