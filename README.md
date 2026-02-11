@@ -1,11 +1,11 @@
 # R2 Bucket Manager
 
-**Last Updated: February 4, 2026**
+**Last Updated February 11, 2026**
 
 A modern web application for managing Cloudflare R2 buckets with enterprise-grade authentication via Cloudflare Access Zero Trust.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v3.3.0-green)
+![Version](https://img.shields.io/badge/version-v3.4.0-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
@@ -21,18 +21,19 @@ R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to man
 
 ## ✨ Features
 
-- 🎯 **Custom Metadata** `NEW` - User-defined, searchable bucket tags
+- 🎯 **Custom Metadata** - User-defined, searchable bucket tags
 - 🚀 **S3 Import** `BETA` - Migrate data from Amazon, Google, and All S3 Compatible buckets to R2 using Cloudflare's Super Slurper API.
-- 📊 **Metrics Dashboard** `ENHANCED` - Comprehensive R2 analytics with tabbed interface (Overview | Storage), bucket-level filtering, storage trends, object count tracking, and Class A/B operation breakdowns powered by Cloudflare's GraphQL Analytics API
-- 🏥 **Health Dashboard** `NEW` - At-a-glance operational status with health score, job monitoring, and bucket organization metrics
+- 📊 **Metrics Dashboard** - Comprehensive R2 analytics with tabbed interface (Overview | Storage), bucket-level filtering, storage trends, object count tracking, and Class A/B operation breakdowns powered by Cloudflare's GraphQL Analytics API
+- 🏥 **Health Dashboard** - At-a-glance operational status with health score, job monitoring, and bucket organization metrics
 - 🪝 **WebHooks** - 15 event types for bucket operations (file uploads, moves, copies, renames, folder lifecycle, bucket operations, job status)
 - 📋 **Job History & Audit Logging** - Complete audit trail for all operations (bulk and individual) with filterable job list and event timeline
-- 🤖 **AI Search Integration** `NEW` - Connect R2 buckets to Cloudflare AI Search for semantic search, natural language queries, and RAG capabilities. Supports PDF, DOCX, and 20+ file formats with automatic indexing and real-time status monitoring.
+- 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search, natural language queries, and RAG capabilities. Supports PDF, DOCX, and 20+ file formats with automatic indexing and real-time status monitoring.
 - 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
 - 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
 - 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
 - 🧭 **Bucket Filtering** - Filter buckets by name, size, and creation date with preset and custom ranges
-- ⏳ **Object Lifecycle Management** `NEW` - Configure automated expiration and storage class transitions for cost optimization (33% savings with Infrequent Access)
+- ⏳ **Object Lifecycle Management** - Configure automated expiration and storage class transitions for cost optimization (33% savings with Infrequent Access)
+- ⚡ **Local Uploads** `BETA` - Enable per-bucket local uploads for up to 75% faster upload performance by writing data to storage near the client
 - 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
 - 📄 **File Management** - Rename files via right-click context menu with validation
 - 🔍 **Smart Filtering** - Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)
@@ -401,7 +402,7 @@ The following operations return simulated success responses for UI testing:
 
 | Component  | Technology         | Version       |
 | ---------- | ------------------ | ------------- |
-| Frontend   | React              | 19.2.3        |
+| Frontend   | React              | 19.2.4        |
 | Build Tool | Vite               | 7.3.1         |
 | Language   | TypeScript         | 5.9.3         |
 | Backend    | Cloudflare Workers | Runtime API   |

@@ -22,6 +22,7 @@ import { UpgradeBanner } from "./components/UpgradeBanner";
 import { BucketTagPicker } from "./components/tags/BucketTagPicker";
 import { BucketColorPicker } from "./components/colors";
 import { LifecycleRulesPanel } from "./components/lifecycle";
+import { LocalUploadsToggle } from "./components/local-uploads";
 import type { BucketColor } from "./utils/bucketColors";
 import "./styles/metrics.css";
 import "./styles/tags.css";
@@ -1355,6 +1356,9 @@ export default function BucketManager(): JSX.Element {
                                   >
                                     Lifecycle
                                   </button>
+                                  <LocalUploadsToggle
+                                    bucketName={bucket.name}
+                                  />
                                   <button
                                     onClick={() =>
                                       startEditingBucket(bucket.name)
@@ -1485,6 +1489,12 @@ export default function BucketManager(): JSX.Element {
                                   handleBucketColorChange(bucket.name, color)
                                 }
                               />
+                            </div>
+                            <div
+                              className="bucket-grid-local-uploads"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <LocalUploadsToggle bucketName={bucket.name} />
                             </div>
                             <div className="bucket-actions">
                               <button

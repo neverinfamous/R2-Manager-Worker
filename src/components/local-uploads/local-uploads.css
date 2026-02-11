@@ -1,0 +1,103 @@
+/* ============================================
+   Local Uploads Toggle Component Styles
+   ============================================ */
+
+/* Toggle container - compact inline with other bucket actions */
+.local-uploads-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  position: relative;
+}
+
+/* Toggle switch track */
+.local-uploads-switch {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  background: rgba(128, 128, 128, 0.35);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  padding: 0;
+  outline: none;
+  flex-shrink: 0;
+}
+
+.local-uploads-switch:hover {
+  background: rgba(128, 128, 128, 0.5);
+}
+
+.local-uploads-switch:focus-visible {
+  box-shadow: 0 0 0 2px var(--accent-color);
+}
+
+/* Toggle switch thumb — always white for contrast */
+.local-uploads-switch::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+/* Active state */
+.local-uploads-switch[aria-checked="true"] {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+.local-uploads-switch[aria-checked="true"]::after {
+  transform: translateX(14px);
+}
+
+/* Disabled (loading) state */
+.local-uploads-switch[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Label styling - compact */
+.local-uploads-label {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  user-select: none;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.local-uploads-label:hover {
+  color: var(--text-primary);
+}
+
+/* Loading spinner for toggle */
+.local-uploads-loading {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(128, 128, 128, 0.3);
+  border-top-color: var(--accent-color);
+  border-radius: 50%;
+  animation: local-uploads-spin 0.6s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes local-uploads-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Error state */
+.local-uploads-error {
+  font-size: 0.65rem;
+  color: var(--error-color, #ef4444);
+}
