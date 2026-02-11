@@ -57,8 +57,7 @@ export function CreateLifecycleRuleModal({
       const existingRules = existing.result?.rules ?? [];
 
       // Create the new rule using Cloudflare API format
-      // maxAge is in SECONDS and conditions must be present (even if empty)
-      const maxAgeSeconds = days * 86400; // Convert days to seconds
+      // maxAge is in DAYS (Cloudflare R2 lifecycle API unit)
       const newRule: LifecycleRule = {
         id: ruleId,
         enabled: true,
@@ -66,13 +65,13 @@ export function CreateLifecycleRuleModal({
         ...(ruleType === "expiration"
           ? {
               deleteObjectsTransition: {
-                condition: { maxAge: maxAgeSeconds, type: "Age" as const },
+                condition: { maxAge: days, type: "Age" as const },
               },
             }
           : {
               storageClassTransitions: [
                 {
-                  condition: { maxAge: maxAgeSeconds, type: "Age" as const },
+                  condition: { maxAge: days, type: "Age" as const },
                   storageClass: "InfrequentAccess" as const,
                 },
               ],
