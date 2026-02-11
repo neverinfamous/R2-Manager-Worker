@@ -2885,6 +2885,66 @@ class APIService {
     // Set the updated rules
     await this.setLifecycleRules(bucketName, updatedRules);
   }
+
+  // ============================================
+  // Local Uploads Management Methods
+  // ============================================
+
+  /**
+   * Get local uploads status for a bucket
+   */
+  async getLocalUploadsStatus(
+    bucketName: string,
+  ): Promise<LocalUploadsResponse> {
+    const response = await fetch(
+      `${WORKER_API}/api/local-uploads/${encodeURIComponent(bucketName)}`,
+      this.getFetchOptions({
+        headers: this.getHeaders(),
+      }),
+    );
+
+    if (!response.ok) {
+      // Default to disabled on error
+      return { success: true, result: { enabled: false } };
+    }
+
+    return (await response.json()) as LocalUploadsResponse;
+  }
+
+  /**
+   * Set local uploads status for a bucket
+   */
+  async setLocalUploadsStatus(
+    bucketName: string,
+    enabled: boolean,
+  ): Promise<LocalUploadsResponse> {
+    const response = await fetchWithRetry(
+      `${WORKER_API}/api/local-uploads/${encodeURIComponent(bucketName)}`,
+      this.getFetchOptions({
+        method: "PUT",
+        headers: {
+          ...this.getHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ enabled }),
+      }),
+    );
+
+    if (!response.ok) {
+      const errorData = (await response
+        .json()
+        .catch(() => ({
+          error: "Failed to update local uploads setting",
+        }))) as {
+        error?: string;
+      };
+      throw new Error(
+        errorData.error ?? "Failed to update local uploads setting",
+      );
+    }
+
+    return { success: true, result: { enabled } };
+  }
 }
 
 export const api = new APIService();
@@ -2893,6 +2953,7 @@ export const api = new APIService();
 // Lifecycle Types (imported from types/lifecycle.ts)
 // ============================================
 import type { LifecycleRule, LifecycleRulesResponse } from "../types/lifecycle";
+import type { LocalUploadsResponse } from "../types/local-uploads";
 
 // ============================================
 // Tag Types (imported from types/tags.ts)

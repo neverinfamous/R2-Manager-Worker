@@ -31,6 +31,7 @@ import { handleTagRoutes } from "./routes/tags";
 import { handleMigrationRoutes } from "./routes/migrations";
 import { handleColorRoutes } from "./routes/colors";
 import { handleLifecycleRoutes } from "./routes/lifecycle";
+import { handleLocalUploadsRoutes } from "./routes/local-uploads";
 
 async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
@@ -440,6 +441,18 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   // Handle lifecycle routes
   if (url.pathname.startsWith("/api/lifecycle")) {
     return await handleLifecycleRoutes(
+      request,
+      env,
+      url,
+      corsHeaders,
+      isLocalDev,
+      userEmail,
+    );
+  }
+
+  // Handle local uploads routes
+  if (url.pathname.startsWith("/api/local-uploads")) {
+    return await handleLocalUploadsRoutes(
       request,
       env,
       url,
