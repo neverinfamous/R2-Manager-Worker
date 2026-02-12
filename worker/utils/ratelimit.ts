@@ -20,9 +20,9 @@ export interface RateLimitCheckResult {
  * Determines which rate limit tier to apply based on the HTTP method and pathname
  *
  * Classification:
- * - READ (300 req/60s): GET operations for buckets, files, search, signed URLs
- * - WRITE (100 req/60s): POST/PATCH operations for uploads, renames, copies, moves, folder creation
- * - DELETE (30 req/60s): DELETE operations for buckets, files, folders
+ * - READ (600 req/60s): GET operations for buckets, files, search, signed URLs
+ * - WRITE (200 req/60s): POST/PATCH operations for uploads, renames, copies, moves, folder creation
+ * - DELETE (60 req/60s): DELETE operations for buckets, files, folders
  *
  * @param method HTTP request method
  * @param pathname URL pathname
@@ -62,11 +62,11 @@ function getRateLimiter(
 ): { limiter: RateLimit; limit: number; period: number } {
   switch (tier) {
     case "READ":
-      return { limiter: env.RATE_LIMITER_READ, limit: 300, period: 60 };
+      return { limiter: env.RATE_LIMITER_READ, limit: 600, period: 60 };
     case "WRITE":
-      return { limiter: env.RATE_LIMITER_WRITE, limit: 100, period: 60 };
+      return { limiter: env.RATE_LIMITER_WRITE, limit: 200, period: 60 };
     case "DELETE":
-      return { limiter: env.RATE_LIMITER_DELETE, limit: 30, period: 60 };
+      return { limiter: env.RATE_LIMITER_DELETE, limit: 60, period: 60 };
   }
 }
 

@@ -20,10 +20,10 @@ Enable per-bucket local uploads for dramatically faster upload performance by wr
 
 #### New API Endpoints
 
-| Endpoint                          | Method  | Description                              |
-| --------------------------------- | ------- | ---------------------------------------- |
-| `/api/local-uploads/:bucketName`  | GET     | Get local uploads status for a bucket    |
-| `/api/local-uploads/:bucketName`  | PUT     | Enable or disable local uploads          |
+| Endpoint                         | Method | Description                           |
+| -------------------------------- | ------ | ------------------------------------- |
+| `/api/local-uploads/:bucketName` | GET    | Get local uploads status for a bucket |
+| `/api/local-uploads/:bucketName` | PUT    | Enable or disable local uploads       |
 
 #### New Types
 
@@ -108,15 +108,15 @@ Resolved deprecated `FormEvent` usage across the codebase.
 
 Properly fixed all eslint-disable suppressions across the codebase:
 
-| File                   | Fix Applied                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------ |
-| `JobHistory.tsx`       | Refactored to use separate `fetchJobs` callback with proper dependencies       |
-| `JobHistoryDialog.tsx` | Wrapped `loadEvents` in useCallback with proper dependencies                   |
-| `ThemeContext.tsx`      | Split context into `theme-context-value.ts` for react-refresh compliance       |
-| `useFileFilters.ts`    | Replaced useEffect + setState with useMemo for `availableExtensions`           |
-| `api.ts`               | Extracted file validation regex to documented top-level constant                |
-| `logger.ts`            | Consolidated 8 individual eslint-disable-next-line into single scoped block    |
-| `filegrid.tsx`         | Captured ref values at effect start for cleanup function pattern               |
+| File                   | Fix Applied                                                                 |
+| ---------------------- | --------------------------------------------------------------------------- |
+| `JobHistory.tsx`       | Refactored to use separate `fetchJobs` callback with proper dependencies    |
+| `JobHistoryDialog.tsx` | Wrapped `loadEvents` in useCallback with proper dependencies                |
+| `ThemeContext.tsx`     | Split context into `theme-context-value.ts` for react-refresh compliance    |
+| `useFileFilters.ts`    | Replaced useEffect + setState with useMemo for `availableExtensions`        |
+| `api.ts`               | Extracted file validation regex to documented top-level constant            |
+| `logger.ts`            | Consolidated 8 individual eslint-disable-next-line into single scoped block |
+| `filegrid.tsx`         | Captured ref values at effect start for cleanup function pattern            |
 
 ---
 

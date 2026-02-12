@@ -116,12 +116,9 @@ export function LocalUploadsToggle({
               : "Local uploads disabled — click to enable faster uploads"
         }
       />
-      <label
-        className="local-uploads-label"
-        onClick={() => void handleToggle()}
-      >
+      <span className="local-uploads-label" onClick={() => void handleToggle()}>
         Local Uploads
-      </label>
+      </span>
       {error !== null && (
         <span className="local-uploads-error" title={error}>
           ⚠
