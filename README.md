@@ -46,7 +46,7 @@ R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to man
 - 🗑️ **Bulk Bucket Delete** - Select and force delete multiple buckets at once with progress tracking
 - 🧭 **Breadcrumb Navigation** - Navigate through folder hierarchies with ease
 - 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access Zero Trust
-- 🛡️ **Rate Limiting** - Tiered API rate limits (100/min reads, 30/min writes, 10/min deletes) with automatic enforcement
+- 🛡️ **Rate Limiting** - Tiered API rate limits (600/min reads, 200/min writes, 60/min deletes) with automatic enforcement
 - ⚡ **Edge Performance** - Deployed on Cloudflare's global network with intelligent client-side caching (5-min TTL)
 - 🔄 **Smart Retry Logic** - Automatic exponential backoff for rate limits and transient errors (429/503/504)
 - 🎨 **Modern UI** - Beautiful, responsive interface built with React 19
@@ -296,9 +296,9 @@ Intelligent, per-user rate limiting prevents abuse while ensuring fair resource 
 
 | Tier       | Operations                | Limit   | Period | Scope               |
 | :--------- | :------------------------ | :------ | :----- | :------------------ |
-| **READ**   | List, Search, Signed URLs | 300 req | 60s    | High-volume access  |
-| **WRITE**  | Upload, Rename, Move      | 100 req | 60s    | Modification safety |
-| **DELETE** | Remove Files/Buckets      | 30 req  | 60s    | Destructive actions |
+| **READ**   | List, Search, Signed URLs | 600 req | 60s    | High-volume access  |
+| **WRITE**  | Upload, Rename, Move      | 200 req | 60s    | Modification safety |
+| **DELETE** | Remove Files/Buckets      | 60 req  | 60s    | Destructive actions |
 
 **Note:** Rate limiting returns standard `429 Too Many Requests` headers and can be configured or disabled via `wrangler.toml`.
 
@@ -319,7 +319,7 @@ Rate limits are defined in `wrangler.toml` using Cloudflare Workers Rate Limitin
 [[ratelimits]]
 name = "RATE_LIMITER_READ"
 namespace_id = "1001"
-simple = { limit = 100, period = 60 }
+simple = { limit = 600, period = 60 }
 ```
 
 **Requirements:**

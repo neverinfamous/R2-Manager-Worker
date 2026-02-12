@@ -46,7 +46,7 @@ R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to man
 - 🗑️ **Bulk Bucket Delete** - Select and force delete multiple buckets at once with progress tracking
 - 🧭 **Breadcrumb Navigation** - Navigate through folder hierarchies with ease
 - 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access Zero Trust
-- 🛡️ **Rate Limiting** - Tiered API rate limits (100/min reads, 30/min writes, 10/min deletes) with automatic enforcement
+- 🛡️ **Rate Limiting** - Tiered API rate limits (600/min reads, 200/min writes, 60/min deletes) with automatic enforcement
 - ⚡ **Edge Performance** - Deployed on Cloudflare's global network with intelligent client-side caching (5-min TTL)
 - 🔄 **Smart Retry Logic** - Automatic exponential backoff for rate limits and transient errors (429/503/504)
 - 🎨 **Modern UI** - Beautiful, responsive interface built with React 19
