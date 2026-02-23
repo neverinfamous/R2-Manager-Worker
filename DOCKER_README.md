@@ -1,6 +1,6 @@
 # R2 Bucket Manager - Docker
 
-**Last Updated February 12, 2026**
+**Last Updated February 23, 2026**
 
 A modern web application for managing Cloudflare R2 buckets with enterprise-grade authentication via Cloudflare Access Zero Trust.
 
@@ -15,7 +15,7 @@ R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to man
 
 **[Live Demo](https://r2.adamic.tech/)** • **[GitHub](https://github.com/neverinfamous/R2-Manager-Worker)** • **[Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki)** • **[Changelog](https://github.com/neverinfamous/R2-Manager-Worker/wiki/Changelog)** • **[Release Article](https://adamic.tech/articles/r2-manager)**
 
-**Tech Stack:** React 19.2.4 | Vite 7.3.1 | TypeScript 5.9.3 | Cloudflare Workers + Zero Trust
+**Tech Stack:** React | Vite | TypeScript | Cloudflare Workers + Zero Trust
 
 ---
 

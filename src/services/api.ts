@@ -894,7 +894,7 @@ class APIService {
     } = options;
 
     const uploadFileName = fileName || file.name;
-    let lastError: Error | null = null;
+    let lastError: Error | null;
 
     // Calculate MD5 for this chunk
     const chunkMD5 = await this.calculateMD5(chunk);
@@ -940,6 +940,7 @@ class APIService {
         }
         throw new Error(
           `Failed to upload chunk ${chunkIndex} after ${maxRetries} attempts: ${lastError.message}`,
+          { cause: error },
         );
       }
     }
@@ -1084,6 +1085,7 @@ class APIService {
       throw new Error(
         `Upload failed: ${failedChunks.length} chunks remaining. ` +
           `Last error: ${error instanceof Error ? error.message : "Unknown error"}`,
+        { cause: error },
       );
     }
   }
@@ -1511,7 +1513,7 @@ class APIService {
       onProgress?.(100);
     } catch (error) {
       logger.error("API", "Bucket download failed", error);
-      throw new Error("Failed to download bucket");
+      throw new Error("Failed to download bucket", { cause: error });
     }
   }
 
@@ -1581,7 +1583,7 @@ class APIService {
       onProgress?.(100);
     } catch (error) {
       logger.error("API", "Multi-bucket download failed", error);
-      throw new Error("Failed to download buckets");
+      throw new Error("Failed to download buckets", { cause: error });
     }
   }
 

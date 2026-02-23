@@ -201,7 +201,7 @@ export function JobHistoryDialog({
     const diffHours = Math.floor(diffMins / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    let relative = "";
+    let relative: string;
     if (diffMins < 1) relative = "just now";
     else if (diffMins < 60) relative = `${diffMins}m ago`;
     else if (diffHours < 24) relative = `${diffHours}h ago`;

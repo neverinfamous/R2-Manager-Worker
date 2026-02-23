@@ -196,7 +196,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   }
 
   // Skip auth for localhost development
-  let userEmail: string | null = null;
+  let userEmail: string | null;
   if (isLocalhost) {
     logInfo("Localhost detected, skipping JWT validation", {
       module: "worker",
