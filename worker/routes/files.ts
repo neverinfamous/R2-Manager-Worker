@@ -74,7 +74,7 @@ export async function handleFileRoutes(
   ) {
     const jobId = generateJobId("bulk_download");
     const operationType: JobOperationType = "bulk_download";
-    let totalFiles = 0;
+    let totalFiles: number;
     let processedFiles = 0;
     let errorCount = 0;
 
@@ -266,7 +266,7 @@ export async function handleFileRoutes(
     const operationType: JobOperationType = "bulk_download";
     let processedFiles = 0;
     let errorCount = 0;
-    let totalFiles = 0;
+    let totalFiles: number;
     const targetBucket = bucketName ?? "unknown";
 
     try {

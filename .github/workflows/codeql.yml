@@ -42,5 +42,3 @@ jobs:
         uses: github/codeql-action/analyze@v4
         with:
           upload: always
-          wait-for-processing: false
-          fail-on: error

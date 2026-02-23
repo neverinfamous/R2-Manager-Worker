@@ -684,7 +684,9 @@ export async function handleAISearchRoutes(
             searchParams.reranking = body.reranking;
           }
 
+          // TODO: Migrate autorag → env.AI.aiSearch (Cloudflare API rename)
           const result =
+            // eslint-disable-next-line @typescript-eslint/no-deprecated
             await env.AI.autorag(instanceName).search(searchParams);
 
           return new Response(JSON.stringify(result), {
@@ -823,7 +825,9 @@ export async function handleAISearchRoutes(
               streamParams.reranking = body.reranking;
             }
 
+            // TODO: Migrate autorag → env.AI.aiSearch (Cloudflare API rename)
             const streamResult =
+              // eslint-disable-next-line @typescript-eslint/no-deprecated
               await env.AI.autorag(instanceName).aiSearch(streamParams);
 
             // The streaming response returns a Response object
@@ -858,7 +862,9 @@ export async function handleAISearchRoutes(
               searchParams.reranking = body.reranking;
             }
 
+            // TODO: Migrate autorag → env.AI.aiSearch (Cloudflare API rename)
             const result =
+              // eslint-disable-next-line @typescript-eslint/no-deprecated
               await env.AI.autorag(instanceName).aiSearch(searchParams);
 
             return new Response(JSON.stringify(result), {
