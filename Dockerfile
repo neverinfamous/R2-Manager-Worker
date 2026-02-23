@@ -15,12 +15,12 @@ WORKDIR /app
 # Upgrade npm to latest version to fix CVE-2024-21538 (cross-spawn vulnerability)
 RUN npm install -g npm@latest
 
-# Patch npm's own dependencies to fix CVE-2025-64756 (glob), CVE-2026-23745, CVE-2026-23950 & CVE-2026-24842 (tar)
+# Patch npm's own dependencies to fix CVE-2025-64756 (glob), CVE-2026-23745, CVE-2026-23950, CVE-2026-24842 & CVE-2026-26960 (tar)
 # npm bundles vulnerable versions of glob and tar - we replace them with patched versions
 # Note: node-gyp/node_modules/glob path may not exist in newer npm versions (handled with conditional)
 RUN cd /tmp && \
     npm pack glob@11.1.0 && \
-    npm pack tar@7.5.7 && \
+    npm pack tar@7.5.8 && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/glob && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/tar && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob 2>/dev/null || true && \
@@ -30,7 +30,7 @@ RUN cd /tmp && \
         cp -r package /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob; \
     fi && \
     rm -rf package && \
-    tar -xzf tar-7.5.7.tgz && \
+    tar -xzf tar-7.5.8.tgz && \
     mv package /usr/local/lib/node_modules/npm/node_modules/tar && \
     rm -rf /tmp/*
 
@@ -62,12 +62,12 @@ WORKDIR /app
 # Upgrade npm to latest version to fix CVE-2024-21538 (cross-spawn vulnerability)
 RUN npm install -g npm@latest
 
-# Patch npm's own dependencies to fix CVE-2025-64756 (glob), CVE-2026-23745, CVE-2026-23950 & CVE-2026-24842 (tar)
+# Patch npm's own dependencies to fix CVE-2025-64756 (glob), CVE-2026-23745, CVE-2026-23950, CVE-2026-24842 & CVE-2026-26960 (tar)
 # npm bundles vulnerable versions of glob and tar - we replace them with patched versions
 # Note: node-gyp/node_modules/glob path may not exist in newer npm versions (handled with conditional)
 RUN cd /tmp && \
     npm pack glob@11.1.0 && \
-    npm pack tar@7.5.7 && \
+    npm pack tar@7.5.8 && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/glob && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/tar && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob 2>/dev/null || true && \
@@ -77,14 +77,14 @@ RUN cd /tmp && \
         cp -r package /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob; \
     fi && \
     rm -rf package && \
-    tar -xzf tar-7.5.7.tgz && \
+    tar -xzf tar-7.5.8.tgz && \
     mv package /usr/local/lib/node_modules/npm/node_modules/tar && \
     rm -rf /tmp/*
 
 # Install runtime dependencies only
 # Security Notes:
-# - Application dependencies: glob@11.1.0, tar@7.5.7 (patched via package.json overrides)
-# - npm CLI dependencies: glob@11.1.0, tar@7.5.7 (manually patched in npm's installation)
+# - Application dependencies: glob@11.1.0, tar@7.5.8 (patched via package.json overrides)
+# - npm CLI dependencies: glob@11.1.0, tar@7.5.8 (manually patched in npm's installation)
 # - curl 8.17.0-r1 has CVE-2025-14819, CVE-2025-14524, CVE-2025-14017 (MEDIUM)
 #   Fix version 8.18.0-r0 not yet available in Alpine repos (upstream availability gap)
 # - busybox has CVE-2025-46394 & CVE-2024-58251 (LOW) with no fixes available yet
