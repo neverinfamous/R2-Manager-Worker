@@ -1,6 +1,6 @@
 # Changelog
 
-**Last Updated:** February 23, 2026
+**Last Updated:** March 1, 2026
 
 All notable changes to R2 Bucket Manager are documented here.
 
@@ -37,12 +37,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Added `@typescript-eslint/typescript-estree` → `minimatch` override (`^10.2.1`)
 
 - **Dependency Updates** - Updated npm dependencies to latest versions
-  - `@cloudflare/workers-types`: 4.20260212.0 → 4.20260302.0
-  - `@types/node`: 25.2.3 → 25.3.0
-  - `eslint-plugin-react-refresh`: 0.5.0 → 0.5.1
+  - `@cloudflare/workers-types`: 4.20260212.0 → 4.20260305.0
+  - `@types/node`: 25.2.3 → 25.3.3
+  - `eslint`: 10.0.1 → 10.0.2
+  - `eslint-plugin-react-refresh`: 0.5.0 → 0.5.2
+  - `globals`: 17.3.0 → 17.4.0
   - `lucide-react`: 0.563.0 → 0.575.0
   - `typescript-eslint`: 8.55.0 → 8.56.1
-  - `wrangler`: 4.65.0 → 4.67.1
+  - `wrangler`: 4.65.0 → 4.69.0
   - `react-dropzone`: 14.4.1 → 15.0.0 (major version; only breaking change is `isDragReject` behavior, which this project does not use)
 
 ### CI/CD
@@ -54,7 +56,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ### Security
 
 - **tar CVE Fix** - Updated tar override from 7.5.7 → 7.5.8 to address CVE-2026-26960
-- **minimatch ReDoS** - Resolved through ESLint 10 upgrade (minimatch 10.x replaces vulnerable 3.x)
+- **minimatch ReDoS** - Updated override from `^10.2.1` → `^10.2.4` and promoted to top-level override to fix GHSA-7r86-cg39-jmmj and GHSA-23c5-xmqv-rm74
 - **CodeQL Workflow** - Removed deprecated `fail-on: error` and `wait-for-processing` inputs from `codeql.yml`
 
 ---
