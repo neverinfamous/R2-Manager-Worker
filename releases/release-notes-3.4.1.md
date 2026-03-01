@@ -82,6 +82,11 @@ Upgraded linting toolchain to ESLint 10 with strict checking:
 
 - Removed deprecated `fail-on: error` and `wait-for-processing` inputs from `codeql.yml`
 
+### Docker minimatch CVE
+
+- Patched npm CLI's bundled minimatch 10.2.2 → 10.2.4 in Dockerfile
+- Fixes **CVE-2026-27904** (HIGH 7.5) and **CVE-2026-27903** (HIGH 7.5) — Inefficient Regular Expression / Algorithmic Complexity
+
 ---
 
 ## 📦 CI/CD
