@@ -15,14 +15,18 @@ WORKDIR /app
 # Upgrade npm to latest version to fix CVE-2024-21538 (cross-spawn vulnerability)
 RUN npm install -g npm@latest
 
-# Patch npm's own dependencies to fix CVE-2025-64756 (glob), CVE-2026-23745, CVE-2026-23950, CVE-2026-24842 & CVE-2026-26960 (tar)
-# npm bundles vulnerable versions of glob and tar - we replace them with patched versions
-# Note: node-gyp/node_modules/glob path may not exist in newer npm versions (handled with conditional)
+# Patch npm's own dependencies:
+# - glob@11.1.0: CVE-2025-64756
+# - tar@7.5.8: CVE-2026-23745, CVE-2026-23950, CVE-2026-24842, CVE-2026-26960
+# - minimatch@10.2.4: CVE-2026-27904, CVE-2026-27903 (ReDoS)
+# npm bundles vulnerable transitive deps - we replace them with patched versions
 RUN cd /tmp && \
     npm pack glob@11.1.0 && \
     npm pack tar@7.5.8 && \
+    npm pack minimatch@10.2.4 && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/glob && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/tar && \
+    rm -rf /usr/local/lib/node_modules/npm/node_modules/minimatch && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob 2>/dev/null || true && \
     tar -xzf glob-11.1.0.tgz && \
     cp -r package /usr/local/lib/node_modules/npm/node_modules/glob && \
@@ -32,6 +36,9 @@ RUN cd /tmp && \
     rm -rf package && \
     tar -xzf tar-7.5.8.tgz && \
     mv package /usr/local/lib/node_modules/npm/node_modules/tar && \
+    rm -rf package && \
+    tar -xzf minimatch-10.2.4.tgz && \
+    mv package /usr/local/lib/node_modules/npm/node_modules/minimatch && \
     rm -rf /tmp/*
 
 # Install build dependencies
@@ -62,14 +69,18 @@ WORKDIR /app
 # Upgrade npm to latest version to fix CVE-2024-21538 (cross-spawn vulnerability)
 RUN npm install -g npm@latest
 
-# Patch npm's own dependencies to fix CVE-2025-64756 (glob), CVE-2026-23745, CVE-2026-23950, CVE-2026-24842 & CVE-2026-26960 (tar)
-# npm bundles vulnerable versions of glob and tar - we replace them with patched versions
-# Note: node-gyp/node_modules/glob path may not exist in newer npm versions (handled with conditional)
+# Patch npm's own dependencies:
+# - glob@11.1.0: CVE-2025-64756
+# - tar@7.5.8: CVE-2026-23745, CVE-2026-23950, CVE-2026-24842, CVE-2026-26960
+# - minimatch@10.2.4: CVE-2026-27904, CVE-2026-27903 (ReDoS)
+# npm bundles vulnerable transitive deps - we replace them with patched versions
 RUN cd /tmp && \
     npm pack glob@11.1.0 && \
     npm pack tar@7.5.8 && \
+    npm pack minimatch@10.2.4 && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/glob && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/tar && \
+    rm -rf /usr/local/lib/node_modules/npm/node_modules/minimatch && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob 2>/dev/null || true && \
     tar -xzf glob-11.1.0.tgz && \
     cp -r package /usr/local/lib/node_modules/npm/node_modules/glob && \
@@ -79,6 +90,9 @@ RUN cd /tmp && \
     rm -rf package && \
     tar -xzf tar-7.5.8.tgz && \
     mv package /usr/local/lib/node_modules/npm/node_modules/tar && \
+    rm -rf package && \
+    tar -xzf minimatch-10.2.4.tgz && \
+    mv package /usr/local/lib/node_modules/npm/node_modules/minimatch && \
     rm -rf /tmp/*
 
 # Install runtime dependencies only
@@ -126,4 +140,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Default command: Run Wrangler in development mode
 # Override with specific commands for production deployment
 CMD ["npx", "wrangler", "dev", "--ip", "0.0.0.0", "--port", "8787"]
-

@@ -61,6 +61,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - **tar CVE Fix** - Updated tar override from 7.5.7 → 7.5.8 to address CVE-2026-26960
 - **minimatch ReDoS** - Updated override from `^10.2.1` → `^10.2.4` and promoted to top-level override to fix GHSA-7r86-cg39-jmmj and GHSA-23c5-xmqv-rm74
+- **Docker minimatch CVE** - Patched npm CLI's bundled minimatch 10.2.2 → 10.2.4 in Dockerfile (CVE-2026-27904, CVE-2026-27903)
 - **CodeQL Workflow** - Removed deprecated `fail-on: error` and `wait-for-processing` inputs from `codeql.yml`
 
 ---
