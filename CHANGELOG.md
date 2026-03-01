@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+---
+
+## [3.4.1] - 2026-03-01
+
 ### Fixed
 
 - **Local Uploads Accessibility** - Fixed "No label associated with a form field" violation
@@ -754,6 +758,20 @@ Version 2.0.0 is a major release featuring **Job History tracking**, **AI Search
 
 ## Release Notes
 
+### Version 3.4.1 (2026-03-01)
+
+This patch release delivers **ESLint 10 migration**, **accessibility fixes**, **relaxed API rate limits**, **dependency updates**, and **security fixes** for the R2 Bucket Manager.
+
+**Key Changes:**
+
+- **ESLint 10 Migration:** Upgraded linting toolchain to ESLint 10 with strict checking
+- **Accessibility Fix:** Fixed "No label associated with a form field" violation in LocalUploadsToggle
+- **Relaxed Rate Limits:** Doubled all rate limit tiers (READ: 600, WRITE: 200, DELETE: 60)
+- **Security:** tar CVE fix (7.5.7 → 7.5.8), minimatch ReDoS fix (^10.2.4), CodeQL workflow cleanup
+- **Code Quality:** Fixed 9 ESLint 10 violations (no-useless-assignment, preserve-caught-error)
+- **Dependency Updates:** 8 packages updated including wrangler 4.65.0 → 4.69.0, react-dropzone 14.4.1 → 15.0.0
+- **CI/CD:** Removed Dependabot auto-merge workflow
+
 ### Version 3.4.0 (2026-02-11)
 
 This minor release brings **Local Uploads**, **Node.js 24 LTS Baseline**, **React 19 Compatibility Fixes**, **Lifecycle Rules Bug Fix**, and comprehensive **ESLint Disable Remediation** to the R2 Bucket Manager. Version 3.4.0 adds faster upload performance and modernizes the runtime baseline.
@@ -899,5 +917,5 @@ Initial production release with full R2 bucket management capabilities, enterpri
 
 - **GitHub Issues:** [Report bugs or request features](https://github.com/neverinfamous/R2-Manager-Worker/issues)
 - **GitHub Discussions:** [Ask questions and discuss](https://github.com/neverinfamous/R2-Manager-Worker/discussions)
-- **Release Article:** [v3.4.0 Release](https://adamic.tech/articles/r2-manager)
-- **Previous Release:** [v3.3.0 Release](https://adamic.tech/articles/r2-manager)
+- **Release Article:** [v3.4.1 Release](https://adamic.tech/articles/r2-manager)
+- **Previous Release:** [v3.4.0 Release](https://adamic.tech/articles/r2-manager)

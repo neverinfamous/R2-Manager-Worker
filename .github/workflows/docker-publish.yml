@@ -2,7 +2,8 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [main]
+    # NOTE: branches: [main] temporarily removed to prevent dual Docker builds during v3.4.1 release.
+    # Only tag pushes trigger Docker builds. Re-enable after release if desired.
     tags: ["v*"]
   pull_request:
     branches: [main]
