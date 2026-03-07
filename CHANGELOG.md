@@ -12,6 +12,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [3.4.2] - 2026-03-07
+
+### Security
+
+- **tar CVE Fix** - Updated tar override from 7.5.8 to 7.5.10 to fix reported vulnerabilities
+- **GitHub Actions** - Bumped `actions/upload-artifact` from v6 to v7 and `actions/download-artifact` from v7 to v8
+
+### Changed
+
+- **Dependency Updates** - Updated npm dependencies to latest versions
+  - `@cloudflare/workers-types`: 4.20260305.0 → 4.20260307.1
+  - `@types/node`: 25.3.3 → 25.3.5
+  - `brace-expansion`: 5.0.3 → 5.0.4
+  - `caniuse-lite`: 1.0.30001774 → 1.0.30001775
+  - `eslint`: 10.0.2 → 10.0.3
+  - `jose`: 6.1.3 → 6.2.0
+  - `lucide-react`: 0.575.0 → 0.577.0
+  - `wrangler`: 4.69.0 → 4.71.0
+
+---
+
 ## [3.4.1] - 2026-03-01
 
 ### Fixed

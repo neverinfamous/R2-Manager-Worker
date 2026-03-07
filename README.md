@@ -1,11 +1,11 @@
 # R2 Bucket Manager
 
-**Last Updated March 1, 2026**
+**Last Updated March 7, 2026**
 
 A modern web application for managing Cloudflare R2 buckets with enterprise-grade authentication via Cloudflare Access Zero Trust.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v3.4.1-green)
+![Version](https://img.shields.io/badge/version-v3.4.2-green)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
