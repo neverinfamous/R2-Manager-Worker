@@ -12,6 +12,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
+## [3.4.3] - 2026-03-07
+
+### CI/CD
+
+- **Docker Publishing** - Fixed conditionals in `docker-publish.yml` that prevented the Docker Hub README and Deployment Summary steps from executing on tag pushes
+
+---
+
 ## [3.4.2] - 2026-03-07
 
 ### Security
