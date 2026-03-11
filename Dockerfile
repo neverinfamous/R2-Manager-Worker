@@ -34,7 +34,7 @@ RUN cd /tmp && \
         cp -r package /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob; \
     fi && \
     rm -rf package && \
-    tar -xzf tar-7.5.10.tgz && \
+    tar -xzf tar-7.5.11.tgz && \
     mv package /usr/local/lib/node_modules/npm/node_modules/tar && \
     rm -rf package && \
     tar -xzf minimatch-10.2.4.tgz && \
@@ -88,7 +88,7 @@ RUN cd /tmp && \
         cp -r package /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob; \
     fi && \
     rm -rf package && \
-    tar -xzf tar-7.5.10.tgz && \
+    tar -xzf tar-7.5.11.tgz && \
     mv package /usr/local/lib/node_modules/npm/node_modules/tar && \
     rm -rf package && \
     tar -xzf minimatch-10.2.4.tgz && \
