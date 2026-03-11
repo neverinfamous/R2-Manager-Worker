@@ -17,12 +17,12 @@ RUN npm install -g npm@latest
 
 # Patch npm's own dependencies:
 # - glob@11.1.0: CVE-2025-64756
-# - tar@7.5.10: CVE-2026-23745, CVE-2026-23950, CVE-2026-24842, CVE-2026-26960
+# - tar@7.5.11: CVE-2026-23745, CVE-2026-23950, CVE-2026-24842, CVE-2026-26960
 # - minimatch@10.2.4: CVE-2026-27904, CVE-2026-27903 (ReDoS)
 # npm bundles vulnerable transitive deps - we replace them with patched versions
 RUN cd /tmp && \
     npm pack glob@11.1.0 && \
-    npm pack tar@7.5.10 && \
+    npm pack tar@7.5.11 && \
     npm pack minimatch@10.2.4 && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/glob && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/tar && \
@@ -34,7 +34,7 @@ RUN cd /tmp && \
         cp -r package /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob; \
     fi && \
     rm -rf package && \
-    tar -xzf tar-7.5.10.tgz && \
+    tar -xzf tar-7.5.11.tgz && \
     mv package /usr/local/lib/node_modules/npm/node_modules/tar && \
     rm -rf package && \
     tar -xzf minimatch-10.2.4.tgz && \
@@ -71,12 +71,12 @@ RUN npm install -g npm@latest
 
 # Patch npm's own dependencies:
 # - glob@11.1.0: CVE-2025-64756
-# - tar@7.5.10: CVE-2026-23745, CVE-2026-23950, CVE-2026-24842, CVE-2026-26960
+# - tar@7.5.11: CVE-2026-23745, CVE-2026-23950, CVE-2026-24842, CVE-2026-26960
 # - minimatch@10.2.4: CVE-2026-27904, CVE-2026-27903 (ReDoS)
 # npm bundles vulnerable transitive deps - we replace them with patched versions
 RUN cd /tmp && \
     npm pack glob@11.1.0 && \
-    npm pack tar@7.5.10 && \
+    npm pack tar@7.5.11 && \
     npm pack minimatch@10.2.4 && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/glob && \
     rm -rf /usr/local/lib/node_modules/npm/node_modules/tar && \
@@ -88,7 +88,7 @@ RUN cd /tmp && \
         cp -r package /usr/local/lib/node_modules/npm/node_modules/node-gyp/node_modules/glob; \
     fi && \
     rm -rf package && \
-    tar -xzf tar-7.5.10.tgz && \
+    tar -xzf tar-7.5.11.tgz && \
     mv package /usr/local/lib/node_modules/npm/node_modules/tar && \
     rm -rf package && \
     tar -xzf minimatch-10.2.4.tgz && \
@@ -97,8 +97,8 @@ RUN cd /tmp && \
 
 # Install runtime dependencies only
 # Security Notes:
-# - Application dependencies: glob@11.1.0, tar@7.5.10 (patched via package.json overrides)
-# - npm CLI dependencies: glob@11.1.0, tar@7.5.10 (manually patched in npm's installation)
+# - Application dependencies: glob@11.1.0, tar@7.5.11 (patched via package.json overrides)
+# - npm CLI dependencies: glob@11.1.0, tar@7.5.11 (manually patched in npm's installation)
 # - curl 8.17.0-r1 has CVE-2025-14819, CVE-2025-14524, CVE-2025-14017 (MEDIUM)
 #   Fix version 8.18.0-r0 not yet available in Alpine repos (upstream availability gap)
 # - busybox has CVE-2025-46394 & CVE-2024-58251 (LOW) with no fixes available yet

@@ -1,7 +1,7 @@
 {
   "name": "r2",
   "private": true,
-  "version": "3.4.3",
+  "version": "3.4.4",
   "type": "module",
   "engines": {
     "node": ">=24.0.0"
@@ -46,7 +46,7 @@
     "cross-spawn": "^7.0.5",
     "glob": "^11.1.0",
     "minimatch": "^10.2.4",
-    "tar": "7.5.10",
+    "tar": "7.5.11",
     "brace-expansion": "5.0.4",
     "caniuse-lite": "1.0.30001775",
     "eslint-plugin-react-hooks": {
