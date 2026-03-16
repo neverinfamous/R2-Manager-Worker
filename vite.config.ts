@@ -7,13 +7,17 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          // React core
-          "vendor-react": ["react", "react-dom"],
-          // Icons
-          "vendor-icons": ["lucide-react"],
-          // Utilities
-          "vendor-utils": ["jszip", "jose", "spark-md5", "react-dropzone"],
+        manualChunks(id) {
+          if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
+            return "vendor-react";
+          }
+          if (id.includes("node_modules/lucide-react/")) {
+            return "vendor-icons";
+          }
+          if (id.includes("node_modules/jszip/") || id.includes("node_modules/jose/") || id.includes("node_modules/spark-md5/") || id.includes("node_modules/react-dropzone/")) {
+            return "vendor-utils";
+          }
+          return undefined;
         },
       },
     },
