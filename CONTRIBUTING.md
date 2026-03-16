@@ -112,7 +112,7 @@ All files and directories use **kebab-case** (lowercase with dashes):
 ### TypeScript
 
 - **Strict mode** with no `any` types — the entire codebase is fully type-safe.
-- **No `eslint-disable`** — do not suppress linting rules. Exceptions are allowed only for external SDK deprecations where the linter genuinely misunderstands intent.
+- **No `eslint-disable`** — do not suppress linting rules to evade established type or formatting standards. Exceptions are allowed ONLY when necessary to deal with deprecations external to our code (e.g., SDK backward compatibility) or cases where the linter genuinely misunderstands intent (e.g., explicitly matching control characters like in `no-control-regex` exceptions).
 - **Formatting** is handled automatically by Prettier during the release workflow via `/bump-deploy` — no need to run it manually.
 
 ### Modularity
