@@ -1,14 +1,34 @@
 # Changelog
 
-**Last Updated:** March 10, 2026
-
 All notable changes to R2 Bucket Manager are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [Unreleased]
+## [Unreleased](https://github.com/neverinfamous/R2-Manager-Worker/compare/v3.5.0...HEAD)
+
+## [3.5.0](https://github.com/neverinfamous/R2-Manager-Worker/releases/tag/v3.5.0) - 2026-03-16
+
+### Security
+
+- Fixed multiple high severity vulnerabilities in `undici` by pinning exact patched version `7.24.4` via package.json overrides.
+
+### Performance
+
+- Migrated CSS transformer and minifier to `lightningcss` in Vite 8, accelerating application compile time from 29 seconds to 1.9 seconds.
+
+### Changed
+
+**Dependency Updates**
+
+- Bumped `@cloudflare/workers-types` to `4.20260316.1`
+- Bumped `@types/node` to `25.5.0`
+- Bumped `@vitejs/plugin-react` to `6.0.1`
+- Bumped `esbuild` to `0.27.4`
+- Bumped `vite` to `8.0.0`
+- Bumped `wrangler` to `4.74.0`
+- Added `lightningcss` to devDependencies for optimized build speeds
 
 ---
 
@@ -24,7 +44,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - `wrangler`: 4.71.0 → 4.72.0 (minor)
   - `tar` override: 7.5.10 → 7.5.11 (patch) — npm + Docker layers
   - GitHub Actions: `docker/setup-buildx-action` (v3 → v4), `docker/login-action` (v3 → v4), `docker/metadata-action` (v5 → v6), `docker/build-push-action` (v6 → v7)
-
 
 ## [3.4.3] - 2026-03-07
 

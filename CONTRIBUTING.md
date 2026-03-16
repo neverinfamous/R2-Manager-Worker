@@ -1,124 +1,125 @@
 # Contributing to R2-Manager-Worker
 
-First off, thank you for considering contributing to R2-Manager-Worker! It's people like you that make R2-Manager-Worker such a great tool.
+Thank you for your interest in contributing to R2-Manager-Worker! This guide covers everything you need to get started — from setting up your environment to understanding our code conventions and submitting a pull request.
 
-## Code of Conduct
+## Prerequisites
 
-This project and everyone participating in it is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code.
+- **Node.js 24+** (LTS) — required by `engines` in `package.json`
+- **Git** with SSH access configured
+- **Cloudflare Account** (Free tier works!) with `npx wrangler login` authenticated
+- **Docker** (optional, for container-based testing)
 
-## How Can I Contribute?
+## Getting Started
 
-### Reporting Bugs
+1. **Fork** the repository on GitHub
+2. **Clone** your fork locally:
 
-Before creating bug reports, please check the issue list as you might find out that you don't need to create one. When you are creating a bug report, please include as many details as possible:
-
-- **Use a clear and descriptive title**
-- **Describe the exact steps which reproduce the problem** in as many details as possible
-- **Provide specific examples to demonstrate the steps.** Include links to files or GitHub projects, or copy/pasteable snippets
-- **Describe the behavior you observed after following the steps** and point out what exactly is the problem with that behavior
-- **Explain which behavior you expected to see instead and why**
-- **Include screenshots and animated GIFs** if possible
-- **Include your environment** (OS, Node version, Browser, etc.)
-
-### Suggesting Enhancements
-
-Enhancement suggestions are tracked as GitHub issues. When creating an enhancement suggestion, please include:
-
-- **Use a clear and descriptive title**
-- **Provide a step-by-step description of the suggested enhancement** in as many details as possible
-- **Provide specific examples to demonstrate the steps**
-- **Describe the current behavior** and **the expected behavior**
-- **Explain why this enhancement would be useful**
-
-### Pull Requests
-
-- Follow the [TypeScript](#typescript-styleguide) and [CSS](#css-styleguide) styleguides
-- Include appropriate test cases for new features
-- Document new code based on the [Documentation Styleguide](#documentation-styleguide)
-- End all files with a newline
-
-## Development Setup
-
-### Prerequisites
-
-- Node.js 20+ or 25+
-- npm 10+
-
-### Local Development
-
-1. Fork the repository
-2. Clone your fork:
    ```bash
-   git clone https://github.com/YOUR-USERNAME/R2-Manager-Worker.git
+   git clone https://github.com/YOUR_USERNAME/R2-Manager-Worker.git
    cd R2-Manager-Worker
    ```
-3. Add the upstream repository:
-   ```bash
-   git remote add upstream https://github.com/neverinfamous/R2-Manager-Worker.git
-   ```
-4. Create a branch for your changes:
-   ```bash
-   git checkout -b fix/issue-name
-   ```
-5. Install dependencies:
+
+3. **Install** dependencies:
+
    ```bash
    npm install
    ```
 
-### Running the Development Server
+4. **Configure environment:**
 
-**Frontend:**
+   ```bash
+   cp .env.example .env
+   cp wrangler.toml.example wrangler.toml
+   ```
+
+   Edit both files with your settings. The `.env.development` file is automatically loaded by Vite when running `npm run dev` and automatically points to the local worker on port 8787. No manual switching between dev and production URLs required.
+
+5. **Build** the project:
+
+   ```bash
+   npm run build
+   ```
+
+6. **Run the quality gate** to confirm everything works:
+
+   ```bash
+   npm run check   # Runs ESLint + TypeScript strict-mode type checking
+   ```
+
+7. **Create a branch** for your changes:
+
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+## Development Workflow
+
+### Available Scripts
+
+| Script              | Purpose                                              |
+| ------------------- | ---------------------------------------------------- |
+| `npm run dev`       | Start frontend Vite dev server on port 5173          |
+| `npm run build`     | Build React app and typescript worker                |
+| `npm run check`     | **Quality gate** — lint + typecheck (run before PRs) |
+| `npm run lint`      | ESLint only                                          |
+| `npm run lint:fix`  | ESLint with auto-fix                                 |
+| `npm run typecheck` | TypeScript strict-mode type checking                 |
+
+### Running the App Locally (Two Terminal Windows Required)
+
+We use Vite for the frontend and Wrangler for the backend API.
+
+**Terminal 1: Frontend dev server (Vite)**
 
 ```bash
 npm run dev
-# Open http://localhost:5173
+# Opens http://localhost:5173
 ```
 
-**Worker (requires local .env with VITE_WORKER_API):**
+**Terminal 2: Worker dev server (Wrangler)**
 
 ```bash
-npx wrangler dev
-# Open http://localhost:8787
+npx wrangler dev --config wrangler.dev.toml --local
+# Opens http://localhost:8787
 ```
 
-### Building
+> **Note:** The local database mock operations return simulated success responses for UI testing. Files and folders are not actually stored. Local development is for UI/UX testing only. Authentication, rate-limiting, and CORS are automatically bypassed. For full functionality, deploy to Cloudflare Workers.
 
-```bash
-npm run build
+## Project Architecture
+
+```
+src/                      # Frontend source code (React 19)
+├── app.tsx              # Main UI component
+├── filegrid.tsx         # File browser with grid/list views
+└── services/            # API client and auth utilities
+worker/                   # Backend API (Cloudflare Workers)
+├── index.ts             # Worker runtime & API endpoints
+├── routes/              # API route handlers
+└── utils/               # Helper utilities
+wrangler.toml.example    # Wrangler configuration template
+.env.example             # Environment variables template
 ```
 
-### Linting
+## Code Conventions
 
-```bash
-npm run lint
-```
+### File Naming
 
-## Styleguides
+All files and directories use **kebab-case** (lowercase with dashes):
 
-### TypeScript Styleguide
+- ✅ `file-grid.tsx`, `api-service.ts`, `job-history/`
+- ❌ `FileGrid.tsx`, `apiService.ts`
 
-- Use semicolons
-- Use 2-space indentation
-- Use `const` by default, `let` only when reassignment is necessary
-- Use meaningful variable names (avoid single letters except for loops)
-- Use type annotations for function parameters and return types
-- Use interfaces over types for object shapes
-- Comment complex logic and non-obvious code
+### TypeScript
 
-Example:
+- **Strict mode** with no `any` types — the entire codebase is fully type-safe.
+- **No `eslint-disable`** — do not suppress linting rules to evade established type or formatting standards. Exceptions are allowed ONLY when necessary to deal with deprecations external to our code (e.g., SDK backward compatibility) or cases where the linter genuinely misunderstands intent (e.g., explicitly matching control characters like in `no-control-regex` exceptions).
+- **Formatting** is handled automatically by Prettier during the release workflow via `/bump-deploy` — no need to run it manually.
 
-```typescript
-interface User {
-  email: string;
-  id: string;
-}
+### Modularity
 
-const getUser = async (id: string): Promise<User> => {
-  // Fetch user from API
-  const response = await fetch(`/api/users/${id}`);
-  return response.json();
-};
-```
+- **Source files stay under ~500 lines.** If a file is approaching that limit, split it proactively.
+- **Split pattern:** `foo.ts` → `foo/` directory with sub-modules + `foo/index.ts` barrel re-export.
+- **Group by functional cohesion** (e.g., CRUD vs. analysis, basic vs. advanced), not arbitrary line counts.
 
 ### CSS Styleguide
 
@@ -126,30 +127,32 @@ const getUser = async (id: string): Promise<User> => {
 - Use meaningful class names (BEM notation recommended)
 - Mobile-first approach for responsive design
 - Use CSS custom properties for colors and spacing
-- Group related properties together
 
-Example:
+## Error Handling & Logging
 
-```css
-.file-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
-}
+Use the centralized logger with structured payloads. Include: `module`, `operation`, `entityId`, `context`, and `stack` (for errors). Severity levels: `error`, `warning`, `info`.
 
-.file-grid__item {
-  padding: 1rem;
-  border: 1px solid var(--color-border);
+Example structured error pattern for APIs:
+
+```json
+{
+  "success": false,
+  "error": "Descriptive message with context",
+  "code": "R2_UPLOAD_FAILED"
 }
 ```
 
-### Documentation Styleguide
+## Changelog
 
-- Use Markdown
-- Reference functions and files with backticks (`` `functionName` ``)
-- Use clear headings and sections
-- Include code examples for complex features
-- Keep language clear and concise
+Log all changes in **[`UNRELEASED.md`](UNRELEASED.md)** at the project root using [Keep a Changelog](https://keepachangelog.com/) format. Use the appropriate header:
+
+- `### Added` — new features or tools
+- `### Changed` — changes to existing functionality
+- `### Fixed` — bug fixes
+- `### Removed` — removed features
+- `### Security` — vulnerability fixes
+
+> **Do not edit `CHANGELOG.md` directly** — it is assembled automatically during the release process.
 
 ## Commit Messages
 
@@ -167,57 +170,43 @@ Example:
   - `test:` - Adding or updating tests
   - `chore:` - Build process, dependencies, or tooling
 
-Example:
+## Submitting a Pull Request
 
-```
-feat: add file transfer progress tracking
+1. **Ensure all checks pass:**
 
-- Implement onProgress callback in API service
-- Add progress bar to UI
-- Update transfer state management
-
-Fixes #123
-```
-
-## Pull Request Process
-
-1. Update the README.md with details of changes to the interface, if applicable
-2. Update the worker/schema.sql if there are database changes
-3. Ensure all tests pass and linting shows no errors:
    ```bash
-   npm run lint
-   ```
-4. Request review from maintainers
-5. Address any review comments
-6. Ensure your branch is up to date with `main`:
-   ```bash
-   git fetch upstream
-   git rebase upstream/main
-   git push --force-with-lease
+   npm run check   # Lint + typecheck
    ```
 
-## Additional Notes
+2. **Update documentation** — if your change affects user-facing behavior, update the README, help resources, or Wiki as appropriate
+3. **Update `UNRELEASED.md`** with your change
+4. **Commit** with a clear, descriptive message in conventional commit format. Reference issues when applicable (`Fixes #123`). Keep commits atomic — one logical change per commit.
+5. **Push** to your fork and **open a Pull Request**
 
-### Issue and Pull Request Labels
+### What CI Will Check
 
-- `bug` - Something isn't working
-- `enhancement` - New feature or request
-- `documentation` - Improvements or additions to documentation
-- `good first issue` - Good for newcomers
-- `help wanted` - Extra attention is needed
-- `question` - Further information is requested
-- `wontfix` - This will not be worked on
+When you open a PR, the following checks run automatically:
 
-### Recognition
+| Workflow           | What It Does                                 |
+| ------------------ | -------------------------------------------- |
+| **Lint & Compile** | ESLint, TypeScript strict-mode, Vite Build   |
+| **CodeQL**         | Static analysis for security vulnerabilities |
+| **Docker Scout**   | Container image vulnerability checks         |
 
-Contributors will be recognized in:
+All checks must pass before merge. Security steps **hard-fail on fixable issues** — this is intentional.
 
-- Pull Request merge messages
-- Release notes
-- Project README (for significant contributions)
+## Security
+
+If you discover a security vulnerability, **do not** open a public issue. Please follow our [Security Policy](SECURITY.md) and report it to **admin@adamic.tech**.
+
+When contributing code, follow these security practices:
+
+- **No secrets in code** — use environment variables (`.env` files are gitignored) or Cloudflare Secrets mapping.
+- **Typed error classes** with descriptive messages — don't expose internal details like server stack traces to end users over the frontend.
 
 ## Questions?
 
-Feel free to open an issue with the `question` label or reach out to the maintainers.
+If you have questions or want to discuss a potential contribution, feel free to:
 
-Thank you for contributing! 🎉
+- Open an [issue](https://github.com/neverinfamous/R2-Manager-Worker/issues) for discussion
+- Email **admin@adamic.tech**

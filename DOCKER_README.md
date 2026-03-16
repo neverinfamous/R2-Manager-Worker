@@ -1,7 +1,5 @@
 # R2 Bucket Manager - Docker
 
-**Last Updated March 10, 2026**
-
 A modern web application for managing Cloudflare R2 buckets with enterprise-grade authentication via Cloudflare Access Zero Trust.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
@@ -21,38 +19,44 @@ R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to man
 
 ## ✨ Features
 
-- 🎯 **Custom Metadata** - User-defined, searchable bucket tags
-- 🚀 **S3 Import** `BETA` - Migrate data from Amazon, Google, and All S3 Compatible buckets to R2 using Cloudflare's Super Slurper API.
-- 📊 **Metrics Dashboard** - Comprehensive R2 analytics with tabbed interface (Overview | Storage), bucket-level filtering, storage trends, object count tracking, and Class A/B operation breakdowns powered by Cloudflare's GraphQL Analytics API
-- 🏥 **Health Dashboard** - At-a-glance operational status with health score, job monitoring, and bucket organization metrics
-- 🪝 **WebHooks** - 15 event types for bucket operations (file uploads, moves, copies, renames, folder lifecycle, bucket operations, job status)
-- 📋 **Job History & Audit Logging** - Complete audit trail for all operations (bulk and individual) with filterable job list and event timeline
-- 🤖 **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search for semantic search, natural language queries, and RAG capabilities. Supports PDF, DOCX, and 20+ file formats with automatic indexing and real-time status monitoring.
-- 🔎 **Cross-Bucket Search** - Search for files across all buckets with advanced filtering
-- 🪣 **Bucket Management** - Create, rename, and delete R2 buckets (with bulk delete support)
-- 📦 **Multi-Bucket Download** - Select and download multiple buckets as a single ZIP archive with "Select All" button
-- 🧭 **Bucket Filtering** - Filter buckets by name, size, and creation date with preset and custom ranges
-- ⏳ **Object Lifecycle Management** - Configure automated expiration and storage class transitions for cost optimization (33% savings with Infrequent Access)
-- ⚡ **Local Uploads** `BETA` - Enable per-bucket local uploads for up to 75% faster upload performance by writing data to storage near the client
-- 📁 **Folder Management** - Create, rename, copy, move, and delete folders with hierarchical navigation
-- 📄 **File Management** - Rename files via right-click context menu with validation
-- 🔍 **Smart Filtering** - Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)
-- 🎯 **Advanced Filtering** - Filter files by extension, size ranges, and upload dates with preset and custom options
-- 📤 **Smart Uploads** - Chunked uploads with automatic retry and integrity verification (10MB chunks, up to 500MB files)\*
-- ✓ **Upload Verification** - MD5 checksum verification ensures uploaded files match stored files exactly
-- 📥 **Bulk Downloads** - Download multiple files as ZIP archives
-- 🔗 **Shareable Links** - Generate signed URLs to share files securely
-- 🔄 **Advanced File Operations** - Move and copy files/folders between buckets and to specific folders within buckets
-- 🗑️ **Bulk Bucket Delete** - Select and force delete multiple buckets at once with progress tracking
-- 🧭 **Breadcrumb Navigation** - Navigate through folder hierarchies with ease
-- 🔐 **Enterprise Auth** - GitHub SSO via Cloudflare Access Zero Trust
-- 🛡️ **Rate Limiting** - Tiered API rate limits (600/min reads, 200/min writes, 60/min deletes) with automatic enforcement
-- ⚡ **Edge Performance** - Deployed on Cloudflare's global network with intelligent client-side caching (5-min TTL)
-- 🔄 **Smart Retry Logic** - Automatic exponential backoff for rate limits and transient errors (429/503/504)
-- 🎨 **Modern UI** - Beautiful, responsive interface built with React 19
-- 🌓 **Light/Dark Mode** - Auto-detects system preference with manual toggle (System → Light → Dark)
+| Feature                            | Description                                                                                                                                                                                                             |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 🎯 **Custom Metadata**             | User-defined, searchable bucket tags                                                                                                                                                                                    |
+| 🚀 **S3 Import** `BETA`            | Migrate data from Amazon, Google, and All S3 Compatible buckets to R2 using Cloudflare's Super Slurper API.                                                                                                             |
+| 📊 **Metrics Dashboard**           | Comprehensive R2 analytics with tabbed interface (Overview \| Storage), bucket-level filtering, storage trends, object count tracking, and Class A/B operation breakdowns powered by Cloudflare's GraphQL Analytics API |
+| 🏥 **Health Dashboard**            | At-a-glance operational status with health score, job monitoring, and bucket organization metrics                                                                                                                       |
+| 🪝 **WebHooks**                    | 15 event types for bucket operations (file uploads, moves, copies, renames, folder lifecycle, bucket operations, job status)                                                                                            |
+| 📋 **Job History & Audit Logging** | Complete audit trail for all operations (bulk and individual) with filterable job list and event timeline                                                                                                               |
+| 🤖 **AI Search Integration**       | Connect R2 buckets to Cloudflare AI Search for semantic search, natural language queries, and RAG capabilities. Supports PDF, DOCX, and 20+ file formats with automatic indexing and real-time status monitoring.       |
+| 🔎 **Cross-Bucket Search**         | Search for files across all buckets with advanced filtering                                                                                                                                                             |
+| 🪣 **Bucket Management**           | Create, rename, and delete R2 buckets (with bulk delete support)                                                                                                                                                        |
+| 📦 **Multi-Bucket Download**       | Select and download multiple buckets as a single ZIP archive with "Select All" button                                                                                                                                   |
+| 🧭 **Bucket Filtering**            | Filter buckets by name, size, and creation date with preset and custom ranges                                                                                                                                           |
+| ⏳ **Object Lifecycle Management** | Configure automated expiration and storage class transitions for cost optimization (33% savings with Infrequent Access)                                                                                                 |
+| ⚡ **Local Uploads**               | Enable per-bucket local uploads for up to 75% faster upload performance by writing data to storage near the client                                                                                                      |
+| 📁 **Folder Management**           | Create, rename, copy, move, and delete folders with hierarchical navigation                                                                                                                                             |
+| 📄 **File Management**             | Rename files via right-click context menu with validation                                                                                                                                                               |
+| 🔍 **Smart Filtering**             | Real-time client-side filtering by filename/folder name with type filters (All/Files/Folders)                                                                                                                           |
+| 🎯 **Advanced Filtering**          | Filter files by extension, size ranges, and upload dates with preset and custom options                                                                                                                                 |
+| 📤 **Smart Uploads**               | Chunked uploads with automatic retry and integrity verification (10MB chunks, up to 500MB files)\*                                                                                                                      |
+| ✓ **Upload Verification**          | MD5 checksum verification ensures uploaded files match stored files exactly                                                                                                                                             |
+| 📥 **Bulk Downloads**              | Download multiple files as ZIP archives                                                                                                                                                                                 |
+| 🔗 **Shareable Links**             | Generate signed URLs to share files securely                                                                                                                                                                            |
+| 🔄 **Advanced File Operations**    | Move and copy files/folders between buckets and to specific folders within buckets                                                                                                                                      |
+| 🗑️ **Bulk Bucket Delete**          | Select and force delete multiple buckets at once with progress tracking                                                                                                                                                 |
+| 🧭 **Breadcrumb Navigation**       | Navigate through folder hierarchies with ease                                                                                                                                                                           |
+| 🔐 **Enterprise Auth**             | GitHub SSO via Cloudflare Access Zero Trust                                                                                                                                                                             |
+| 🛡️ **Rate Limiting**               | Tiered API rate limits (600/min reads, 200/min writes, 60/min deletes) with automatic enforcement                                                                                                                       |
+| ⚡ **Edge Performance**            | Deployed on Cloudflare's global network with intelligent client-side caching (5-min TTL)                                                                                                                                |
+| 🔄 **Smart Retry Logic**           | Automatic exponential backoff for rate limits and transient errors (429/503/504)                                                                                                                                        |
+| 🎨 **Modern UI**                   | Beautiful, responsive interface built with React 19                                                                                                                                                                     |
+| 🌓 **Light/Dark Mode**             | Auto-detects system preference with manual toggle (System → Light → Dark)                                                                                                                                               |
 
-**\*Upload Size Limits:** Plan-based (Free: 100MB, Pro: 100MB, Business: 200MB, Enterprise: 500MB)
+**Upload Size Limits:** This application supports uploads up to 500MB per file. However, **Cloudflare enforces plan-based limits**:
+
+- **Free/Pro Plans:** 100MB maximum per file
+- **Business Plan:** 200MB maximum per file
+- **Enterprise Plan:** 500MB maximum per file
 
 ### Supported File Types
 
