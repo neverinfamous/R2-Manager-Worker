@@ -56,14 +56,14 @@ Thank you for your interest in contributing to R2-Manager-Worker! This guide cov
 
 ### Available Scripts
 
-| Script                | Purpose                                          |
-| --------------------- | ------------------------------------------------ |
-| `npm run dev`         | Start frontend Vite dev server on port 5173      |
-| `npm run build`       | Build React app and typescript worker            |
-| `npm run check`       | **Quality gate** — lint + typecheck (run before PRs) |
-| `npm run lint`        | ESLint only                                      |
-| `npm run lint:fix`    | ESLint with auto-fix                             |
-| `npm run typecheck`   | TypeScript strict-mode type checking             |
+| Script              | Purpose                                              |
+| ------------------- | ---------------------------------------------------- |
+| `npm run dev`       | Start frontend Vite dev server on port 5173          |
+| `npm run build`     | Build React app and typescript worker                |
+| `npm run check`     | **Quality gate** — lint + typecheck (run before PRs) |
+| `npm run lint`      | ESLint only                                          |
+| `npm run lint:fix`  | ESLint with auto-fix                                 |
+| `npm run typecheck` | TypeScript strict-mode type checking                 |
 
 ### Running the App Locally (Two Terminal Windows Required)
 
@@ -133,6 +133,7 @@ All files and directories use **kebab-case** (lowercase with dashes):
 Use the centralized logger with structured payloads. Include: `module`, `operation`, `entityId`, `context`, and `stack` (for errors). Severity levels: `error`, `warning`, `info`.
 
 Example structured error pattern for APIs:
+
 ```json
 {
   "success": false,
@@ -186,11 +187,11 @@ Log all changes in **[`UNRELEASED.md`](UNRELEASED.md)** at the project root usin
 
 When you open a PR, the following checks run automatically:
 
-| Workflow        | What It Does                                       |
-| --------------- | -------------------------------------------------- |
-| **Lint & Compile**| ESLint, TypeScript strict-mode, Vite Build        |
-| **CodeQL**      | Static analysis for security vulnerabilities       |
-| **Docker Scout**| Container image vulnerability checks               |
+| Workflow           | What It Does                                 |
+| ------------------ | -------------------------------------------- |
+| **Lint & Compile** | ESLint, TypeScript strict-mode, Vite Build   |
+| **CodeQL**         | Static analysis for security vulnerabilities |
+| **Docker Scout**   | Container image vulnerability checks         |
 
 All checks must pass before merge. Security steps **hard-fail on fixable issues** — this is intentional.
 

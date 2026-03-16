@@ -12,13 +12,21 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("node_modules/react/") || id.includes("node_modules/react-dom/")) {
+          if (
+            id.includes("node_modules/react/") ||
+            id.includes("node_modules/react-dom/")
+          ) {
             return "vendor-react";
           }
           if (id.includes("node_modules/lucide-react/")) {
             return "vendor-icons";
           }
-          if (id.includes("node_modules/jszip/") || id.includes("node_modules/jose/") || id.includes("node_modules/spark-md5/") || id.includes("node_modules/react-dropzone/")) {
+          if (
+            id.includes("node_modules/jszip/") ||
+            id.includes("node_modules/jose/") ||
+            id.includes("node_modules/spark-md5/") ||
+            id.includes("node_modules/react-dropzone/")
+          ) {
             return "vendor-utils";
           }
           return undefined;
