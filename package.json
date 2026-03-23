@@ -33,7 +33,7 @@
     "@types/spark-md5": "^3.0.5",
     "@vitejs/plugin-react": "^6.0.1",
     "esbuild": "^0.27.4",
-    "eslint": "^10.0.3",
+    "eslint": "^10.1.0",
     "eslint-plugin-react-hooks": "7.0.1",
     "eslint-plugin-react-refresh": "^0.5.1",
     "globals": "^17.3.0",
