@@ -67,7 +67,7 @@ export function useFileFilters({
   files,
   folders,
 }: UseFileFiltersParams): UseFileFiltersReturn {
-  const [filterText, setFilterText] = useState<string>("");
+  const [filterText, setFilterText] = useState("");
   const [filterType, setFilterType] = useState<"all" | "files" | "folders">(
     "all",
   );

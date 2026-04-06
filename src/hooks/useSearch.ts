@@ -41,7 +41,7 @@ const INITIAL_FILTERS: SearchFilters = {
 };
 
 export function useSearch(): UseSearchReturn {
-  const [filters, setFilters] = useState<SearchFilters>(INITIAL_FILTERS);
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [results, setResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);

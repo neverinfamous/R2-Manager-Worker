@@ -21,8 +21,8 @@ export function SizeFilter({
 }: SizeFilterProps): JSX.Element {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const [customMin, setCustomMin] = useState<string>("");
-  const [customMax, setCustomMax] = useState<string>("");
+  const [customMin, setCustomMin] = useState("");
+  const [customMax, setCustomMax] = useState("");
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent): void => {

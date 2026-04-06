@@ -95,9 +95,9 @@ export function FileGrid({
 }: FileGridProps): JSX.Element {
   const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
   const [selectedFolders, setSelectedFolders] = useState<string[]>([]);
-  const [currentPath, setCurrentPath] = useState<string>("");
-  const [error, setError] = useState<string>("");
-  const [infoMessage, setInfoMessage] = useState<string>("");
+  const [currentPath, setCurrentPath] = useState("");
+  const [error, setError] = useState("");
+  const [infoMessage, setInfoMessage] = useState("");
   const [downloadProgress, setDownloadProgress] =
     useState<DownloadProgress | null>(null);
   const [paginatedFiles, setPaginatedFiles] = useState<PaginatedFiles>({
@@ -133,7 +133,7 @@ export function FileGrid({
     progress: number;
   } | null>(null);
   const [isTransferring, setIsTransferring] = useState(false);
-  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [failedImages, setFailedImages] = useState(new Set());
   const [copyingUrl, setCopyingUrl] = useState<string | null>(null);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
@@ -142,7 +142,7 @@ export function FileGrid({
   const bucketButtonRef = useRef<HTMLButtonElement>(null);
   const lastSelectedRef = useRef<string | null>(null);
   const loadingRef = useRef<LoadingState>({ isLoading: false });
-  const mountedRef = useRef<boolean>(true);
+  const mountedRef = useRef(true);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingTriggerRef = useRef<HTMLDivElement>(null);
   const debounceTimerRef = useRef<number | undefined>(undefined);

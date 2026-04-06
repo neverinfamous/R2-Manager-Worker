@@ -129,12 +129,12 @@ export default function BucketManager(): JSX.Element {
   const [selectedBucket, setSelectedBucket] = useState<string | null>(null);
   const [newBucketName, setNewBucketName] = useState("");
   const [isCreatingBucket, setIsCreatingBucket] = useState(false);
-  const [error, setError] = useState<string>("");
+  const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
   const [rejectedFiles, setRejectedFiles] = useState<RejectedFile[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [currentPath, setCurrentPath] = useState<string>("");
+  const [currentPath, setCurrentPath] = useState("");
   const [deleteConfirmState, setDeleteConfirmState] = useState<{
     bucketNames: string[];
     totalFiles: number | null;

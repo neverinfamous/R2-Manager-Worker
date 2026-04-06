@@ -134,7 +134,7 @@ export function MetricsDashboard({
   const [activeTab, setActiveTab] = useState<"overview" | "storage">(
     "overview",
   );
-  const [bucketFilter, setBucketFilter] = useState<string>("");
+  const [bucketFilter, setBucketFilter] = useState("");
 
   const loadMetrics = useCallback(
     async (skipCache?: boolean) => {
