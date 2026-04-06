@@ -133,7 +133,9 @@ export function FileGrid({
     progress: number;
   } | null>(null);
   const [isTransferring, setIsTransferring] = useState(false);
-  const [failedImages, setFailedImages] = useState(new Set());
+  const [failedImages, setFailedImages] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [copyingUrl, setCopyingUrl] = useState<string | null>(null);
   const [copiedUrl, setCopiedUrl] = useState<string | null>(null);
 
