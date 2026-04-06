@@ -31,7 +31,9 @@ export function SearchResultsTable({
   onRefresh,
   onNavigateToBucket,
 }: SearchResultsTableProps): JSX.Element {
-  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(
+    () => new Set(),
+  );
   const [transferModalState, setTransferModalState] = useState<{
     show: boolean;
     mode: "move" | "copy";

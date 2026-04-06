@@ -41,7 +41,7 @@ interface UseBucketFiltersReturn {
 export function useBucketFilters({
   buckets,
 }: UseBucketFiltersParams): UseBucketFiltersReturn {
-  const [filterText, setFilterText] = useState<string>("");
+  const [filterText, setFilterText] = useState("");
 
   const [sizeFilter, setSizeFilter] = useState<SizeFilterType>({
     min: null,

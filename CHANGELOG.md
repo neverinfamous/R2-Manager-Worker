@@ -6,7 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
-## [Unreleased](https://github.com/neverinfamous/R2-Manager-Worker/compare/v3.5.0...HEAD)
+## [Unreleased](https://github.com/neverinfamous/R2-Manager-Worker/compare/v3.5.1...HEAD)
+
+## [3.5.1](https://github.com/neverinfamous/R2-Manager-Worker/releases/tag/v3.5.1) - 2026-04-06
+
+### Security
+
+- Added Dockerfile layout-agnostic patching for `picomatch` to fix Method Injection vulnerability
+- Pinned `flatted` transitive dependency to fix Prototype Pollution vulnerability
+- Updated `brace-expansion` override to address zero-step sequence hang issue
+
+### Changed
+
+- Bumped `esbuild` to 0.28.0
+- Bumped `lucide-react` to 1.7.0
+- Bumped `typescript` to 6.0.2
+- Bumped `@cloudflare/workers-types` to 4.20260405.1
+- Various minor and patch dependency updates via npm update
 
 ## [3.5.0](https://github.com/neverinfamous/R2-Manager-Worker/releases/tag/v3.5.0) - 2026-03-16
 
@@ -14,11 +30,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Fixed multiple high severity vulnerabilities in `undici` by pinning exact patched version `7.24.4` via package.json overrides.
 
-### Performance
+### Changed
 
 - Migrated CSS transformer and minifier to `lightningcss` in Vite 8, accelerating application compile time from 29 seconds to 1.9 seconds.
-
-### Changed
 
 **Dependency Updates**
 
@@ -47,7 +61,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [3.4.3] - 2026-03-07
 
-### CI/CD
+### Fixed
 
 - **Docker Publishing** - Fixed conditionals in `docker-publish.yml` that prevented the Docker Hub README and Deployment Summary steps from executing on tag pushes
 
@@ -113,11 +127,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - `wrangler`: 4.65.0 → 4.69.0
   - `react-dropzone`: 14.4.1 → 15.0.0 (major version; only breaking change is `isDragReject` behavior, which this project does not use)
 
-### CI/CD
-
-- **Removed Dependabot Auto-Merge Workflow**: Deleted `dependabot-auto-merge.yml` to prevent automatic merging of dependency PRs
-  - Dependabot will still open PRs for visibility into available updates
-  - Dependencies are now updated manually in batched local sessions to avoid unnecessary Docker deployments
+- Deleted `dependabot-auto-merge.yml` to prevent automatic merging of dependency PRs, prioritizing batched manual updates to avoid unnecessary Docker deployments.
 
 ### Security
 
@@ -291,9 +301,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
   - Vite auto-loads development config during `npm run dev`
   - No manual commenting/uncommenting of `VITE_WORKER_API` required
 
-### Documentation
-
-- **Added** [Upgrade Guide](Upgrade-Guide) to wiki - Comprehensive documentation for the automated in-app upgrade system covering all 4 schema migrations
+- Added [Upgrade Guide](Upgrade-Guide) to wiki - Comprehensive documentation for the automated in-app upgrade system covering all 4 schema migrations
 
 ### Fixed
 
@@ -408,10 +416,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [3.0.0] - 2025-12-08
 
-### 🎉 Major Release Highlights
-
-Version 3.0.0 brings **Metrics Dashboard**, **Webhooks**, **S3 Import**, **automated database migrations**, **audit logging for individual actions**, and **centralized logging**. This major release adds powerful monitoring, integration, and migration capabilities.
-
 ### Added
 
 - **Bucket Item Count** - Display the number of files/objects in each bucket
@@ -520,10 +524,6 @@ Version 3.0.0 brings **Metrics Dashboard**, **Webhooks**, **S3 Import**, **autom
 
 ## [2.0.0] - 2025-11-27
 
-### 🎉 Major Release Highlights
-
-Version 2.0.0 is a major release featuring **Job History tracking**, **AI Search integration**, **API rate limiting**, **upload integrity verification**, and **strict TypeScript compliance**. This release represents a significant evolution of the R2 Bucket Manager with enterprise-grade features.
-
 ### Added
 
 - **Job History Tracking** - Complete audit trail for bulk operations
@@ -618,33 +618,6 @@ Version 2.0.0 is a major release featuring **Job History tracking**, **AI Search
   - Updated wrangler.toml.example with both settings
   - Now `*.workers.dev` subdomain remains enabled after deployments
 
-### Technical Details
-
-- **Rate Limiting Implementation:**
-  - New utility module: `worker/utils/ratelimit.ts` (154 lines)
-  - New rate limit bindings in wrangler.toml (RATE_LIMITER_READ, RATE_LIMITER_WRITE, RATE_LIMITER_DELETE)
-  - Updated TypeScript types with RateLimit and RateLimitResult interfaces
-  - Integrated rate limiting check in worker/index.ts after authentication
-  - Rate limit check executes before route handling with 429 response on violation
-  - Automatic classification: GET → READ, POST/PATCH → WRITE, DELETE → DELETE
-  - ~150 lines of new code for rate limiting logic
-  - Requires Wrangler 4.36.0 or later
-  - Requires Cloudflare Workers paid plan
-
-- **Multi-Bucket Download Implementation:**
-  - New API method: `downloadMultipleBuckets()` in `src/services/api.ts`
-  - New worker endpoint: `POST /api/files/download-buckets-zip` in `worker/routes/files.ts`
-  - Uses JSZip to create nested folder structure (bucket/file.ext)
-  - Parallel file fetching from multiple buckets
-  - Frontend state management with progress tracking
-  - ~200 lines of new code across 3 files
-
-- **UI Enhancements:**
-  - Green "Select All" button positioned on left side of toolbar
-  - Blue "Download Selected" button between "Clear Selection" and "Delete Selected"
-  - Toolbar shows/hides buttons based on selection state
-  - Visual spacing improvements (3px between checkbox and bucket name)
-
 ---
 
 ## [1.2.0] - 2025-10-27
@@ -713,31 +686,6 @@ Version 2.0.0 is a major release featuring **Job History tracking**, **AI Search
   - Improved code reusability and testability with custom hooks
   - All functionality preserved with zero regressions
 
-### Technical Details
-
-- **New Backend Components:**
-  - `worker/routes/search.ts` (200 lines) - Parallel cross-bucket search API endpoint
-  - Search endpoint: `GET /api/search` with query params for filters
-
-- **New Frontend Components:**
-  - `src/components/search/CrossBucketSearch.tsx` (207 lines) - Main search interface
-  - `src/components/search/SearchResultsTable.tsx` (393 lines) - Results table with actions
-  - `src/hooks/useSearch.ts` (217 lines) - Search state management with debouncing
-  - `src/types/search.ts` (40 lines) - Type definitions for search functionality
-  - `src/styles/search.css` (383 lines) - Complete search component styling
-
-- **Modified Files:**
-  - `worker/index.ts` - Integrated search routes
-  - `src/services/api.ts` - Added `searchAcrossBuckets()` method
-  - `src/app.tsx` - Integrated search component above bucket grid
-  - `eslint.config.js` - Added `.wrangler` to ignores
-
-- **Total New Code:** ~1,440 lines across 6 new files
-- **TypeScript Compilation:** Clean (0 errors)
-- **ESLint:** Clean (0 errors, 0 warnings)
-- **Bundle Size Impact:** +0.1 kB gzipped (366.23 kB → 366.33 kB)
-- **Browser Testing:** All features verified working in Chrome/Edge
-
 ---
 
 ## [1.0.1] - 2025-10-26
@@ -759,7 +707,7 @@ Version 2.0.0 is a major release featuring **Job History tracking**, **AI Search
 - Updated Development Guide wiki with accurate setup steps
 - Updated `wrangler.toml.example` to clarify production vs development usage
 
-### Documentation
+### Added
 
 - Added comprehensive local development section to README
 - Updated Development Guide wiki with troubleshooting steps
@@ -790,195 +738,3 @@ Version 2.0.0 is a major release featuring **Job History tracking**, **AI Search
   - GitHub SSO via Cloudflare Access (Zero Trust)
   - Responsive design for mobile and desktop
   - Production deployment on Cloudflare Workers
-
-### Tech Stack
-
-| Component  | Technology         | Version       |
-| ---------- | ------------------ | ------------- |
-| Frontend   | React              | 19.2.0        |
-| Build Tool | Vite               | 7.1.11        |
-| Language   | TypeScript         | 5.9.3         |
-| Backend    | Cloudflare Workers | Runtime API   |
-| Storage    | Cloudflare R2      | S3-compatible |
-| Auth       | Cloudflare Access  | Zero Trust    |
-
-### Documentation
-
-- Comprehensive README with quick start guide
-- GitHub Wiki with complete documentation:
-  - Installation & Setup Guide
-  - API Reference
-  - Configuration Reference
-  - Development Guide
-  - Authentication & Security
-  - Troubleshooting
-  - FAQ
-- Docker deployment guide
-- Contributing guidelines
-- Security policy
-
----
-
-## Release Notes
-
-### Version 3.4.1 (2026-03-01)
-
-This patch release delivers **ESLint 10 migration**, **accessibility fixes**, **relaxed API rate limits**, **dependency updates**, and **security fixes** for the R2 Bucket Manager.
-
-**Key Changes:**
-
-- **ESLint 10 Migration:** Upgraded linting toolchain to ESLint 10 with strict checking
-- **Accessibility Fix:** Fixed "No label associated with a form field" violation in LocalUploadsToggle
-- **Relaxed Rate Limits:** Doubled all rate limit tiers (READ: 600, WRITE: 200, DELETE: 60)
-- **Security:** tar CVE fix (7.5.7 → 7.5.8), minimatch ReDoS fix (^10.2.4), CodeQL workflow cleanup
-- **Code Quality:** Fixed 9 ESLint 10 violations (no-useless-assignment, preserve-caught-error)
-- **Dependency Updates:** 8 packages updated including wrangler 4.65.0 → 4.69.0, react-dropzone 14.4.1 → 15.0.0
-- **CI/CD:** Removed Dependabot auto-merge workflow
-
-### Version 3.4.0 (2026-02-11)
-
-This minor release brings **Local Uploads**, **Node.js 24 LTS Baseline**, **React 19 Compatibility Fixes**, **Lifecycle Rules Bug Fix**, and comprehensive **ESLint Disable Remediation** to the R2 Bucket Manager. Version 3.4.0 adds faster upload performance and modernizes the runtime baseline.
-
-**Key Features:**
-
-- **Local Uploads Toggle (BETA):** Enable per-bucket local uploads for up to 75% faster upload performance
-  - Inline toggle in list and grid bucket views
-  - Optimistic UI updates with loading and error states
-  - New backend routes and API methods
-- **Node.js 24 LTS Baseline:** Upgraded from Node 20 to Node 24 across all configurations
-- **Security:** Fixed HIGH severity tar CVEs (CVE-2026-23745, CVE-2026-23950)
-- **Bug Fixes:** Fixed lifecycle rules day display (86,400 → 1), React 19 FormEvent deprecation, ESLint disable remediation across 7 files
-- **Dependency Updates:** 12 packages updated including wrangler 4.61.0 → 4.64.0
-
-### Version 3.3.0 (2026-01-14)
-
-This minor release brings **Object Lifecycle Management** to the R2 Bucket Manager. Version 3.3.0 adds automated expiration and storage class transition capabilities for cost optimization.
-
-**Key Features:**
-
-- **Object Lifecycle Management:** Manage R2 bucket lifecycle rules via Cloudflare REST API
-  - Create expiration rules to automatically delete objects after specified days
-  - Create transition rules to move objects to Infrequent Access storage (33% cost savings)
-  - Filter rules by prefix for targeted lifecycle policies
-- **CI/CD Improvements:** Modernized GitHub Actions with 5-job Docker architecture and native ARM builds
-- **CodeQL Fixes:** Resolved 4 code scanning issues
-- **Dependency Updates:** 10 packages updated including wrangler 4.56.0 → 4.59.1
-
-### Version 3.2.0 (2026-01-09)
-
-This minor release brings **Metrics Storage Tab**, **Health Dashboard**, **Expanded Webhook Events**, **AI Search Improvements**, and significant **Developer Experience** enhancements to the R2 Bucket Manager. Version 3.2.0 adds powerful monitoring, operational visibility, and streamlined local development.
-
-**Key Features:**
-
-- **Metrics Dashboard Storage Tab:** Dedicated storage trend visualization with bucket filtering
-  - New "Storage" tab with storage and object count charts
-  - Storage distribution chart and per-bucket breakdown
-  - Filter metrics by specific bucket
-- **Health Dashboard:** At-a-glance operational status
-  - System health score (0-100)
-  - Failed jobs alert and low activity detection
-  - Organization status (color/tag coverage)
-- **AI Search Instance Status:** Real-time indexing job visibility
-  - Last sync time and files indexed on instance cards
-  - New `/api/ai-search/instances/:name/status` endpoint
-- **Dynamic File Type Detection:** Live supported types from Cloudflare API
-- **Expanded Webhook Events:** 6 new events (15 total including file_move, file_copy, folder_create, etc.)
-- **Auto-Detect Dev/Prod API:** `.env.development` for automatic API URL switching
-- **Increased Rate Limits:** 300/100/30 requests per minute for READ/WRITE/DELETE
-- **Support Email in Errors:** All API errors now include support contact
-- **7 AI Search Bug Fixes:** Instance listing, sync, query results, status display
-- **Local Development Fixes:** URL signing key fallback, cross-port API requests
-
-### Version 3.1.0 (2025-12-11)
-
-This minor release brings **Bucket Tagging**, **Bucket Color Tags**, **Automated Database Migrations**, and **Build Optimization** to the R2 Bucket Manager. Version 3.1.0 adds powerful organization and search capabilities for buckets.
-
-**Key Features:**
-
-- **Bucket Tagging:** Organize and search buckets with custom text tags
-  - Add/remove multiple tags per bucket
-  - Search buckets by tag with match-all/match-any modes
-  - Tag management: add, remove, import/export tags
-  - New "Search" navigation tab with Files and Tags sub-tabs
-- **Bucket Color Tags:** Visual organization with 27-color palette
-  - Click palette icon to assign colors to buckets
-  - Available in both Grid and List views
-  - Colors persist in D1 database
-- **Build Optimization:** 30% bundle size reduction
-  - Configured Vite manual chunks for vendor libraries
-  - Lazy loading for tab-based feature components
-
-### Version 3.0.0 (2025-12-08)
-
-This major release brings **Metrics Dashboard**, **Webhooks**, **S3 Import**, **automated database migrations**, **audit logging for individual actions**, and **centralized logging** to the R2 Bucket Manager. Version 3.0.0 adds powerful monitoring, integration, and migration capabilities.
-
-**Key Features:**
-
-- **Metrics Dashboard:** R2 analytics and usage statistics
-  - View requests, success rates, storage, and object counts
-  - Time range selector: 24 Hours, 7 Days, 30 Days
-  - Interactive charts and per-bucket metrics table
-- **Webhooks:** Configure HTTP notifications for events
-  - Support for file, bucket, and job events
-  - HMAC-SHA256 signature verification
-  - Test webhooks and manage configurations
-- **S3 Import:** Migrate data from Amazon S3 to R2
-  - Integration with Cloudflare Super Slurper
-  - Real-time progress tracking with abort capability
-- **Audit Logging:** Track all individual file, folder, and bucket operations
-- **Automated Database Migrations:** One-click schema upgrades
-- **Client-Side API Caching:** 50-80% performance improvement on repeat visits
-
-### Version 2.0.0 (2025-11-27)
-
-This major release brings **Job History tracking**, **AI Search integration**, **API rate limiting**, **upload integrity verification**, and **strict TypeScript compliance** to the R2 Bucket Manager. Version 2.0.0 represents a significant evolution with enterprise-grade features for auditing, AI-powered search, and robust API protection.
-
-**Key Features:**
-
-- **Job History Tracking:** Complete audit trail for all bulk operations
-  - Track downloads, uploads, deletions, moves, and copies
-  - Filterable job list with status, operation type, bucket, and date filters
-  - Event timeline modal showing detailed operation progress
-  - Real-time progress tracking with percentage completion
-- **AI Search Integration:** Connect R2 buckets to Cloudflare AI Search
-  - Semantic search and AI-powered question answering
-  - Bucket compatibility analysis with visual reports
-- **API Rate Limiting:** Tiered protection (100/30/10 requests per minute)
-- **Upload Verification:** MD5 checksum verification for all uploads
-- **Multi-Bucket Download:** Download multiple buckets as a single ZIP
-- **Strict TypeScript:** Enterprise-grade type safety (280+ errors fixed)
-
-### Version 1.2.0 (2025-10-27)
-
-This minor release adds the highly requested **cross-bucket search** feature, allowing users to search for files across all buckets from the main page. The new search interface includes powerful filtering options (extension, size, date) and displays results in a sortable table with full file operations (download, move, copy, delete). This release also includes **bulk bucket deletion**, major code refactoring for improved maintainability, and several important bug fixes.
-
-**Key Features:**
-
-- **Cross-Bucket Search:** Search all buckets at once with advanced filters
-  - Real-time search with 300ms debounce
-  - Filter by extension, size, and date
-  - Sortable results table with full file operations
-  - Server-side parallel search for fast results
-- **Bulk Bucket Deletion:** Select and delete multiple buckets at once
-  - Visual checkbox selection with highlighting
-  - Progress bar and status tracking
-  - Force delete removes all files automatically
-- **Bug Fixes:** Fixed file transfer path logic, rename operations, and ESLint configuration
-- **Code Quality:** Major refactoring with extracted hooks for better maintainability
-
-### Version 1.0.1 (2025-10-26)
-
-This patch release fixes the local development environment which was previously non-functional. Developers can now run both frontend (Vite) and backend (Wrangler) servers locally with automatic authentication bypass and mock data support. No changes to production functionality.
-
-### Version 1.0.0 (2025-10-24)
-
-Initial production release with full R2 bucket management capabilities, enterprise authentication, and modern UI/UX.
-
----
-
-## Stay Updated
-
-- **GitHub Issues:** [Report bugs or request features](https://github.com/neverinfamous/R2-Manager-Worker/issues)
-- **GitHub Discussions:** [Ask questions and discuss](https://github.com/neverinfamous/R2-Manager-Worker/discussions)
-- **Release Article:** [v3.4.1 Release](https://adamic.tech/articles/r2-manager)
-- **Previous Release:** [v3.4.0 Release](https://adamic.tech/articles/r2-manager)

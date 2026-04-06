@@ -3,13 +3,13 @@
 A modern web application for managing Cloudflare R2 buckets with enterprise-grade authentication via Cloudflare Access Zero Trust.
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](https://opensource.org/licenses/MIT)
-![Version](https://img.shields.io/badge/version-v3.4.4-green)
+![Version](https://img.shields.io/github/package-json/v/neverinfamous/R2-Manager-Worker?color=green&label=version)
 ![Status](https://img.shields.io/badge/status-Production%2FStable-brightgreen)
 [![Security](https://img.shields.io/badge/Security-Enhanced-green.svg)](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/SECURITY.md)
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
 [![Type Safety](https://img.shields.io/badge/TypeScript-Strict-blue.svg)](https://github.com/neverinfamous/R2-Manager-Worker)
 
-R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to manage Cloudflare R2 buckets and objects. Supports job history tracking, AI-powered search, drag-and-drop uploads with verification, batch copy/move/delete, multi-file ZIP downloads, signed share links, folder hierarchies, advanced cross-bucket search + filters (extension, size, date), S3 import, tags and GitHub SSO via Cloudflare Zero Trust.
+R2 Bucket Manager — A self-hosted web app to manage Cloudflare R2 buckets and objects.
 
 **[Live Demo](https://r2.adamic.tech/)** • **[GitHub](https://github.com/neverinfamous/R2-Manager-Worker)** • **[Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki)** • **[Changelog](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/CHANGELOG.md)** • **[Release Article](https://adamic.tech/articles/r2-manager)**
 
@@ -156,13 +156,13 @@ docker run -p 8787:8787 -v "/path/to/wrangler.toml:/app/wrangler.toml" writenote
 | Tag           | Description                | Use Case                    |
 | ------------- | -------------------------- | --------------------------- |
 | `latest`      | Latest stable release      | **Recommended for testing** |
-| `v3.4.4`      | Specific version           | Pin to exact version        |
+| `<VERSION>`   | Specific version           | Pin to exact version        |
 | `sha-abc1234` | Commit SHA (12-char short) | Development/traceability    |
 
 **Pull a specific version:**
 
 ```bash
-docker pull writenotenow/r2-bucket-manager:v3.4.4
+docker pull writenotenow/r2-bucket-manager:<VERSION>
 ```
 
 ---
