@@ -9,7 +9,7 @@ A modern web application for managing Cloudflare R2 buckets with enterprise-grad
 [![CodeQL](https://img.shields.io/badge/CodeQL-Passing-brightgreen.svg)](https://github.com/neverinfamous/R2-Manager-Worker/security/code-scanning)
 [![Type Safety](https://img.shields.io/badge/TypeScript-Strict-blue.svg)](https://github.com/neverinfamous/R2-Manager-Worker)
 
-R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to manage Cloudflare R2 buckets and objects. Supports job history tracking, AI-powered search, drag-and-drop uploads with verification, batch copy/move/delete, multi-file ZIP downloads, signed share links, folder hierarchies, advanced cross-bucket search + filters (extension, size, date), S3 import, tags and GitHub SSO via Cloudflare Zero Trust.
+R2 Bucket Manager — A self-hosted web app to manage Cloudflare R2 buckets and objects.
 
 **[Live Demo](https://r2.adamic.tech/)** • **[GitHub](https://github.com/neverinfamous/R2-Manager-Worker)** • **[Wiki](https://github.com/neverinfamous/R2-Manager-Worker/wiki)** • **[Changelog](https://github.com/neverinfamous/R2-Manager-Worker/blob/main/CHANGELOG.md)** • **[Release Article](https://adamic.tech/articles/r2-manager)**
 
