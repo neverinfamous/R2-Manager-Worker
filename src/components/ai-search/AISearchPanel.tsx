@@ -25,7 +25,9 @@ export function AISearchPanel({
   const [compatibility, setCompatibility] =
     useState<AISearchCompatibility | null>(null);
   const [instances, setInstances] = useState<AISearchInstance[]>([]);
-  const [instanceStatuses, setInstanceStatuses] = useState(new Map<string, AISearchInstanceStatus>());
+  const [instanceStatuses, setInstanceStatuses] = useState(
+    new Map<string, AISearchInstanceStatus>(),
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedInstance, setSelectedInstance] = useState<string | null>(null);

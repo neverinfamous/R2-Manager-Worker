@@ -168,36 +168,36 @@ export function useSearch(): UseSearchReturn {
 
     queueMicrotask(() => {
       setResults((prev) => {
-      const sorted = [...prev].sort((a, b) => {
-        let comparison = 0;
+        const sorted = [...prev].sort((a, b) => {
+          let comparison = 0;
 
-        switch (sortColumn) {
-          case "filename": {
-            const aName = a.key.split("/").pop() || a.key;
-            const bName = b.key.split("/").pop() || b.key;
-            comparison = aName.localeCompare(bName);
-            break;
+          switch (sortColumn) {
+            case "filename": {
+              const aName = a.key.split("/").pop() || a.key;
+              const bName = b.key.split("/").pop() || b.key;
+              comparison = aName.localeCompare(bName);
+              break;
+            }
+            case "bucket":
+              comparison = a.bucket.localeCompare(b.bucket);
+              break;
+            case "size":
+              comparison = a.size - b.size;
+              break;
+            case "uploaded":
+              comparison =
+                new Date(a.uploaded).getTime() - new Date(b.uploaded).getTime();
+              break;
           }
-          case "bucket":
-            comparison = a.bucket.localeCompare(b.bucket);
-            break;
-          case "size":
-            comparison = a.size - b.size;
-            break;
-          case "uploaded":
-            comparison =
-              new Date(a.uploaded).getTime() - new Date(b.uploaded).getTime();
-            break;
+
+          return sortDirection === "asc" ? comparison : -comparison;
+        });
+
+        // Only update if order actually changed
+        if (JSON.stringify(sorted) === JSON.stringify(prev)) {
+          return prev;
         }
-
-        return sortDirection === "asc" ? comparison : -comparison;
-      });
-
-      // Only update if order actually changed
-      if (JSON.stringify(sorted) === JSON.stringify(prev)) {
-        return prev;
-      }
-      return sorted;
+        return sorted;
       });
     });
   }, [sortColumn, sortDirection, results.length]); // Re-sort when settings or result count changes

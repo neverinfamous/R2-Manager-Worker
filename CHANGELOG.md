@@ -6,7 +6,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
-## [Unreleased](https://github.com/neverinfamous/R2-Manager-Worker/compare/v3.5.1...HEAD)
+## [Unreleased](https://github.com/neverinfamous/R2-Manager-Worker/compare/v3.5.2...HEAD)
+
+## [3.5.2](https://github.com/neverinfamous/R2-Manager-Worker/releases/tag/v3.5.2) - 2026-04-23
+
+### Changed
+
+**Dependency Updates**
+
+- Bumped various npm dependencies including `react`, `lucide-react`, `vite`, `typescript`, `eslint`, and `wrangler`.
+- Pinned `tar` to `7.5.13` in `package.json` overrides and `Dockerfile` to align with the latest version.
+
+### Fixed
+
+- **Linting:** Remediated multiple `react-hooks/set-state-in-effect` violations across dashboard components and hooks by wrapping `setState` calls in `queueMicrotask` to avoid synchronous re-renders and React Compiler memoization errors.
+- **Type Safety:** Removed unnecessary type assertions in `webhookApi.ts` to satisfy `@typescript-eslint/no-unnecessary-type-assertion`.
 
 ## [3.5.1](https://github.com/neverinfamous/R2-Manager-Worker/releases/tag/v3.5.1) - 2026-04-06
 
