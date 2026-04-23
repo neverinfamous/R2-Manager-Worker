@@ -153,7 +153,9 @@ export function JobHistoryDialog({
 
   useEffect(() => {
     if (open && jobId) {
-      void loadEvents();
+      queueMicrotask(() => {
+        void loadEvents();
+      });
     }
   }, [open, jobId, loadEvents]);
 

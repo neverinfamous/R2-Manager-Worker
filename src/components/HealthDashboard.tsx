@@ -72,7 +72,9 @@ export function HealthDashboard({
   }, []);
 
   useEffect(() => {
-    void loadHealth();
+    queueMicrotask(() => {
+      void loadHealth();
+    });
   }, [loadHealth]);
 
   const handleRefresh = (): void => {

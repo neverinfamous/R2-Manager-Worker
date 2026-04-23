@@ -242,7 +242,9 @@ export function WebhookManager(): ReactElement {
   }, []);
 
   useEffect(() => {
-    void loadWebhooks();
+    queueMicrotask(() => {
+      void loadWebhooks();
+    });
   }, [loadWebhooks]);
 
   const resetForm = (): void => {

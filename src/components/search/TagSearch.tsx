@@ -46,8 +46,10 @@ export function TagSearch({ onNavigateToBucket }: TagSearchProps): JSX.Element {
   // Search when tags change
   useEffect(() => {
     if (selectedTags.length === 0) {
-      setResults([]);
-      setSearchPerformed(false);
+      queueMicrotask(() => {
+        setResults([]);
+        setSearchPerformed(false);
+      });
       return;
     }
 

@@ -166,7 +166,8 @@ export function useSearch(): UseSearchReturn {
   useEffect(() => {
     if (results.length === 0) return;
 
-    setResults((prev) => {
+    queueMicrotask(() => {
+      setResults((prev) => {
       const sorted = [...prev].sort((a, b) => {
         let comparison = 0;
 
@@ -197,6 +198,7 @@ export function useSearch(): UseSearchReturn {
         return prev;
       }
       return sorted;
+      });
     });
   }, [sortColumn, sortDirection, results.length]); // Re-sort when settings or result count changes
 
@@ -223,9 +225,11 @@ export function useSearch(): UseSearchReturn {
       }, 300);
     } else {
       // Clear results if no filters
-      setResults([]);
-      setTotal(0);
-      setHasMore(false);
+      queueMicrotask(() => {
+        setResults([]);
+        setTotal(0);
+        setHasMore(false);
+      });
     }
 
     // Cleanup

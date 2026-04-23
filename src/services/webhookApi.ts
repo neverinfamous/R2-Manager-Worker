@@ -30,7 +30,7 @@ async function apiFetch<T>(
     const optHeaders =
       options.headers instanceof Headers
         ? options.headers
-        : new Headers(options.headers as Record<string, string>);
+        : new Headers(options.headers);
     optHeaders.forEach((value, key) => headers.set(key, value));
   }
 

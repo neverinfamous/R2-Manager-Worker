@@ -501,18 +501,20 @@ export function JobHistory({ buckets }: JobHistoryProps): JSX.Element {
 
   // Load jobs when filter criteria change (reset to first page)
   useEffect(() => {
-    setLoading(true);
-    setError("");
-    fetchJobs(0, true)
-      .catch((err: unknown) => {
-        logger.error("JobHistory", "Failed to load job history", err);
-        setError(
-          err instanceof Error ? err.message : "Failed to load job history",
-        );
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    queueMicrotask(() => {
+      setLoading(true);
+      setError("");
+      fetchJobs(0, true)
+        .catch((err: unknown) => {
+          logger.error("JobHistory", "Failed to load job history", err);
+          setError(
+            err instanceof Error ? err.message : "Failed to load job history",
+          );
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    });
   }, [fetchJobs]);
 
   const handleLoadMore = (): void => {
