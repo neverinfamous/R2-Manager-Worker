@@ -40,7 +40,9 @@ export function LifecycleRulesPanel({
   }, [bucketName]);
 
   useEffect(() => {
-    void loadRules();
+    queueMicrotask(() => {
+      void loadRules();
+    });
   }, [loadRules]);
 
   const handleDeleteRule = useCallback(

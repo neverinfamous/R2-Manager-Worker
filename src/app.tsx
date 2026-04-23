@@ -450,8 +450,10 @@ export default function BucketManager(): JSX.Element {
   });
 
   useEffect(() => {
-    void loadBuckets();
-    void loadBucketColors();
+    queueMicrotask(() => {
+      void loadBuckets();
+      void loadBucketColors();
+    });
   }, [loadBuckets, loadBucketColors]);
 
   const createBucket = async (): Promise<void> => {

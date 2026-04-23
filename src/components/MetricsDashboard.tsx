@@ -180,7 +180,9 @@ export function MetricsDashboard({
   );
 
   useEffect(() => {
-    void loadMetrics(false);
+    queueMicrotask(() => {
+      void loadMetrics(false);
+    });
   }, [loadMetrics]);
 
   // Prepare chart data
