@@ -6,7 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
-## [Unreleased](https://github.com/neverinfamous/R2-Manager-Worker/compare/v3.5.2...HEAD)
+## [Unreleased](https://github.com/neverinfamous/R2-Manager-Worker/compare/v3.5.3...HEAD)
+
+## [3.5.3](https://github.com/neverinfamous/R2-Manager-Worker/releases/tag/v3.5.3) - 2026-05-06
+
+### Changed
+
+- **Dependency Updates**: Updated npm and Docker transitive dependencies to latest versions for security and stability.
 
 ## [3.5.2](https://github.com/neverinfamous/R2-Manager-Worker/releases/tag/v3.5.2) - 2026-04-23
 

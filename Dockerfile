@@ -95,7 +95,7 @@ RUN cd /tmp && \
 # Install runtime dependencies only
 # Security Notes:
 # - Application runtime dependencies: refer to package-lock.json. (devDependencies are not installed)
-# - npm CLI bundled dependencies: glob@11.1.0, tar@7.5.14, minimatch@10.2.5, picomatch@4.0.4 (manually patched in npm's installation via P111 via layout-agnostic strategy)
+# - npm CLI bundled dependencies: glob@11.1.0, tar@7.5.14, minimatch@10.2.5, picomatch@4.0.4 (manually patched in npm's installation via P111 using a layout-agnostic strategy)
 # - Precautionary overrides: flatted, brace-expansion
 # - curl 8.17.0-r1 has CVE-2025-14819, CVE-2025-14524, CVE-2025-14017 (MEDIUM)
 #   Fix version 8.18.0-r0 not yet available in Alpine repos (upstream availability gap)
