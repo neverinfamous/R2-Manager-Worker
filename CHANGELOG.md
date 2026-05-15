@@ -6,7 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ---
 
-## [Unreleased](https://github.com/neverinfamous/R2-Manager-Worker/compare/v3.5.3...HEAD)
+## [Unreleased](https://github.com/neverinfamous/R2-Manager-Worker/compare/v3.5.4...HEAD)
+
+## [3.5.4](https://github.com/neverinfamous/R2-Manager-Worker/releases/tag/v3.5.4) - 2026-05-15
+
+### Changed
+
+- **Dependency Updates:** Bumped package minor and patch versions via npm update, including `react` (19.2.6), `vite` (8.0.13), `wrangler` (4.91.0), updated the transitive Dockerfile patch for `tar` (7.5.15), and updated the `package.json` override for `brace-expansion` (5.0.6).
 
 ## [3.5.3](https://github.com/neverinfamous/R2-Manager-Worker/releases/tag/v3.5.3) - 2026-05-06
 
