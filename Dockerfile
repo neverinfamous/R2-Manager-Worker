@@ -47,7 +47,7 @@ RUN apk add --no-cache \
     g++
 
 # Copy package files
-COPY package.json pnpm-lock.yaml .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
 # Install ALL dependencies (including devDependencies for build)
 RUN corepack enable && pnpm install --frozen-lockfile
@@ -111,7 +111,7 @@ RUN addgroup -g 1001 app && \
     adduser -D -u 1001 -G app app
 
 # Copy package files
-COPY package.json pnpm-lock.yaml .npmrc ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
 # Install production dependencies only
 RUN corepack enable && pnpm install --prod --frozen-lockfile && \

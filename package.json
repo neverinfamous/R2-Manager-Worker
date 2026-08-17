@@ -55,11 +55,5 @@
     "picomatch": "4.0.4",
     "caniuse-lite": "1.0.30001792",
     "undici": "7.25.0"
-  },
-  "pnpm": {
-    "onlyBuiltDependencies": [
-      "esbuild",
-      "workerd"
-    ]
   }
 }
