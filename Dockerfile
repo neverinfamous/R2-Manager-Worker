@@ -47,16 +47,16 @@ RUN apk add --no-cache \
     g++
 
 # Copy package files
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
 # Install ALL dependencies (including devDependencies for build)
-RUN npm ci --include=dev
+RUN corepack enable && pnpm install --frozen-lockfile
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN npm run build
+RUN pnpm run build
 
 # -----------------
 # Stage 2: Runtime
@@ -111,11 +111,11 @@ RUN addgroup -g 1001 app && \
     adduser -D -u 1001 -G app app
 
 # Copy package files
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
 # Install production dependencies only
-RUN npm ci --omit=dev && \
-    npm cache clean --force
+RUN corepack enable && pnpm install --prod --frozen-lockfile && \
+    pnpm store prune
 
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
@@ -137,4 +137,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Default command: Run Wrangler in development mode
 # Override with specific commands for production deployment
-CMD ["npx", "wrangler", "dev", "--ip", "0.0.0.0", "--port", "8787"]
+CMD ["pnpm", "exec", "wrangler", "dev", "--ip", "0.0.0.0", "--port", "8787"]

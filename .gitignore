@@ -24,3 +24,4 @@ pnpm-debug.log*
 # Docker Scout diagnostic artifacts
 scout-sbom.json
 scout_*.txt
+.agents/

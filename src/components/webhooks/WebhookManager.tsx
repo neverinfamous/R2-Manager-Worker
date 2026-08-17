@@ -639,8 +639,8 @@ export function WebhookManager(): ReactElement {
                   If set, requests will include an X-Webhook-Signature header
                 </span>
               </div>
-              <div className="webhook-form-group">
-                <label>Events</label>
+              <fieldset className="webhook-form-group">
+                <legend>Events</legend>
                 <div className="webhook-events-grid">
                   {ALL_WEBHOOK_EVENTS.map((event) => (
                     <div key={event} className="webhook-checkbox-wrapper">
@@ -660,7 +660,7 @@ export function WebhookManager(): ReactElement {
                     </div>
                   ))}
                 </div>
-              </div>
+              </fieldset>
               <div className="webhook-checkbox-wrapper">
                 <input
                   id="webhook-enabled"

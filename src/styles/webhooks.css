@@ -393,12 +393,17 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  border: none;
+  padding: 0;
+  margin: 0;
 }
 
-.webhook-form-group label {
+.webhook-form-group label,
+.webhook-form-group legend {
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-secondary);
+  padding: 0;
 }
 
 .webhook-form-input {
