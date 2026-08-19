@@ -25,27 +25,27 @@ RUN npm install -g npm@latest
 # npm bundles vulnerable transitive deps - we replace them with patched versions using a robust layout-agnostic approach
 RUN cd /tmp && \
     npm pack glob@11.1.0 && \
-    npm pack tar@7.5.19 && \
-    npm pack minimatch@10.2.5 && \
-    npm pack picomatch@4.0.4 && \
+    npm pack tar@7.5.22 && \
+    npm pack minimatch@10.2.6 && \
+    npm pack picomatch@4.0.5 && \
     npm pack brace-expansion@5.0.9 && \
-    npm pack ip-address@10.3.1 && \
+    npm pack ip-address@10.5.0 && \
     tar -xzf glob-11.1.0.tgz && \
     find /usr/local/lib/node_modules/npm -type d -name "glob" -exec sh -c 'rm -rf "$1"/* && cp -r package/* "$1"/' _ {} \; && \
     rm -rf package && \
-    tar -xzf tar-7.5.19.tgz && \
+    tar -xzf tar-7.5.22.tgz && \
     find /usr/local/lib/node_modules/npm -type d -name "tar" -exec sh -c 'rm -rf "$1"/* && cp -r package/* "$1"/' _ {} \; && \
     rm -rf package && \
-    tar -xzf minimatch-10.2.5.tgz && \
+    tar -xzf minimatch-10.2.6.tgz && \
     find /usr/local/lib/node_modules/npm -type d -name "minimatch" -exec sh -c 'rm -rf "$1"/* && cp -r package/* "$1"/' _ {} \; && \
     rm -rf package && \
-    tar -xzf picomatch-4.0.4.tgz && \
+    tar -xzf picomatch-4.0.5.tgz && \
     find /usr/local/lib/node_modules/npm -type d -name "picomatch" -exec sh -c 'rm -rf "$1"/* && cp -r package/* "$1"/' _ {} \; && \
     rm -rf package && \
     tar -xzf brace-expansion-5.0.9.tgz && \
     find /usr/local/lib/node_modules/npm -type d -name "brace-expansion" -exec sh -c 'rm -rf "$1"/* && cp -r package/* "$1"/' _ {} \; && \
     rm -rf package && \
-    tar -xzf ip-address-10.3.1.tgz && \
+    tar -xzf ip-address-10.5.0.tgz && \
     find /usr/local/lib/node_modules/npm -type d -name "ip-address" -exec sh -c 'rm -rf "$1"/* && cp -r package/* "$1"/' _ {} \; && \
     rm -rf /tmp/*
 
@@ -88,27 +88,27 @@ RUN npm install -g npm@latest
 # npm bundles vulnerable transitive deps - we replace them with patched versions using a robust layout-agnostic approach
 RUN cd /tmp && \
     npm pack glob@11.1.0 && \
-    npm pack tar@7.5.19 && \
-    npm pack minimatch@10.2.5 && \
-    npm pack picomatch@4.0.4 && \
+    npm pack tar@7.5.22 && \
+    npm pack minimatch@10.2.6 && \
+    npm pack picomatch@4.0.5 && \
     npm pack brace-expansion@5.0.9 && \
-    npm pack ip-address@10.3.1 && \
+    npm pack ip-address@10.5.0 && \
     tar -xzf glob-11.1.0.tgz && \
     find /usr/local/lib/node_modules/npm -type d -name "glob" -exec sh -c 'rm -rf "$1"/* && cp -r package/* "$1"/' _ {} \; && \
     rm -rf package && \
-    tar -xzf tar-7.5.19.tgz && \
+    tar -xzf tar-7.5.22.tgz && \
     find /usr/local/lib/node_modules/npm -type d -name "tar" -exec sh -c 'rm -rf "$1"/* && cp -r package/* "$1"/' _ {} \; && \
     rm -rf package && \
-    tar -xzf minimatch-10.2.5.tgz && \
+    tar -xzf minimatch-10.2.6.tgz && \
     find /usr/local/lib/node_modules/npm -type d -name "minimatch" -exec sh -c 'rm -rf "$1"/* && cp -r package/* "$1"/' _ {} \; && \
     rm -rf package && \
-    tar -xzf picomatch-4.0.4.tgz && \
+    tar -xzf picomatch-4.0.5.tgz && \
     find /usr/local/lib/node_modules/npm -type d -name "picomatch" -exec sh -c 'rm -rf "$1"/* && cp -r package/* "$1"/' _ {} \; && \
     rm -rf package && \
     tar -xzf brace-expansion-5.0.9.tgz && \
     find /usr/local/lib/node_modules/npm -type d -name "brace-expansion" -exec sh -c 'rm -rf "$1"/* && cp -r package/* "$1"/' _ {} \; && \
     rm -rf package && \
-    tar -xzf ip-address-10.3.1.tgz && \
+    tar -xzf ip-address-10.5.0.tgz && \
     find /usr/local/lib/node_modules/npm -type d -name "ip-address" -exec sh -c 'rm -rf "$1"/* && cp -r package/* "$1"/' _ {} \; && \
     rm -rf /tmp/*
 
