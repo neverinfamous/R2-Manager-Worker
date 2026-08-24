@@ -20,7 +20,7 @@
     "lucide-react": "^1.32.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "react-dropzone": "^20.1.0",
+    "react-dropzone": "^20.1.1",
     "spark-md5": "^3.0.2"
   },
   "devDependencies": {
