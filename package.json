@@ -35,7 +35,7 @@
     "esbuild": "^0.28.2",
     "eslint": "^10.8.1",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.4",
+    "eslint-plugin-react-refresh": "^0.5.5",
     "globals": "^17.11.0",
     "lightningcss": "^1.33.0",
     "ts-pattern": "^5.9.0",
