@@ -116,7 +116,8 @@ export function FileGrid({
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     // Check for saved preference
     const savedMode = localStorage.getItem("r2_manager_view_mode");
-    return savedMode ? (savedMode as ViewMode) : ViewMode.List;
+    if (savedMode === "preview") return ViewMode.Preview;
+    return ViewMode.List;
   });
 
   // Persist view mode preference
