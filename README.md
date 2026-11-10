@@ -125,7 +125,7 @@ R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to man
 
 4. **Configure Cloudflare Access:**
    - Set up GitHub OAuth in [Zero Trust](https://one.dash.cloudflare.com/)
-   - Create an Access application for your domain
+   - Create an Access application covering **every** reachable Worker hostname (your custom domain, and `*.workers.dev` if enabled; keep `workers_dev = false` and `preview_urls = false` when using a custom domain)
    - Copy the Application Audience (AUD) Tag
 
 5. **Set Worker secrets:**
@@ -136,6 +136,8 @@ R2 Bucket Manager for Cloudflare — A full-featured, self-hosted web app to man
    npx wrangler secret put API_KEY
    npx wrangler secret put TEAM_DOMAIN
    npx wrangler secret put POLICY_AUD
+   # Optional: comma-separated list of additional trusted CORS origins (same-origin is allowed by default)
+   # npx wrangler secret put ALLOWED_ORIGINS
    ```
 
 6. **Deploy:**
@@ -480,6 +482,7 @@ The following operations return simulated success responses for UI testing:
 
 - ✅ **Zero Trust Architecture** - All requests authenticated by Cloudflare Access
 - ✅ **JWT Validation** - Tokens verified on every API call
+- ✅ **Strict CORS & CSRF Protection** - Credentialed CORS and state-changing API requests are restricted to same-origin (or explicitly configured `ALLOWED_ORIGINS`)
 - ✅ **Rate Limiting** - Tiered API rate limits prevent abuse and ensure fair usage
 - ✅ **HTTPS Only** - All traffic encrypted via Cloudflare's edge network
 - ✅ **Signed URLs** - Download operations use HMAC-SHA256 signatures

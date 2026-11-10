@@ -1,766 +1,158 @@
 # Changelog
 
-All notable changes to R2 Bucket Manager are documented here.
+All notable changes to this project are documented in this file.
+This changelog is auto-generated from Git history using [lib-git-history](https://github.com/neverinfamous/adamic).
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## [Unreleased]
 
----
+### Bug Fixes
 
-## [Unreleased](https://github.com/neverinfamous/R2-Manager-Worker/compare/v3.5.4...HEAD)
+- harden origin validation and prevent local dev auth bypass by **Chris** ([fa48ef9](https://github.com/neverinfamous/R2-Manager-Worker/commit/fa48ef9665e36b3cfe102a093d4751a24c378e59))
 
-## [3.5.4](https://github.com/neverinfamous/R2-Manager-Worker/releases/tag/v3.5.4) - 2026-05-15
+## [v3.5.8]
 
-### Changed
+### Code Quality
 
-- **Dependency Updates:** Bumped package minor and patch versions via npm update, including `react` (19.2.6), `vite` (8.0.13), `wrangler` (4.91.0), updated the transitive Dockerfile patch for `tar` (7.5.15), and updated the `package.json` override for `brace-expansion` (5.0.6).
+- --- product: "R2-Manager-Worker" version: "3.5.8" date: "2026-10-30" slug: "v3.5.8-release-notes" docker_image: "writenotenow/r2-bucket-manager" github_repo: "neverinfamous/R2-Manager-Worker" description: "Dependency refresh and a hardened Docker image with near-zero known vulnerabilities." --- # R2-Manager-Worker v3.5.8 ## Highlights; **Hardened Container**: The Docker image drops from 24 known vulnerabilities, including 2 critical, to a single unrated `musl` finding that awaits an upstream Alpine fix.; **Fresh Stack**: React 19.3, Vite 8.3, Wrangler 4.156, and updated tooling keep the app current.; **Safer View Preference**: A corrupted saved view setting now falls back to the list view instead of breaking the file grid. ## Changed; **deps**: Updated all runtime and development dependencies and refreshed security overrides for `undici`, `ip-address`, `brace-expansion`, `picomatch`, and `flatted`.; **ci**: Refreshed pinned GitHub Actions to their latest releases and pinned all runners to `ubuntu-24.04`.; **docs**: Added GitHub and Docker Pulls badges to the README files. ## Fixed; **filegrid**: Validate the saved view mode instead of casting it, so an invalid stored value no longer leaks into the UI state. ## Security; **docker**: Patched `undici` and `postcss-selector-parser` bundled inside npm, and upgraded OpenSSL, zlib, and musl in the runtime image.; **deps**: Raised `undici` to 7.30.1, clearing the open Dependabot alerts. ## Install ```bash docker pull writenotenow/r2-bucket-manager:v3.5.8 ``` [Full Changelog](https://github.com/neverinfamous/R2-Manager-Worker/compare/v3.5.7...v3.5.8) by **Chris LeRoux** ([2beb8f1](https://github.com/neverinfamous/R2-Manager-Worker/commit/2beb8f118eb20b4e14472bfabb187a37596d4028))
 
-## [3.5.3](https://github.com/neverinfamous/R2-Manager-Worker/releases/tag/v3.5.3) - 2026-05-06
+## [v3.5.7]
 
-### Changed
+### Code Quality
 
-- **Dependency Updates**: Updated npm and Docker transitive dependencies to latest versions for security and stability.
+- --- product: "R2-Manager-Worker" version: "3.5.7" date: "2026-08-19" slug: "v3.5.7-release-notes" github_repo: "neverinfamous/R2-Manager-Worker" description: "Security updates, pnpm migration, and deterministic CI pipelines." --- # R2-Manager-Worker v3.5.7 ## Highlights; **Fast & Deterministic Builds**: Migrated the package manager from `npm` to `pnpm` for faster dependency resolution and stricter module boundaries.; **Supply Chain Security**: Hardened GitHub Actions workflows by pinning all external actions to explicit commit SHAs, preventing upstream supply chain attacks.; **Dependency Hardening**: Updated all runtime dependencies and applied targeted overrides to transitive CLI dependencies to resolve known vulnerabilities. ## Changed; **deps**: Migrated project from npm to pnpm to improve speed and consistency.; **ci**: Pinned GitHub Actions by SHA for tamper-proof CI workflows.; **docs**: Standardized release notes naming convention and formatting. ## Security; **deps**: Updated dependencies and applied security patches to eliminate transitive vulnerabilities in Docker builds. ## Install ```bash git clone https://github.com/neverinfamous/R2-Manager-Worker.git git checkout v3.5.7 ``` [Full Changelog](https://github.com/neverinfamous/R2-Manager-Worker/compare/v3.5.6...v3.5.7) by **Chris LeRoux** ([cac9664](https://github.com/neverinfamous/R2-Manager-Worker/commit/cac966477ebc4bb511fbf1b5ef3bbe63767958f1))
 
-## [3.5.2](https://github.com/neverinfamous/R2-Manager-Worker/releases/tag/v3.5.2) - 2026-04-23
+## [v3.5.6]
 
-### Changed
+### Bug Fixes
 
-**Dependency Updates**
+- Resolve vulnerabilities in tar, brace-expansion, and ip-address by **Chris** ([fccf550](https://github.com/neverinfamous/R2-Manager-Worker/commit/fccf5508c5054f503890af457eb42b6c444a7d1d))
 
-- Bumped various npm dependencies including `react`, `lucide-react`, `vite`, `typescript`, `eslint`, and `wrangler`.
-- Pinned `tar` to `7.5.13` in `package.json` overrides and `Dockerfile` to align with the latest version.
+### Code Quality
 
-### Fixed
+- --- product: "R2 Manager Worker" version: "3.5.6" date: "2026-08-17" slug: "v3.5.6" npm_package: "" github_repo: "neverinfamous/R2-Manager-Worker" docker_image: "writenotenow/r2-bucket-manager:3.5.6" description: "Resolves CI/CD Node.js 20 deprecation warnings." --- # R2 Manager Worker v3.5.6 ## Changed * **CI/CD:** Upgraded `pnpm/action-setup` to v6 to permanently resolve Node.js 20 runner deprecation warnings across all workflows. by **Chris** ([9a92550](https://github.com/neverinfamous/R2-Manager-Worker/commit/9a9255044ebff73d78d5a8d0012856a788936ed2))
 
-- **Linting:** Remediated multiple `react-hooks/set-state-in-effect` violations across dashboard components and hooks by wrapping `setState` calls in `queueMicrotask` to avoid synchronous re-renders and React Compiler memoization errors.
-- **Type Safety:** Removed unnecessary type assertions in `webhookApi.ts` to satisfy `@typescript-eslint/no-unnecessary-type-assertion`.
+## [v3.5.5]
 
-## [3.5.1](https://github.com/neverinfamous/R2-Manager-Worker/releases/tag/v3.5.1) - 2026-04-06
+### Bug Fixes
 
-### Security
+- migrate github actions to use pnpm and fix cache lookup by **Chris** ([1f3e79a](https://github.com/neverinfamous/R2-Manager-Worker/commit/1f3e79ad1b28965da7e43c97448c5008cda2be45))
+- resolve accessibility issues in webhook dialogs by **Chris** ([1b70b03](https://github.com/neverinfamous/R2-Manager-Worker/commit/1b70b03978c197440023ba74cea10b50ab0546fc))
 
-- Added Dockerfile layout-agnostic patching for `picomatch` to fix Method Injection vulnerability
-- Pinned `flatted` transitive dependency to fix Prototype Pollution vulnerability
-- Updated `brace-expansion` override to address zero-step sequence hang issue
+### Code Quality
 
-### Changed
+- --- product: "R2 Manager Worker" version: "3.5.5" date: "2026-08-17" slug: "r2-manager-worker-v3-5-5" npm_package: "r2" docker_image: "ghcr.io/neverinfamous/r2-manager-worker" github_repo: "neverinfamous/R2-Manager-Worker" description: "Resolve Webhook accessibility issues, migrate to pnpm, and pin GitHub Actions by SHA." --- # R2 Manager Worker v3.5.5 ## Highlights; **Enhanced Accessibility**: Improved Webhook configuration dialogs to fully comply with W3C standards, ensuring a seamless experience for screen readers and keyboard navigation.; **Robust Supply Chain Security**: Migrated the package manager from `npm` to `pnpm` for faster, deterministic builds, and pinned all GitHub Actions to their exact SHA digests to prevent unauthorized pipeline tampering. ## Changed; **deps**: Converted project from `npm` to `pnpm` for stricter dependency resolution.; **deps**: Pinned GitHub Actions in `.github/workflows/` to exact SHA digests to secure CI/CD pipelines. ## Fixed; **ui**: Resolved `<label>` accessibility issues in Webhook Add and Edit dialogs by implementing semantic `<fieldset>` and `<legend>` grouping. by **Chris** ([65c42aa](https://github.com/neverinfamous/R2-Manager-Worker/commit/65c42aab0e6f59487d7a147ce6da84be6cfc0100))
 
-- Bumped `esbuild` to 0.28.0
-- Bumped `lucide-react` to 1.7.0
-- Bumped `typescript` to 6.0.2
-- Bumped `@cloudflare/workers-types` to 4.20260405.1
-- Various minor and patch dependency updates via npm update
+## [v3.4.1]
 
-## [3.5.0](https://github.com/neverinfamous/R2-Manager-Worker/releases/tag/v3.5.0) - 2026-03-16
+### Bug Fixes
 
-### Security
+- patch Docker minimatch CVE-2026-27904, CVE-2026-27903 by **Chris LeRoux** (with Temp) ([a8900fb](https://github.com/neverinfamous/R2-Manager-Worker/commit/a8900fba468c89b9dc34f2592caef08d894adbcb))
+- update Dockerfile tar patch from 7.5.7 to 7.5.8 (CVE-2026-26960) (#236) by **Chris LeRoux** (with Temp) ([9d68f96](https://github.com/neverinfamous/R2-Manager-Worker/commit/9d68f966d64814b2f7d5c5c60031dc2205a16c6b))
 
-- Fixed multiple high severity vulnerabilities in `undici` by pinning exact patched version `7.24.4` via package.json overrides.
-
-### Changed
-
-- Migrated CSS transformer and minifier to `lightningcss` in Vite 8, accelerating application compile time from 29 seconds to 1.9 seconds.
-
-**Dependency Updates**
-
-- Bumped `@cloudflare/workers-types` to `4.20260316.1`
-- Bumped `@types/node` to `25.5.0`
-- Bumped `@vitejs/plugin-react` to `6.0.1`
-- Bumped `esbuild` to `0.27.4`
-- Bumped `vite` to `8.0.0`
-- Bumped `wrangler` to `4.74.0`
-- Added `lightningcss` to devDependencies for optimized build speeds
-
----
-
-## [3.4.4] - 2026-03-10
-
-### Changed
-
-- **Dependency Updates**
-  - `@cloudflare/workers-types`: 4.20260307.1 → 4.20260310.1 (patch)
-  - `@types/node`: 25.3.5 → 25.4.0 (minor)
-  - `jose`: 6.2.0 → 6.2.1 (patch)
-  - `typescript-eslint`: 8.56.1 → 8.57.0 (minor)
-  - `wrangler`: 4.71.0 → 4.72.0 (minor)
-  - `tar` override: 7.5.10 → 7.5.11 (patch) — npm + Docker layers
-  - GitHub Actions: `docker/setup-buildx-action` (v3 → v4), `docker/login-action` (v3 → v4), `docker/metadata-action` (v5 → v6), `docker/build-push-action` (v6 → v7)
-
-## [3.4.3] - 2026-03-07
-
-### Fixed
-
-- **Docker Publishing** - Fixed conditionals in `docker-publish.yml` that prevented the Docker Hub README and Deployment Summary steps from executing on tag pushes
-
----
-
-## [3.4.2] - 2026-03-07
-
-### Security
-
-- **tar CVE Fix** - Updated tar override from 7.5.8 to 7.5.10 to fix reported vulnerabilities
-- **GitHub Actions** - Bumped `actions/upload-artifact` from v6 to v7 and `actions/download-artifact` from v7 to v8
-
-### Changed
-
-- **Dependency Updates** - Updated npm dependencies to latest versions
-  - `@cloudflare/workers-types`: 4.20260305.0 → 4.20260307.1
-  - `@types/node`: 25.3.3 → 25.3.5
-  - `brace-expansion`: 5.0.3 → 5.0.4
-  - `caniuse-lite`: 1.0.30001774 → 1.0.30001775
-  - `eslint`: 10.0.2 → 10.0.3
-  - `jose`: 6.1.3 → 6.2.0
-  - `lucide-react`: 0.575.0 → 0.577.0
-  - `wrangler`: 4.69.0 → 4.71.0
-
----
-
-## [3.4.1] - 2026-03-01
-
-### Fixed
-
-- **Local Uploads Accessibility** - Fixed "No label associated with a form field" violation
-  - Changed `<label>` to `<span>` in `LocalUploadsToggle` component since the toggle button already carries a descriptive `aria-label`
-  - Resolves 5 accessibility violations (one per rendered bucket)
-
-- **ESLint 10 Code Quality Fixes** - Resolved 9 new violations surfaced by ESLint 10
-  - Fixed 5 `no-useless-assignment` violations in `JobHistoryDialog.tsx`, `api.ts`, `worker/index.ts`, and `worker/routes/files.ts`
-  - Fixed 4 `preserve-caught-error` violations in `api.ts` by attaching `{ cause: error }` to re-thrown errors
-  - Suppressed 6 `no-deprecated` violations for `autorag` → `aiSearch` API migration (tracked as TODO)
-
-### Changed
-
-- **Relaxed API Rate Limits** - Doubled all rate limit tiers to reduce 429 errors during normal usage
-  - READ operations: 300 → 600 requests per 60 seconds
-  - WRITE operations: 100 → 200 requests per 60 seconds
-  - DELETE operations: 30 → 60 requests per 60 seconds
-
-- **ESLint 10 Migration** - Upgraded linting toolchain to ESLint 10 with strict checking
-  - `eslint`: 9.39.2 → 10.0.1
-  - `@eslint/js`: 9.39.2 → 10.0.1
-  - `tsconfig.app.json` target and lib: ES2020 → ES2022 (enables `Error` `cause` option)
-  - Removed `brace-expansion` override (incompatible with ESLint 10's `minimatch` 10.x)
-  - Added `eslint-plugin-react-hooks` peer dependency override for ESLint 10
-  - Added `@typescript-eslint/typescript-estree` → `minimatch` override (`^10.2.1`)
-
-- **Dependency Updates** - Updated npm dependencies to latest versions
-  - `@cloudflare/workers-types`: 4.20260212.0 → 4.20260305.0
-  - `@types/node`: 25.2.3 → 25.3.3
-  - `eslint`: 10.0.1 → 10.0.2
-  - `eslint-plugin-react-refresh`: 0.5.0 → 0.5.2
-  - `globals`: 17.3.0 → 17.4.0
-  - `lucide-react`: 0.563.0 → 0.575.0
-  - `typescript-eslint`: 8.55.0 → 8.56.1
-  - `wrangler`: 4.65.0 → 4.69.0
-  - `react-dropzone`: 14.4.1 → 15.0.0 (major version; only breaking change is `isDragReject` behavior, which this project does not use)
-
-- Deleted `dependabot-auto-merge.yml` to prevent automatic merging of dependency PRs, prioritizing batched manual updates to avoid unnecessary Docker deployments.
-
-### Security
-
-- **tar CVE Fix** - Updated tar override from 7.5.7 → 7.5.8 to address CVE-2026-26960
-- **minimatch ReDoS** - Updated override from `^10.2.1` → `^10.2.4` and promoted to top-level override to fix GHSA-7r86-cg39-jmmj and GHSA-23c5-xmqv-rm74
-- **Docker minimatch CVE** - Patched npm CLI's bundled minimatch 10.2.2 → 10.2.4 in Dockerfile (CVE-2026-27904, CVE-2026-27903)
-- **CodeQL Workflow** - Removed deprecated `fail-on: error` and `wait-for-processing` inputs from `codeql.yml`
-
----
-
-## [3.4.0] - 2026-02-11
-
-### Added
-
-- **Local Uploads Toggle (BETA)** - Enable/disable R2 Local Uploads per bucket for faster upload performance
-  - Up to 75% reduction in upload latency by writing to storage near the client
-  - Inline toggle in both list and grid bucket views
-  - Optimistic UI updates with loading and error states
-  - New backend route: `GET/PUT /api/local-uploads/:bucketName`
-  - New types: `LocalUploadsStatus`, `LocalUploadsResponse`
-  - New API methods: `getLocalUploadsStatus()`, `setLocalUploadsStatus()`
-  - Mock data support for local development
-
-### Changed
-
-- **Node.js 24 LTS Baseline** - Upgraded from Node 20 to Node 24 LTS across all configurations
-  - Dockerfile already using `node:24-alpine` for both builder and runtime stages
-  - GitHub Actions workflows updated to use Node 24.x as primary version
-  - `package.json` now includes `engines` field requiring Node.js >=24.0.0
-  - README prerequisites updated to specify Node.js 24+ (LTS)
-  - DOCKER_README updated to reflect Node 24-alpine base image
-
-- **Dependency Updates** - Updated npm dependencies to latest versions
-  - `@babel/core`: 7.28.6 → 7.29.0
-  - `@cloudflare/workers-types`: 4.20260127.0 → 4.20260210.0
-  - `@types/node`: 25.0.10 → 25.2.3
-  - `@types/react`: 19.2.10 → 19.2.14
-  - `@vitejs/plugin-react`: 5.1.2 → 5.1.4
-  - `esbuild`: 0.27.2 → 0.27.3
-  - `eslint-plugin-react-refresh`: 0.4.26 → 0.5.0 (major version)
-  - `globals`: 17.1.0 → 17.3.0
-  - `react-dropzone`: 14.3.8 → 14.4.1
-  - `typescript-eslint`: 8.54.0 → 8.55.0
-  - `wrangler`: 4.61.0 → 4.64.0
-
-### Security
-
-- **tar Package Security** - Updated tar override to 7.5.4 to fix HIGH severity CVEs
-  - CVE-2026-23745 (HIGH 8.2) - Path Traversal via hardlink/symlink escape
-  - CVE-2026-23950 (HIGH 8.8) - Unicode handling race condition on macOS APFS
-
-- **Docker Security** - Documented 3 curl CVEs as accepted upstream risks
-  - CVE-2025-14819 (MEDIUM 5.3) - Fix 8.18.0-r0 not yet in Alpine repos
-  - CVE-2025-14524 (MEDIUM 5.3) - Fix 8.18.0-r0 not yet in Alpine repos
-  - CVE-2025-14017 (N/A) - Fix 8.18.0-r0 not yet in Alpine repos
-  - Will upgrade when Alpine publishes patched packages
-
-### Fixed
-
-- **React 19 Compatibility** - Resolved deprecated `FormEvent` usage
-  - Replaced deprecated `React.FormEvent` with inline type `{ preventDefault(): void }` in form handlers
-  - Fixed in `app.tsx`, `AISearchQuery.tsx`, `CreateLifecycleRuleModal.tsx`, `S3CredentialsForm.tsx`
-  - Removed unused eslint-disable directives in `filegrid.tsx`
-  - Added missing `sortedFilesRef` to useCallback dependency arrays
-
-- **Lifecycle Rules Display** - Fixed lifecycle rules showing incorrect day values (e.g., 86,400 days instead of 1 day)
-  - `CreateLifecycleRuleModal.tsx` incorrectly converted days to seconds (`days * 86400`) before setting `maxAge`
-  - Cloudflare R2 lifecycle API `maxAge` is already in days, not seconds
-  - Affects both Expiration (Delete) and Transition to Infrequent Access rule types
-
-- **ESLint Disable Remediation** - Properly fixed all eslint-disable suppressions across the codebase
-  - `JobHistory.tsx`: Refactored to use separate `fetchJobs` callback with proper dependency management
-  - `JobHistoryDialog.tsx`: Wrapped `loadEvents` in useCallback with proper dependencies
-  - `ThemeContext.tsx`: Split context into `theme-context-value.ts` to satisfy `react-refresh/only-export-components`
-  - `useFileFilters.ts`: Replaced useEffect + setState with useMemo for `availableExtensions`
-  - `api.ts`: Extracted file validation regex to documented top-level constant `INVALID_FILENAME_CHARS`
-  - `logger.ts`: Consolidated 8 individual eslint-disable-next-line comments into single scoped block disable
-  - `filegrid.tsx`: Captured ref values at effect start for cleanup function pattern
-
----
-
-## [3.3.0] - 2026-01-14
-
-### Added
-
-- **Object Lifecycle Management** - Manage R2 bucket lifecycle rules via Cloudflare REST API
-  - View configured lifecycle rules for any bucket
-  - Create expiration rules to automatically delete objects after specified days
-  - Create transition rules to move objects to Infrequent Access storage (33% cost savings)
-  - Filter rules by prefix for targeted object lifecycle policies
-  - New backend route: `GET/PUT /api/lifecycle/:bucketName`
-  - New types: `LifecycleRule`, `LifecycleRulesResponse`
-  - New API methods: `getLifecycleRules()`, `setLifecycleRules()`, `deleteLifecycleRule()`
-
-### Changed
-
-- **Dependency Updates** - Updated npm dependencies to latest versions
-  - `@babel/core`: 7.28.5 → 7.28.6
-  - `@cloudflare/workers-types`: 4.20260109.0 → 4.20260114.0
-  - `@types/node`: 25.0.3 → 25.0.8
-  - `@types/react`: 19.2.7 → 19.2.8
-  - `baseline-browser-mapping`: 2.9.11 → 2.9.14
-  - `caniuse-lite`: 1.0.30001762 → 1.0.30001764
-  - `rollup`: 4.54.0 → 4.55.1
-  - `typescript-eslint`: 8.51.0 → 8.53.0
-  - `vite`: 7.3.0 → 7.3.1
-  - `wrangler`: 4.56.0 → 4.59.1
-
-- **CI/CD Improvements** - Modernized GitHub Actions workflows to match d1/do/kv-manager fleet pattern
-  - `docker-publish.yml`: Migrated from single-job to 5-job architecture (lint, codeql, build-platform, security-scan, merge-and-push)
-  - Native ARM builds via `ubuntu-24.04-arm` runner (replaces slow QEMU emulation)
-  - Lint and CodeQL gates block Docker builds on failure
-  - Uses `docker/scout-action@v1` for CVE scanning with SARIF upload to GitHub Security
-  - `codeql.yml`: Added `fail-on: error` to block builds on security vulnerabilities
-  - Removed standalone `deploy.yml` (consolidated into Docker workflow)
-
-### Fixed
-
-- **CodeQL Alerts** - Resolved 4 code scanning issues
-  - Removed redundant null check on narrowed variable in `files.ts`
-  - Removed unused variable `url` in `src/worker.js`
-  - Removed useless `hasMore = false` assignments before `break` in `folders.ts`
-  - Removed always-true conditional `userEmail ?? undefined` in `index.ts`
-
----
-
-## [3.2.0] - 2026-01-09
-
-### Added
-
-- **Metrics Dashboard Storage Tab** - Dedicated storage trend visualization
-  - New "Storage" tab with storage and object count over time charts
-  - Storage distribution chart by bucket
-  - Storage details table with per-bucket breakdown and percentage
-
-- **Metrics Bucket Filtering** - Filter metrics by specific bucket
-  - Dropdown selector in metrics header
-  - API support for `bucketName` query parameter
-  - Filtered views show bucket-specific metrics
-
-- **AI Search Instance Status** - Real-time visibility into indexing jobs
-  - Instance cards now display last sync time and files indexed count
-  - Status data fetched in parallel with instance list for fast loading
-  - New backend endpoint: `GET /api/ai-search/instances/:name/status`
-  - Returns job history with up to 10 recent indexing jobs
-
-- **Dynamic File Type Detection** - Always up-to-date supported file types
-  - New backend endpoint: `GET /api/ai-search/supported-types`
-  - Dynamically fetches supported types from Cloudflare `toMarkdown()` API
-  - 5-minute cache with fallback to hardcoded list if API unavailable
-  - Includes `.pdf`, `.docx`, `.odt`, `.jpeg` and other newly-supported formats
-
-- **Health Dashboard** - New tab providing at-a-glance operational status
-  - System health score (0-100) based on job failures, webhook config, and organization
-  - Summary cards for buckets, operations, webhooks, and recent jobs
-  - Failed jobs alert with expandable details
-  - Low activity bucket detection (7+ days without activity)
-  - Organization status displays (color/tag coverage)
-  - 2-minute caching for performance
-  - New backend route: `GET /api/health`
-
-- **Expanded Webhook Events** - 6 new granular event types for R2 operations
-  - `file_move`, `file_copy`, `file_rename` - Track file transfer and rename operations
-  - `folder_create`, `folder_delete` - Monitor folder lifecycle events
-  - `bucket_rename` - Capture bucket rename operations
-  - Helper payloads for future job-level events: `bulk_download_complete`, `s3_import_complete`
-  - Total webhook events increased from 7 to 15
-
-- **Auto-Detect Dev/Prod API Endpoint** - Simplified local development workflow
-  - Added `.env.development` file for automatic API URL switching
-  - Vite auto-loads development config during `npm run dev`
-  - No manual commenting/uncommenting of `VITE_WORKER_API` required
-
-- Added [Upgrade Guide](Upgrade-Guide) to wiki - Comprehensive documentation for the automated in-app upgrade system covering all 4 schema migrations
-
-### Fixed
-
-- **Local Development Environment** - Fixed issues preventing local dev from working ([#149](https://github.com/neverinfamous/R2-Manager-Worker/issues/149))
-  - **URL Signing Key Fallback:** Auto-generates random signing key when `URL_SIGNING_KEY` is not configured
-  - **Metrics API:** Updated to use `VITE_WORKER_API` environment variable for cross-port requests
-  - **Webhooks API:** Updated to use `VITE_WORKER_API` environment variable for cross-port requests
-  - **Vite Compatibility:** Replaced `process.env.NODE_ENV` with `import.meta.env.DEV` for browser environment
-  - Thanks to [@denzyve](https://github.com/denzyve) for identifying these issues in [PR #150](https://github.com/neverinfamous/R2-Manager-Worker/pull/150)
-
-- **AI Search Instance Listing** - Fixed instances not appearing in the Instances tab
-  - Corrected API response parsing to handle Cloudflare's array format (was expecting `data.result.rags`, now handles direct array in `data.result`)
-  - Updated `AISearchInstance` type to use `id` and `source` fields from actual API response
-
-- **AI Search Sync** - Fixed "Route not found" error when syncing instances
-  - Changed HTTP method from `POST` to `PATCH` as required by Cloudflare's API
-
-- **AI Search Query Results** - Fixed empty results when querying instances
-  - Added response transformation to unwrap `result` from Cloudflare's API response wrapper
-  - Frontend now correctly receives `{ response, data }` instead of `{ success, result: { response, data } }`
-
-- **AI Search Instance Status** - Fixed "Last sync" time not displaying on instance cards
-  - Updated `AISearchIndexingJob` type to match actual Cloudflare Jobs API response
-  - Changed from `completed_at` to `ended_at` field for sync timestamps
-  - Changed from `status === 'completed'` to `!end_reason` for detecting successful jobs
-
-- **Docker Scout Security Scan** - Fixed vulnerability check incorrectly blocking builds
-  - Grep pattern now correctly parses CRITICAL/HIGH counts from Docker Scout output
-  - MEDIUM/LOW vulnerabilities no longer falsely trigger build failures
-
-### Changed
-
-- **Increased API Rate Limits** - Prevents 429 errors during rapid UI navigation
-  - READ operations: 100 → 300 requests per 60 seconds
-  - WRITE operations: 30 → 100 requests per 60 seconds
-  - DELETE operations: 10 → 30 requests per 60 seconds
-
-- **Support Email in Error Messages** - All API error responses now include support contact
-  - New centralized `createErrorResponse` utility in `worker/utils/error-response.ts`
-  - Support email (`admin@adamic.tech`) automatically included for all 4xx/5xx errors
-  - Updated 70+ error response locations across 8 route files
-  - Consistent error format: `{ error: string, support?: string, code?: string, details?: string }`
-
-- **Dependency Updates** - Updated all outdated packages to latest versions
-  - `@cloudflare/workers-types` 4.20251213.0 → 4.20260109.0
-  - `@types/node` 25.0.2 → 25.0.3
-  - `esbuild` 0.27.1 → 0.27.2
-  - `eslint-plugin-react-refresh` 0.4.25 → 0.4.26
-  - `globals` 16.5.0 → 17.0.0 (major version bump)
-  - `lucide-react` 0.561.0 → 0.562.0
-  - `typescript-eslint` 8.49.0 → 8.52.0
-  - `vite` 7.3.0 → 7.3.1
-  - `wrangler` 4.55.0 → 4.58.0
-
----
-
-## [3.1.0] - 2025-12-11
-
-### Added
-
-- **Bucket Tagging** - Organize and search buckets with custom text tags
-  - Add/remove multiple tags per bucket
-  - Tag picker integrated in bucket list (compact) and grid views
-  - New "Search" navigation tab with sub-tabs:
-    - "Files" sub-tab: Cross-bucket file search (moved from expandable dialog)
-    - "Tags" sub-tab: Search buckets by tag with match-all/match-any modes
-  - Tag management: add, remove, import/export tags
-  - New backend routes: `/api/tags`, `/api/buckets/:name/tags`
-  - New `bucket_tags` table in D1 database with indexes
-  - 5-minute backend caching for tag queries
-  - Keyboard accessible tag picker component
-  - WCAG-compliant UI with ARIA labels
-
-- **Automated Database Migrations** - One-click schema upgrades
-  - Upgrade banner appears when database schema is outdated
-  - Automatically detects legacy installations without version tracking
-  - Click "Upgrade Now" to apply pending migrations
-  - Schema version tracking via `schema_version` table
-  - New backend routes: `/api/migrations/status`, `/api/migrations/apply`
-
-- **Bucket Color Tags** - Visual organization with 27-color palette
-  - Click palette icon to assign colors to buckets
-  - Color picker with 6-column grid layout and fixed positioning
-  - Available in both Grid and List views
-  - "Remove color" option to clear assignments
-  - Colors persist in D1 database (`bucket_colors` table)
-  - New backend routes: `GET /api/buckets/colors`, `PUT /api/buckets/:name/color`
-  - 5-minute client-side caching with invalidation on mutations
-  - WCAG-compliant UI with ARIA labels
-
-### Changed
-
-- **Build Optimization**: Reduced bundle size and improved initial page load
-  - Configured Vite manual chunks to split vendor libraries:
-    - `vendor-react`: React core (11 KB gzip)
-    - `vendor-icons`: lucide-react (1.6 KB gzip)
-    - `vendor-utils`: jszip, jose, spark-md5, react-dropzone (20 KB gzip)
-  - Implemented lazy loading for tab-based feature components with React.lazy and Suspense:
-    - MetricsDashboard, S3ImportPanel, JobHistory, WebhookManager now load on-demand
-    - Added loading spinner fallback during chunk loading
-  - Main bundle reduced from 473KB → 332KB (-30%)
-  - ~60KB of feature code now loads only when respective tabs are accessed
-
-- **S3 Import Performance** - Optimized S3 Import tab to prevent 429 rate limit errors
-  - **Frontend Caching**: 2-minute TTL cache for job list (`Map<key, {data, timestamp}>`)
-  - **Automatic Retry**: Exponential backoff (2s → 4s → 8s) for 429/503/504 errors
-  - Tab switches use cached data; manual refresh bypasses cache
-  - Cache invalidation on job create/abort mutations
-  - **Backend Retry Logic**: Same exponential backoff pattern for Cloudflare API calls
-  - **Structured Error Codes**: Module-prefixed codes (`S3_LIST_JOBS_FAILED`, `S3_CREATE_JOB_FAILED`, etc.)
-  - Respects `Retry-After` header from rate limit responses
-
-## [3.0.0] - 2025-12-08
-
-### Added
-
-- **Bucket Item Count** - Display the number of files/objects in each bucket
-  - Grid view: Shows item count below total size on bucket cards
-  - List view: New "Items" column in the bucket table
-  - Zero additional API overhead - counts objects during existing size calculation
-  - Values formatted with locale-aware number separators for large counts
-
-- **Client-Side API Caching** - Optimized performance with intelligent caching
-  - Bucket list cache with 5-minute TTL (300 seconds)
-  - File list cache (first page only) with 5-minute TTL
-  - Cache is used on initial load, bypassed on user-triggered refreshes
-  - Automatic cache invalidation on mutations (create/delete/rename operations)
-  - Exponential backoff retry logic for rate limits (429) and service errors (503/504)
-  - Retry pattern: 2s → 4s → 8s with max 3 attempts
-  - Significantly faster page loads on repeat visits (~50-80% improvement)
-  - Reduced API calls and improved resilience to transient errors
-
-- **Metrics Dashboard** - R2 analytics and usage statistics
-  - New "Metrics" tab in main navigation
-  - Summary cards: Total Requests, Success Rate, Total Storage, Object Count
-  - Time range selector: 24 Hours, 7 Days, 30 Days
-  - Requests trend line chart with per-bucket breakdown
-  - Storage usage bar chart by bucket
-  - Sortable per-bucket metrics table
-  - 2-minute client-side cache for performance
-  - New backend route: `GET /api/metrics?range=24h|7d|30d`
-  - Uses Cloudflare GraphQL Analytics API (`r2OperationsAdaptiveGroups`, `r2StorageAdaptiveGroups`)
-  - Mock data support for local development
-
-- **Persistent View Preference** - The List/Grid view preference is now saved and persists between sessions.
-  - Applied to both **Buckets** list and **Files** grid views.
-  - Defaults to **List** view for new sessions.
-  - Uses local storage to remember user choice.
-
-- **Webhooks Tab** - Configure HTTP notifications for bucket and file events
-  - New "Webhooks" tab in the main navigation
-  - Create, edit, delete, and test webhook configurations
-  - HMAC-SHA256 signature support for secure payload verification
-  - Event types: file_upload, file_download, file_delete, bucket_create, bucket_delete, job_failed, job_completed
-  - New backend routes: `/api/webhooks/*` for CRUD operations
-  - New `webhooks` table in D1 database
-
-- **Automated Database Upgrades** - One-click schema migrations
-  - Upgrade banner appears when database schema is outdated
-  - Automatically detects legacy installations without version tracking
-  - Click "Upgrade Now" to apply pending migrations
-  - Schema version tracking via `schema_version` table
-  - New backend routes: `/api/migrations/status`, `/api/migrations/apply`
-
-- **Bucket Filter Bar** - Client-side filtering for main bucket list
-  - Filter buckets by name (instant search)
-  - Filter by bucket size with presets (Small, Medium, Large) and custom ranges
-  - Filter by creation date with presets (Last 7 Days, This Year) and custom ranges
-  - Consistent UI with existing file filter bar
-
-- **Audit Logging for Individual Actions** - Extended Job History to track all user operations
-  - **File Operations:** Upload, download, delete, rename, move, copy
-  - **Folder Operations:** Create, delete, rename, move, copy
-  - **Bucket Operations:** Create, delete, rename
-  - New `audit_log` database table with indexes
-  - Unified Job History UI displays both bulk jobs and individual actions
-  - Grouped operation type dropdown (Bulk, File, Folder, Bucket, AI)
-  - New API endpoints: `GET /api/audit`, `GET /api/audit/summary`
-  - Status tracking (success/failed) with detailed metadata
-
-- **Centralized Logger Service** - Replaced all direct `console.*` calls with proper logging abstraction
-  - New `src/services/logger.ts` provides environment-aware logging
-  - Log levels: debug, info, warn, error with configurable minimum level
-  - Development mode: All logs output to console
-  - Production mode: Only warn/error levels output (configurable)
-  - Context tagging for organized logs (e.g., `[API]`, `[FileGrid]`, `[Auth]`)
-  - Extensible for future remote logging integration
-  - Passes strict ESLint `no-console` rule without suppressions
-  - Replaced ~150 specific console statements across 15+ backend files with structured logger
-
-- **S3 Import (Super Slurper Integration)** - Migrate data from Amazon S3 to R2
-  - New backend route: `worker/routes/s3-import.ts`
-  - Create, list, get, and abort migration jobs
-  - Supports AWS S3, Google Cloud Storage, and S3-compatible storage
-  - Frontend panel with three tabs: New Migration, Active Jobs, History
-  - Credentials form with AWS region selector and validation
-  - Real-time job progress tracking with abort capability
-  - Dashboard fallback link for manual job creation
-  - Mock data support for local development
-
-### Changed
-
-- **Dependency Updates** - Updated critical dependencies to latest versions
-  - `wrangler` -> ^4.53.0
-  - `vite` -> ^7.2.7
-  - `lucide-react` -> ^0.556.0
-  - `esbuild` -> ^0.27.1 (unpinned from overrides)
-
-- **UI Refinements** - Improved layout and visual consistency
-  - Moved **List/Grid View Toggle** to Bulk Actions Toolbar for better grouping.
-  - Updated **Rename** button to match standard blue accent color.
-  - Updated **Delete** button to use a muted red (opacity 0.9) for reduced harshness in dark mode.
-  - Improved spacing in Bulk Actions Toolbar.
-
-### Security
-
-- **Accessibility** - Added missing `id` and `name` attributes to "Select All Buckets" checkbox.
-
----
-
-## [2.0.0] - 2025-11-27
-
-### Added
-
-- **Job History Tracking** - Complete audit trail for bulk operations
-  - Track all bulk operations: downloads, uploads, deletions, file moves/copies
-  - Filterable job list by status, operation type, bucket, date range
-  - Real-time progress tracking with percentage completion
-  - Event timeline modal showing detailed operation history
-  - Job search by ID for quick lookup
-  - D1 database storage with `bulk_jobs` and `job_audit_events` tables
-  - New navigation tabs to switch between "Buckets" and "Job History" views
-  - API endpoints: `GET /api/jobs`, `GET /api/jobs/:jobId`, `GET /api/jobs/:jobId/events`
-
-- **AI Search Integration** - Connect R2 buckets to Cloudflare AI Search (formerly AutoRAG) for semantic search
-  - Bucket compatibility analysis shows which files can be indexed by AI Search
-  - Visual donut chart displaying indexable vs non-indexable file ratios
-  - Supported file types: markdown, text, JSON, YAML, HTML, code files (up to 4MB each)
-  - Direct link to Cloudflare Dashboard for creating AI Search instances
-  - Query interface with two search modes: AI-powered (with LLM response) and semantic search (retrieval only)
-  - Instance management: list, sync, and query existing AI Search instances
-  - Real-time search results with relevance scores and content snippets
-  - Configurable result limits and reranking options
-  - Mock data support for local development
-  - New API endpoints: `/api/ai-search/*` for compatibility, instances, and queries
-  - Requires `[ai]` binding in wrangler.toml for Workers AI access
-
-- **Accessibility Improvements** - Added id/name attributes to form elements for better accessibility compliance
-
-- **Strict TypeScript & ESLint Compliance** - Achieved full strict type safety across the codebase
-  - Fixed 280+ ESLint errors and 55 type safety warnings
-  - Enabled `strictTypeChecked` and `stylisticTypeChecked` ESLint rule sets
-  - All `no-unsafe-*` rules now enforced as errors (not warnings)
-  - Added explicit return types to all functions
-  - Added proper type assertions for all API responses (no `any` types)
-  - Fixed all floating promises with `void` operator
-  - Replaced all `||` with `??` for nullish coalescing where appropriate
-  - Fixed all strict boolean expression violations
-  - Created typed interfaces for all API request/response bodies
-  - TypeScript compiles cleanly with `noEmit` flag
-  - Only intentional `console.log` statements remain as warnings
-  - Codebase now meets strict enterprise-grade type safety standards
-
-- **Upload Integrity Verification** - MD5 checksum verification for all file uploads
-  - Client-side MD5 calculation using spark-md5 library
-  - Server-side ETag capture from R2 responses
-  - Automatic verification after upload completion
-  - Visual feedback in UI: "Verifying..." → "✓ Verified"
-  - Checksum mismatch detection with clear error messages
-  - Works for both single-chunk (<10MB) and multi-chunk (>10MB) uploads
-  - Per-chunk verification for chunked uploads
-  - Minimal performance overhead (~2-3% of upload time)
-  - Industry-standard data integrity verification
-  - Prevents silent upload failures and data corruption
-
-- **API Rate Limiting** - Tiered rate limiting to protect API endpoints from abuse
-  - Three-tier rate limiting system based on operation type (READ/WRITE/DELETE)
-  - READ operations: 100 requests per 60 seconds (GET endpoints)
-  - WRITE operations: 30 requests per 60 seconds (POST/PATCH endpoints)
-  - DELETE operations: 10 requests per 60 seconds (DELETE endpoints)
-  - Per-user enforcement using authenticated email as rate limit key
-  - Automatic endpoint classification by HTTP method and path
-  - Detailed 429 error responses with tier, limit, period, and retry guidance
-  - Violation logging with timestamp, user email, endpoint, and tier
-  - Standard rate limit response headers (Retry-After, X-RateLimit-\*)
-  - Automatic bypass for localhost development
-  - Configurable limits via wrangler.toml
-  - Uses Cloudflare Workers Rate Limiting API (no KV required)
-  - Minimal performance impact with sub-millisecond latency
-
-- **Multi-Bucket Download** - Download multiple selected buckets as a single ZIP archive
-  - "Select All" button on main page to quickly select all buckets
-  - "Download Selected" button in bulk action toolbar
-  - Downloads all selected buckets as one ZIP file with each bucket as a folder
-  - Progress tracking with visual feedback (Preparing → Downloading → Complete)
-  - Automatic deselection after successful download
-  - No size limit enforcement (downloads all files from all selected buckets)
-  - Timestamped ZIP filename: `buckets-YYYY-MM-DDTHH-MM-SS.zip`
-  - Works seamlessly with existing bulk selection UI
-
-### Changed
-
-- **Architecture Enhancement** - Added D1 database for job history metadata
-  - New `METADATA` D1 database binding for job tracking
-  - Schema includes `bulk_jobs` and `job_audit_events` tables with proper indexes
-  - Optimized queries for filtering, sorting, and pagination
-  - Previous D1 removal for bucket ownership still applies (simpler auth model)
-
-### Fixed
-
-- **Workers.dev Subdomain** - Fixed subdomain being disabled on every deployment
-  - Added `workers_dev = true` to wrangler.toml to persist setting
-  - Added `preview_urls = true` to enable version-specific preview URLs
-  - Updated wrangler.toml.example with both settings
-  - Now `*.workers.dev` subdomain remains enabled after deployments
-
----
-
-## [1.2.0] - 2025-10-27
-
-### Added
-
-- **Cross-Bucket Search** - Search for files across all buckets from the main page
-  - Expandable/collapsible search interface on bucket list page
-  - Search by filename with real-time debounced search (300ms)
-  - Filter by file extension with quick filters (Images, Documents, Videos, Code, Archives)
-  - Filter by file size with preset ranges (< 1 MB, 1-10 MB, etc.) and custom range
-  - Filter by upload date with preset ranges (Today, Last 7/30/90 Days, This Year) and custom range
-  - Server-side parallel search across all buckets for optimal performance
-  - Search results displayed in sortable table (Filename, Bucket, Size, Upload Date)
-  - Click column headers to sort results (ascending/descending)
-  - Full file actions available from search results (download, move, copy, delete)
-  - Clickable bucket badges to navigate directly to source bucket
-  - "Clear All" button to reset all filters and collapse search panel
-  - Loading and empty state indicators
-  - Active filter count badge when search is collapsed
-  - Responsive design for mobile and tablet devices
-  - Mock data support for local development
-
-- **Bulk Bucket Deletion** - Select and force delete multiple buckets at once from the main page
-  - Checkbox selection for each bucket card with visual highlighting
-  - Bulk action toolbar showing selection count and action buttons
-  - "Clear Selection" button to deselect all buckets
-  - "Delete Selected" button to initiate bulk force delete
-  - Enhanced confirmation modal supporting both single and multiple bucket deletions
-  - Progress tracking during bulk deletion ("Deleting bucket X of Y...")
-  - Visual progress bar showing deletion progress
-  - Individual failure handling - one bucket failing doesn't stop the operation
-  - Automatic file count calculation across all selected buckets
-  - Selected buckets highlighted with blue border and background
-  - Force delete functionality removes all files before deleting buckets
-
-### Fixed
-
-- **File Transfer Path Logic** - Fixed files being moved/copied into incorrectly nested folders
-  - Files now correctly go to root folder when no destination path specified
-  - Folder paths properly handled whether they end with `/` or not
-  - Fixed issue where filename was treated as folder name, creating `filename/filename` structure
-
-- **File Rename Operations** - Fixed image previews and video playback breaking after renaming files
-  - Images now properly reload with updated filenames and fresh signed URLs after rename
-  - Video files maintain playback functionality after rename operations
-  - Subsequent rename operations now work correctly (fixed "Source file not found" error)
-  - File list now refreshes synchronously after rename to prevent stale data
-
-- **Context Menu** - Fixed "Copy Link" throwing TypeError when accessed from right-click menu
-  - Changed `handleCopySignedUrl` to accept optional event parameter
-  - Added optional chaining for event.stopPropagation()
-
-- **ESLint Configuration** - Added `.wrangler` directory to ignored paths to prevent false positives
-
-- **React Hook Pattern** - Fixed `set-state-in-effect` error by replacing `useEffect` with `useMemo`
-
-### Changed
-
-- **Code Architecture** - Major refactoring for improved maintainability
-  - Extracted `useFileSort` hook (122 lines) - Manages sorting state and logic
-  - Extracted `useModalState` hook (95 lines) - Consolidates modal/dropdown states
-  - Extracted `useFileFilters` hook (244 lines) - Handles all filtering logic
-  - Extracted `useSearch` hook (217 lines) - Cross-bucket search state management
-  - Reduced main filegrid file from 1,782 to 1,579 lines (11.4% reduction)
-  - Improved code reusability and testability with custom hooks
-  - All functionality preserved with zero regressions
-
----
-
-## [1.0.1] - 2025-10-26
-
-### Fixed
-
-- **Local Development Environment** - Fixed broken local development setup
-  - Added `wrangler.dev.toml` configuration for development (skips frontend build)
-  - Fixed CORS configuration to allow `http://localhost:5173` origin with credentials
-  - Added automatic authentication bypass for localhost requests
-  - Added mock bucket data support for local testing without Cloudflare API credentials
-  - Fixed 500 errors when ASSETS binding is missing in development mode
-  - Configured `.env` file for proper localhost API endpoint
-
-### Changed
-
-- Updated `worker/index.ts` to detect localhost and handle development mode
-- Updated README.md with correct local development instructions
-- Updated Development Guide wiki with accurate setup steps
-- Updated `wrangler.toml.example` to clarify production vs development usage
-
-### Added
-
-- Added comprehensive local development section to README
-- Updated Development Guide wiki with troubleshooting steps
-- Clarified that local dev returns mock data and doesn't require secrets
-
----
-
-## [1.0.0] - 2025-10-24
-
-### Added
-
-- **Initial Release** - Full-featured R2 bucket manager
-  - Bucket management (create, rename, delete with force option)
-  - Folder management (create, rename, copy, move, delete)
-  - File operations (upload, download, rename, copy, move, delete)
-  - Advanced filtering system:
-    - Extension filters (images, documents, videos, code, archives)
-    - Size filters (preset ranges and custom)
-    - Date filters (preset ranges and custom)
-    - Active filter badges and statistics
-  - Chunked file uploads (10MB chunks, up to 500MB files)
-  - Bulk file downloads as ZIP archives
-  - Signed URL generation for secure file sharing
-  - Light/Dark/System theme support with toggle
-  - Breadcrumb navigation for folder hierarchies
-  - Grid and list view modes
-  - Real-time search and filtering
-  - GitHub SSO via Cloudflare Access (Zero Trust)
-  - Responsive design for mobile and desktop
-  - Production deployment on Cloudflare Workers
+## [v3.3.0]
+
+### Features
+
+- finalize Object Lifecycle Management feature by **Temp** ([92b5f0b](https://github.com/neverinfamous/R2-Manager-Worker/commit/92b5f0bde0c006d99e5b70775be9c080e4a3b1e1))
+- integrate lifecycle panel into bucket list/grid views by **Temp** ([3ab0fcb](https://github.com/neverinfamous/R2-Manager-Worker/commit/3ab0fcb58e570bf24c941829e6e92a61ef441bc3))
+- add lifecycle management frontend components by **Temp** ([fc6b158](https://github.com/neverinfamous/R2-Manager-Worker/commit/fc6b15858b5ef18fd1aaa2522e7db1ee17a4909c))
+- add Object Lifecycle Management API by **Temp** ([4dd3b66](https://github.com/neverinfamous/R2-Manager-Worker/commit/4dd3b66d7075b453ce835124d2fdbc96cb4abb59))
+- Enhanced Metrics Dashboard with Storage Tab and bucket filtering by **Temp** ([a1c9f30](https://github.com/neverinfamous/R2-Manager-Worker/commit/a1c9f302e1a6b988594f6e6b428ee80359cc63a5))
+- Add support email to all API error responses by **Temp** ([e97ba2c](https://github.com/neverinfamous/R2-Manager-Worker/commit/e97ba2cbef8e8e67ff38ea93d7ea100b107f5521))
+- add 6 new webhook events for R2 operations (file_move, file_copy, file_rename, folder_create, folder_delete, bucket_rename) by **Temp** ([3a27aa1](https://github.com/neverinfamous/R2-Manager-Worker/commit/3a27aa1a2e1ac7f071451a66fc196e9d20a39e19))
+
+### Bug Fixes
+
+- normalize existing lifecycle rules - convert maxAge from seconds to days by **Temp** ([096f37b](https://github.com/neverinfamous/R2-Manager-Worker/commit/096f37b750648b82a59dacd6d1f34ca88fcb5b74))
+- update worker lifecycle types to match Cloudflare API format by **Temp** ([5c3840f](https://github.com/neverinfamous/R2-Manager-Worker/commit/5c3840fd9e7b5aef2d7bb9a7363c4f5eeea2865b))
+- use correct Cloudflare REST API format for lifecycle rules by **Temp** ([74645f4](https://github.com/neverinfamous/R2-Manager-Worker/commit/74645f4d871750312eb40b1b7a2fd8e7cae1e0b8))
+- resolve 4 CodeQL code scanning alerts by **Temp** ([772b430](https://github.com/neverinfamous/R2-Manager-Worker/commit/772b4305c4fe49268605749cb2f0b8c217f25ccf))
+- Add CVE-2026-22184 to allowlist for Docker security scan by **Temp** ([556b886](https://github.com/neverinfamous/R2-Manager-Worker/commit/556b88673561b5c4ff8639ce314c68ec094d8873))
+- AI Search integration and rate limit increase by **Temp** ([568813d](https://github.com/neverinfamous/R2-Manager-Worker/commit/568813deee5b34468b6e408e84a27518f4192672))
+- AI Search integration - sync, queries, instance status, and response parsing by **Temp** ([2c059c5](https://github.com/neverinfamous/R2-Manager-Worker/commit/2c059c5deeb792064b73d78d1af22a8c2a5ace37))
+- Docker Scout vulnerability check parsing by **Temp** ([59fbbaf](https://github.com/neverinfamous/R2-Manager-Worker/commit/59fbbafa5e384179168a73e26a11296be44aa5d2))
+- local development issues for Metrics, Webhooks, and URL signing by **Temp** ([08a8c38](https://github.com/neverinfamous/R2-Manager-Worker/commit/08a8c382e4bf9c283e1bf37f923e4152333d46ae))
+
+## [v1.2.0]
+
+### Features
+
+- add production environment tracking to deployment workflows by **Temp** ([435b498](https://github.com/neverinfamous/R2-Manager-Worker/commit/435b498a3328f287033f2d8db1c1e86579195f49))
+
+### Bug Fixes
+
+- suppress ESLint fast-refresh warning for ThemeContext by **Temp** ([88a02e0](https://github.com/neverinfamous/R2-Manager-Worker/commit/88a02e04c889c61ad6d10e5496f11c0df54ace7f))
+- resolve TypeScript linting errors for CORS headers by **Temp** ([1470f08](https://github.com/neverinfamous/R2-Manager-Worker/commit/1470f08590d6f3251ee60940dae69a6fee369223))
+
+## [v1.0]
+
+### Features
+
+- Comprehensive Folder Management for R2 Buckets (#43) by **Chris LeRoux** ([edc26b5](https://github.com/neverinfamous/R2-Manager-Worker/commit/edc26b5c5f6150d3494f8607e09bf40883966a75))
+- Combine Preview/List buttons into single toggle (#37) by **Chris LeRoux** ([8d1944d](https://github.com/neverinfamous/R2-Manager-Worker/commit/8d1944d87a00e709da61086fdf5ab733374b5e4d))
+- make application configurable for any Cloudflare account by **Temp** ([93576e3](https://github.com/neverinfamous/R2-Manager-Worker/commit/93576e35cabf06bd241dd9cd72a18a0df2d92192))
+- Add MIT License by **Chris LeRoux** ([180c6ec](https://github.com/neverinfamous/R2-Manager-Worker/commit/180c6ec52946bed6472aea46b351a9beef6f9439))
+- Add FileGrid component back to show files when bucket is selected by **Temp** ([913b51d](https://github.com/neverinfamous/R2-Manager-Worker/commit/913b51d6248f714b3b020b43cf0306bf0d67b849))
+- **[BREAKING]** implement Cloudflare Zero Trust GitHub SSO authentication by **Temp** ([159d6bb](https://github.com/neverinfamous/R2-Manager-Worker/commit/159d6bbd08e5147bd8e40be434736ebea364b8ee))
+- upgrade Vite from 5.4.20 to 7.1.10 with @vitejs/plugin-react 5.0.4 by **Temp** ([299848d](https://github.com/neverinfamous/R2-Manager-Worker/commit/299848def1ee8e121d127554d63da66a5c006786))
+- upgrade React from 18.3.1 to 19.2.0 with React 19 compatibility fixes by **Temp** ([91bc1a0](https://github.com/neverinfamous/R2-Manager-Worker/commit/91bc1a02e47fa64746c663bfd067d56bad7bd96f))
+- change 'Successfully moved' notification background from red to green by **Temp** ([2eb6fe4](https://github.com/neverinfamous/R2-Manager-Worker/commit/2eb6fe4c18dd37c6e99548c8e93e1ec285bc0743))
+- implement Electron desktop app with native file opening by **Temp** ([276bbc3](https://github.com/neverinfamous/R2-Manager-Worker/commit/276bbc31c3b8afe6fa24ed0829b51556d341c158))
+- implement open files natively feature (issue #13) - Option A by **Temp** ([0752adf](https://github.com/neverinfamous/R2-Manager-Worker/commit/0752adf8c238f0625bd0d2bc63cd04a876379a8c))
+- Add native file opening with context menu and Electron/Tauri support by **Temp** ([e2af96e](https://github.com/neverinfamous/R2-Manager-Worker/commit/e2af96e1bb7e53c3d869a44d1e42dfb1f0d92099))
+- add total bucket size metric to bucket list display by **Temp** ([7acbb15](https://github.com/neverinfamous/R2-Manager-Worker/commit/7acbb157c011e1eaf4fdc2bedfc2f954e4e2faf2))
+- implement move files between R2 buckets feature (#12) by **Temp** ([c1e5a9c](https://github.com/neverinfamous/R2-Manager-Worker/commit/c1e5a9c7674d2205a30482166917b099cd6f5083))
+- Implement full bucket rename workflow with copy and delete by **Temp** ([395f726](https://github.com/neverinfamous/R2-Manager-Worker/commit/395f726b3b485fb240a28c09d099c0fd29d9efcf))
+- Issue #10 - Add bucket rename UI with validation and error handling by **Temp** ([7e38858](https://github.com/neverinfamous/R2-Manager-Worker/commit/7e38858709745c02ff7459b47a055fbb952f7cbc))
+
+### Bug Fixes
+
+- remove unnecessary escape characters in regex patterns by **Temp** ([22c9f9e](https://github.com/neverinfamous/R2-Manager-Worker/commit/22c9f9e9689831a9ddac7a82954a64739ed997d7))
+- add explicit permissions block to secrets-scanning workflow (CodeQL actions/missing-workflow-permissions) by **Temp** ([8655f03](https://github.com/neverinfamous/R2-Manager-Worker/commit/8655f038482009360c3c585311d471d6dccfcaa4))
+- add explicit permissions block to workflow (CodeQL actions/missing-workflow-permissions) by **Temp** ([0e91306](https://github.com/neverinfamous/R2-Manager-Worker/commit/0e9130648534e16e0e726210bd6b1bcff20b9988))
+- remove error details from API responses to prevent information exposure (CodeQL js/stack-trace-exposure) by **Temp** ([7634717](https://github.com/neverinfamous/R2-Manager-Worker/commit/763471748a7ba884e193fa0bc4c1ef4b8c1bc427))
+- Update TruffleHog to use proper base commit on push events by **Chris LeRoux** ([25c0153](https://github.com/neverinfamous/R2-Manager-Worker/commit/25c0153f2ae36b381f3e81c0195606b0be61a4cd))
+- Configure CodeQL to work with GitHub's default setup properly by **Chris LeRoux** ([b12e3dc](https://github.com/neverinfamous/R2-Manager-Worker/commit/b12e3dc8e9df7e795a076ea3029140fe9998914c))
+- Update wrangler command from publish to deploy for dry-run validation by **Chris LeRoux** ([8acb6db](https://github.com/neverinfamous/R2-Manager-Worker/commit/8acb6db5ede70287c72e32f07bda937f085cede6))
+- Remove category parameter from CodeQL to fix SARIF processing error by **Chris LeRoux** ([7148b6a](https://github.com/neverinfamous/R2-Manager-Worker/commit/7148b6a8886ab7ef69e5ba5be8c6f3ff45eef0fe))
+- Update Vite to 7.1.11 to address CVE-2025-30208 server.fs.deny bypass vulnerability by **Temp** ([4865be0](https://github.com/neverinfamous/R2-Manager-Worker/commit/4865be09b085429cae64bb6c2fc5ef4581a41c70))
+- Serve site.webmanifest directly to avoid Cloudflare Access CORS blocks by **Temp** ([323137a](https://github.com/neverinfamous/R2-Manager-Worker/commit/323137a96ed524275c22ca56b7e7c1e86ad497ec))
+- Remove bucket_owners insert from create bucket endpoint by **Temp** ([d79c317](https://github.com/neverinfamous/R2-Manager-Worker/commit/d79c31711e5e0521768162ae67155fe4614e3d8e))
+- Remove bucket ownership check from delete endpoint by **Temp** ([39c2a6a](https://github.com/neverinfamous/R2-Manager-Worker/commit/39c2a6aec18b9b5a22e40e519eb887bcc2d43c82))
+- Remove destination bucket ownership check from move file endpoint by **Temp** ([79d80b6](https://github.com/neverinfamous/R2-Manager-Worker/commit/79d80b60e6b15e22cb4d656e7c90526793462120))
+- Clean up header layout and remove duplicate logout button by **Temp** ([e41f94c](https://github.com/neverinfamous/R2-Manager-Worker/commit/e41f94ce436083d12bd0b5b37608b66329a89902))
+- Hide bucket list and form when bucket is selected by **Temp** ([9445d22](https://github.com/neverinfamous/R2-Manager-Worker/commit/9445d22e464e092e9d56cde893ee82ffce2a1c43))
+- Remove Auth import and fix handleLogout for Zero Trust by **Temp** ([c1d0bca](https://github.com/neverinfamous/R2-Manager-Worker/commit/c1d0bca92234f708d134837b4c687fadbce0f89c))
+- Properly hide bucket list and form when viewing bucket files by **Temp** ([d97ad7b](https://github.com/neverinfamous/R2-Manager-Worker/commit/d97ad7bc8e52966eb393756b30d72572b581c3c7))
+- Hide create bucket form when viewing bucket contents by **Temp** ([b2694d7](https://github.com/neverinfamous/R2-Manager-Worker/commit/b2694d76fab018d9e15929bbac482a1bb368c33d))
+- Show FileGrid conditionally and add back button by **Temp** ([36e0d16](https://github.com/neverinfamous/R2-Manager-Worker/commit/36e0d16caad33f2d06034c6709e4678cc07940ec))
+- Remove file listing ownership checks and improve UI layout by **Temp** ([d7efb9e](https://github.com/neverinfamous/R2-Manager-Worker/commit/d7efb9e3e1342d135f8d0a875748a3b853ee7d97))
+- Disable all ownership checks for Zero Trust authenticated users by **Temp** ([087bf07](https://github.com/neverinfamous/R2-Manager-Worker/commit/087bf0757df8aab9faf73440e991f0c970c735fa))
+- Remove ownership checks and hide system buckets for Zero Trust users by **Temp** ([bc0bb00](https://github.com/neverinfamous/R2-Manager-Worker/commit/bc0bb00f561c52c5cd41f87c70aa1a1365e0bb86))
+- Show all R2 buckets to Zero Trust authenticated users by **Temp** ([4454367](https://github.com/neverinfamous/R2-Manager-Worker/commit/4454367e0aa0105478a765385f0aed477ba3b5ab))
+- Extract JWT from cookies for Cloudflare Access integration by **Temp** ([babb246](https://github.com/neverinfamous/R2-Manager-Worker/commit/babb246e124811bd72d8485722ba3ffa830b90fe))
+- add debugging and improve Electron detection in preload/API by **Temp** ([0d1e67c](https://github.com/neverinfamous/R2-Manager-Worker/commit/0d1e67c149e49cf560ff36ac80fcee7ac196c60b))
+- move download handler setup before window creation by **Temp** ([34b8298](https://github.com/neverinfamous/R2-Manager-Worker/commit/34b829811df028e6144ee3b334d0bf651c3baa36))
+- resolve linting errors in electron/main.ts by **Temp** ([4dd0c18](https://github.com/neverinfamous/R2-Manager-Worker/commit/4dd0c188d0ced82d9cd5de8953c4b29f27c7974b))
+- add dual approach for opening files in Electron with debugging by **Temp** ([da40f0b](https://github.com/neverinfamous/R2-Manager-Worker/commit/da40f0b6d471d4ba28cc1ae4a9b1088fad072b51))
+- implement proper Electron download handler for native file opening by **Temp** ([f1351cc](https://github.com/neverinfamous/R2-Manager-Worker/commit/f1351ccc8c9303650eb962ae77de7dc5236a552a))
+- resolve TypeScript error in app.tsx file rejection type by **Temp** ([4f51f32](https://github.com/neverinfamous/R2-Manager-Worker/commit/4f51f32e77b6af14cb77d344af94890f94f0e7c8))
+- Handle token in new login response format by **Temp** ([3b2606b](https://github.com/neverinfamous/R2-Manager-Worker/commit/3b2606be3f8ef79076fde0a4e899d1fd6ea49389))
+- Include auth token in login response for CORS compatibility by **Temp** ([297abee](https://github.com/neverinfamous/R2-Manager-Worker/commit/297abeecdf118dae9655456a3fc4b54ba7be7f91))
+- Add better error logging to listBuckets by **Temp** ([7d2ce9f](https://github.com/neverinfamous/R2-Manager-Worker/commit/7d2ce9f216731be6b82e4de9910917741440d876))
+- Handle cookie-based auth when no token in response by **Temp** ([a2c15f8](https://github.com/neverinfamous/R2-Manager-Worker/commit/a2c15f80701dc9cfc71f960bed9b77e516d8acd5))
+- Resolve all linting errors in feature branch by **Temp** ([f030ca7](https://github.com/neverinfamous/R2-Manager-Worker/commit/f030ca739b650a91bd56df553a9c55a966b0d711))
+- handle file keys with slashes in move endpoint by **Temp** ([7817228](https://github.com/neverinfamous/R2-Manager-Worker/commit/781722837e076a18b657d51f3a717b4c80c7eca6))
+- open move dialog when Move Selected button is clicked by **Temp** ([87c800e](https://github.com/neverinfamous/R2-Manager-Worker/commit/87c800e5bc7e7cd6534435097be72247f045eb34))
+- Clean up linting errors in bucket rename handler by **Temp** ([ffd4076](https://github.com/neverinfamous/R2-Manager-Worker/commit/ffd4076dde68adfaa429e2eb4e53d68066e2d52f))
+- Move PATCH handler to correct scope to fix TypeScript error by **Temp** ([450c48f](https://github.com/neverinfamous/R2-Manager-Worker/commit/450c48f00f7fe7defe84274a1b38c89e44be0d00))
+- Improve non-empty bucket error detection by **Temp** ([ac0882c](https://github.com/neverinfamous/R2-Manager-Worker/commit/ac0882ce340f47e4cf58281451df1784b82f70f7))
+- Correct force delete API endpoints and response parsing by **Temp** ([f1a1e80](https://github.com/neverinfamous/R2-Manager-Worker/commit/f1a1e80cc2975a966e9df916a35530752b7320fc))
+- Improve API error response handling for bucket deletion by **Temp** ([ef28db9](https://github.com/neverinfamous/R2-Manager-Worker/commit/ef28db9e01bccfad46eb96ed94d50319cf443179))
+- Improve bucket deletion response handling for 204 status by **Temp** ([646b7c0](https://github.com/neverinfamous/R2-Manager-Worker/commit/646b7c06d3561e654cd05c0c1790565f3447f20d))
+- Force delete bucket response handling by **Temp** ([f33364f](https://github.com/neverinfamous/R2-Manager-Worker/commit/f33364fc3f0db1e0a2d46ee22fe5152abb07d7e5))
+- add wrangler build configuration and simplify workflow by **Temp** ([e1bbdf7](https://github.com/neverinfamous/R2-Manager-Worker/commit/e1bbdf78504f0060f2ec856cf3f555a62ed86977))
+- use official cloudflare/wrangler-action for proper authentication by **Temp** ([07fcf37](https://github.com/neverinfamous/R2-Manager-Worker/commit/07fcf373d927daaa71925c16d0c51ae55d4292ab))
+- update CI/CD workflow to use existing GitHub secrets by **Temp** ([b8f4df0](https://github.com/neverinfamous/R2-Manager-Worker/commit/b8f4df07eac670092101962f240b9e412dc3580f))
+- remove unsupported single_page_app field from wrangler.toml by **Temp** ([9648a02](https://github.com/neverinfamous/R2-Manager-Worker/commit/9648a02f8db12ad2d1d34303c2f381e9c3ef41bb))
+- update wrangler config and add CI/CD deployment workflow by **Temp** ([93640a2](https://github.com/neverinfamous/R2-Manager-Worker/commit/93640a2dc273226a881ea10ca1f1bac52146ed93))

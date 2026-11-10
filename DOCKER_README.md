@@ -129,13 +129,14 @@ The development server will be available at `http://localhost:8787`
 
 ### Environment Variables
 
-| Variable      | Required   | Description                            |
-| ------------- | ---------- | -------------------------------------- |
-| `ACCOUNT_ID`  | Yes        | Your Cloudflare account ID             |
-| `CF_EMAIL`    | Yes        | Your Cloudflare email                  |
-| `API_KEY`     | Yes        | Your Cloudflare API key                |
-| `TEAM_DOMAIN` | Yes (prod) | Your Cloudflare Zero Trust team domain |
-| `POLICY_AUD`  | Yes (prod) | Cloudflare Access policy audience tag  |
+| Variable          | Required   | Description                                                                                     |
+| ----------------- | ---------- | ----------------------------------------------------------------------------------------------- |
+| `ACCOUNT_ID`      | Yes        | Your Cloudflare account ID                                                                      |
+| `CF_EMAIL`        | Yes        | Your Cloudflare email                                                                           |
+| `API_KEY`         | Yes        | Your Cloudflare API key                                                                         |
+| `TEAM_DOMAIN`     | Yes (prod) | Your Cloudflare Zero Trust team domain                                                          |
+| `POLICY_AUD`      | Yes (prod) | Cloudflare Access policy audience tag                                                           |
+| `ALLOWED_ORIGINS` | No         | Comma-separated list of additional trusted origins for credentialed CORS (same-origin default) |
 
 ### Volume Mounts
 

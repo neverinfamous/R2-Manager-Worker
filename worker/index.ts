@@ -6,7 +6,8 @@ import { validateSignature } from "./utils/signing";
 import {
   getCorsHeaders,
   handleCorsPreflightRequest,
-  isLocalDevelopment,
+  isLocalDevEnvironment,
+  validateCrossOriginRequest,
 } from "./utils/cors";
 import { getCloudflareHeaders } from "./utils/helpers";
 import {
@@ -35,22 +36,20 @@ import { handleLocalUploadsRoutes } from "./routes/local-uploads";
 
 async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url);
-  // Detect if we're in local development (hoisted for logging availability)
-  const isLocalhost = isLocalDevelopment(request);
-  const isLocalDev =
-    isLocalhost && (!env.ACCOUNT_ID || !env.CF_EMAIL || !env.API_KEY);
+  // Detect if we're in local development (strictly via request hostname and absence of production secrets)
+  const isLocalDev = isLocalDevEnvironment(request, env);
 
   logInfo(`[Request] ${request.method} ${url.pathname}`, {
     module: "worker",
     operation: "request",
   });
 
-  // Get CORS headers
-  const corsHeaders = getCorsHeaders(request);
+  // Get CORS headers (only reflects explicitly trusted origins)
+  const corsHeaders = getCorsHeaders(request, isLocalDev, env.ALLOWED_ORIGINS);
 
   // Handle CORS preflight
   if (request.method === "OPTIONS") {
-    return handleCorsPreflightRequest(corsHeaders);
+    return handleCorsPreflightRequest(request, corsHeaders);
   }
 
   // Serve site.webmanifest directly (avoids Cloudflare Access CORS block)
@@ -195,10 +194,10 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     }
   }
 
-  // Skip auth for localhost development
+  // Skip auth only in local development without production credentials
   let userEmail: string | null;
-  if (isLocalhost) {
-    logInfo("Localhost detected, skipping JWT validation", {
+  if (isLocalDev) {
+    logInfo("Local development detected, skipping JWT validation", {
       module: "worker",
       operation: "auth",
     });
@@ -214,9 +213,20 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
     }
   }
 
-  // Check rate limits for API requests (skip for localhost and if rate limiters not configured)
+  // Reject state-changing API requests from untrusted origins (CSRF / cross-origin protection)
+  const crossOriginBlock = validateCrossOriginRequest(
+    request,
+    url,
+    isLocalDev,
+    env.ALLOWED_ORIGINS,
+  );
+  if (crossOriginBlock !== null) {
+    return crossOriginBlock;
+  }
+
+  // Check rate limits for API requests (skip only in local dev or if rate limiters not configured)
   if (
-    !isLocalhost &&
+    !isLocalDev &&
     url.pathname.startsWith("/api/") &&
     env.RATE_LIMITER_READ !== undefined
   ) {
@@ -463,7 +473,7 @@ async function handleApiRequest(request: Request, env: Env): Promise<Response> {
   }
 
   // Serve frontend assets
-  return await serveFrontendAssets(request, env, isLocalhost);
+  return await serveFrontendAssets(request, env, isLocalDev);
 }
 
 export default {
@@ -489,7 +499,7 @@ export default {
         {
           status: 500,
           headers: {
-            "Access-Control-Allow-Origin": "*",
+            Vary: "Origin",
           },
         },
       );
