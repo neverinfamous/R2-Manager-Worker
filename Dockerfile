@@ -155,7 +155,8 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 
 # Install production dependencies only
 RUN corepack enable && pnpm install --prod --frozen-lockfile && \
-    pnpm store prune
+    pnpm store prune && \
+    rm -rf /root/.local/share/pnpm /root/.cache /tmp/*
 
 # Copy built application from builder
 COPY --from=builder /app/dist ./dist
@@ -177,4 +178,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 
 # Default command: Run Wrangler in development mode
 # Override with specific commands for production deployment
-CMD ["pnpm", "exec", "wrangler", "dev", "--ip", "0.0.0.0", "--port", "8787"]
+CMD ["npx", "wrangler", "dev", "--ip", "0.0.0.0", "--port", "8787"]
