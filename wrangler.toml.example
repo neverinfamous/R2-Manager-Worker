@@ -8,8 +8,10 @@ name = "r2"
 main = "worker/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
-workers_dev = true   # Enable *.workers.dev subdomain
-preview_urls = true  # Enable preview URLs for each version
+# Security: Keep workers_dev and preview_urls disabled in production when using a custom domain.
+# If enabled, ensure your Cloudflare Access policy explicitly covers the *.workers.dev and preview hostnames.
+workers_dev = false  # Set to true only if deploying without a custom domain and protecting *.workers.dev with Access
+preview_urls = false # Keep disabled unless preview URLs are also covered by Cloudflare Access
 
 # Smart Placement disabled for SPA - UI responsiveness priority
 placement = { mode = "off" }
@@ -84,7 +86,7 @@ simple = { limit = 60, period = 60 }
 # ============================================
 # CUSTOM DOMAIN ROUTING (OPTIONAL)
 # ============================================
-# Option 1: Use default Workers.dev subdomain (no configuration needed)
+# Option 1: Use default Workers.dev subdomain (set workers_dev = true above and protect with Cloudflare Access)
 #   Your worker will be available at: https://r2.<your-subdomain>.workers.dev
 #
 # Option 2: Use custom domain (uncomment and configure below)
@@ -108,12 +110,17 @@ simple = { limit = 60, period = 60 }
 #   wrangler secret put TEAM_DOMAIN
 #   wrangler secret put POLICY_AUD
 #
+# Optional secrets:
+#   wrangler secret put ALLOWED_ORIGINS
+#
 # Secret details:
 # - ACCOUNT_ID: Your Cloudflare account ID (Dashboard > Overview)
 # - CF_EMAIL: Your Cloudflare account email
 # - API_KEY: Cloudflare API token with R2 permissions
 # - TEAM_DOMAIN: Cloudflare Zero Trust team domain (e.g., yourteam.cloudflareaccess.com)
 # - POLICY_AUD: Access Policy AUD tag from your Access application
+# - ALLOWED_ORIGINS: (Optional) Comma-separated list of additional trusted origins for credentialed CORS
+#   (same-origin is allowed by default; e.g., "https://r2.yourdomain.com,https://admin.yourdomain.com")
 #
 # ============================================
 # LOCAL DEVELOPMENT
@@ -124,4 +131,3 @@ simple = { limit = 60, period = 60 }
 # Quick start:
 #   Terminal 1: npm run dev
 #   Terminal 2: npx wrangler dev --config wrangler.dev.toml --local
-

@@ -10,6 +10,7 @@ export interface Env {
   URL_SIGNING_KEY?: string; // Optional - auto-generated in local dev
   TEAM_DOMAIN: string;
   POLICY_AUD: string;
+  ALLOWED_ORIGINS?: string; // Optional comma-separated list of allowed origins for credentialed CORS
   RATE_LIMITER_READ: RateLimit;
   RATE_LIMITER_WRITE: RateLimit;
   RATE_LIMITER_DELETE: RateLimit;

@@ -43,7 +43,8 @@ This project follows security best practices:
 
 ### API Security
 
-- CORS headers properly configured
+- Strict CORS origin allowlist: credentialed CORS headers (`Access-Control-Allow-Origin` and `Access-Control-Allow-Credentials: true`) are only emitted for same-origin requests or origins explicitly listed in `ALLOWED_ORIGINS` (plus `localhost` / `127.0.0.1` strictly in unauthenticated local mock development)
+- Cross-origin state-changing API requests (`POST`, `PUT`, `PATCH`, `DELETE`) from untrusted origins are rejected with `403 Forbidden`
 - R2 API calls use properly formatted requests
 - Object keys handled correctly (no encoding issues on Management API)
 - Rate limiting handled by Cloudflare infrastructure
@@ -114,6 +115,7 @@ The zlib library is present in the Alpine base image but is not used in a way th
 
 - This application requires Cloudflare Access (Zero Trust) for authentication
 - If Access policies are misconfigured, unauthorized access may occur
+- Keep `workers_dev = false` and `preview_urls = false` in `wrangler.toml` when deploying on a custom domain, or ensure your Cloudflare Access policy covers every reachable hostname (including `*.workers.dev` and preview URLs if enabled)
 - Ensure your Access policies are properly configured as documented in README.md
 
 ### Static Assets
