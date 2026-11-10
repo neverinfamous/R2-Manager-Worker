@@ -137,13 +137,13 @@ RUN cd /tmp && \
 #   Fix version 8.18.0-r0 not yet available in Alpine repos (upstream availability gap)
 # - busybox has CVE-2025-46394 & CVE-2024-58251 (LOW) with no fixes available yet
 # - npm CLI bundled undici@6.29.1 and postcss-selector-parser@7.2.0 are patched alongside the other npm-bundled deps
-# - OpenSSL (libcrypto3/libssl3), zlib, and musl are upgraded to the latest Alpine patch releases
-# - musl 1.2.6-r3 retains CVE-2026-107891 (HIGH) until Alpine 3.24 publishes 1.2.6-r6 upstream
+# - OpenSSL (libcrypto3/libssl3), zlib, and musl (1.2.6-r6 via Alpine edge to resolve CVE-2026-107891) are upgraded to the latest patch releases
 # These are accepted upstream risks - will upgrade when Alpine publishes patched packages
 RUN apk add --no-cache \
     curl \
     ca-certificates && \
-    apk upgrade --no-cache libcrypto3 libssl3 zlib musl musl-utils
+    apk upgrade --no-cache libcrypto3 libssl3 zlib && \
+    apk upgrade --no-cache musl musl-utils --repository=http://dl-cdn.alpinelinux.org/alpine/edge/main
 
 # Create non-root user for security
 # Note: Alpine Linux uses GID 1000 for 'users' group, so we use a different GID
