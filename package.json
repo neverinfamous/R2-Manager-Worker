@@ -16,7 +16,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "jose": "^6.2.16",
+    "jose": "^6.2.17",
     "jszip": "^3.10.2",
     "lucide-react": "^1.70.0",
     "react": "^19.3.1",
