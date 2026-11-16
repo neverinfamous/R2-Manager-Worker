@@ -26,7 +26,7 @@
   },
   "devDependencies": {
     "@babel/core": "^8.1.0",
-    "@cloudflare/workers-types": "^5.20261108.1",
+    "@cloudflare/workers-types": "^5.20261113.1",
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.6",
     "@types/react": "^19.3.0",
